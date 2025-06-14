@@ -1,0 +1,15 @@
+
+[
+  {
+    "emotion": "stress",
+    "triggers": ["stress", "paniek", "te veel", "spanning"],
+    "response": "Ik hoor veel stress en onrust in je woorden.",
+    "meta": "30m – Hoog"
+  },
+  {
+    "emotion": "verdriet",
+    "triggers": ["verdriet", "huilen", "down", "triest"],
+    "response": "Dat klinkt verdrietig, het is oké om dat te voelen.",
+    "meta": "60m – Normaal"
+  }
+]

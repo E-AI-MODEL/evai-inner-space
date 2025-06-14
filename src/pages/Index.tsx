@@ -1,9 +1,9 @@
-
 import React, { useState } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import ChatBubble from "../components/ChatBubble";
 import InputBar from "../components/InputBar";
+import { useSeedEngine } from "../hooks/useSeedEngine";
 
 // Voorbeeld chat
 const EXAMPLE_AI = [
@@ -62,26 +62,45 @@ const Index = () => {
   ]);
   const [input, setInput] = useState("");
   const [showExplain, setShowExplain] = useState(false);
+  const { checkInput } = useSeedEngine(); // Seed-engine hook
 
   // Demo: bij verzenden voeg nieuwe user-bubbel en AI-sequence toe
   const onSend = () => {
     if (!input.trim()) return;
     const nextId = `user-${messages.length + 1}`;
+    // Stap 1: check seed
+    const matchedSeed = checkInput(input.trim());
+    // Stap 2: AI response afhankelijk van seed
+    const aiResp = matchedSeed
+      ? {
+          id: `ai-seed-${messages.length + 1}`,
+          from: "ai",
+          label: "Valideren",
+          accentColor: "#BFD7FF",
+          content: matchedSeed.response,
+          showExplain: showExplain,
+          explainText: `Seed ‘${matchedSeed.emotion}’. Trigger gevonden: "${matchedSeed.triggers.find(t => input.trim().toLowerCase().includes(t))}"`,
+          emotionSeed: matchedSeed.emotion,
+          animate: true,
+          meta: matchedSeed.meta,
+        }
+      : {
+          id: `ai-new-${messages.length + 1}`,
+          from: "ai",
+          label: "Valideren",
+          accentColor: "#BFD7FF",
+          content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+          showExplain: showExplain,
+          explainText: "Demo logica: geen seed gevonden.",
+          emotionSeed: null,
+          animate: true,
+          meta: "",
+        };
+
     setMessages([
       ...messages,
       { id: nextId, from: "user", label: null, content: input.trim(), emotionSeed: null, animate: false },
-      {
-        id: `ai-new-${messages.length + 1}`,
-        from: "ai",
-        label: "Valideren",
-        accentColor: "#BFD7FF",
-        content: "Ik hoor de stress in je bericht. Wil je daar meer over delen?",
-        showExplain: showExplain,
-        explainText: "Demo logica: seed ‘Stress’, valideren.",
-        emotionSeed: "stress",
-        animate: true,
-        meta: "30m – Hoog",
-      },
+      aiResp,
     ]);
     setInput("");
   };
