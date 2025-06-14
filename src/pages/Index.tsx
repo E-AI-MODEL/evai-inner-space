@@ -1,9 +1,12 @@
+
 import React, { useState } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import ChatBubble from "../components/ChatBubble";
 import InputBar from "../components/InputBar";
 import { useSeedEngine } from "../hooks/useSeedEngine";
+import { toast } from "@/hooks/use-toast";
+import SeedConfetti from "../components/SeedConfetti";
 
 // Voorbeeld chat
 const EXAMPLE_AI = [
@@ -19,6 +22,7 @@ const EXAMPLE_AI = [
     emotionSeed: "stress",
     animate: true,
     meta: "30m – Hoog",
+    brilliant: true,
   },
   {
     id: "ai-2",
@@ -31,6 +35,7 @@ const EXAMPLE_AI = [
     emotionSeed: "stress",
     animate: false,
     meta: "30m – Hoog",
+    brilliant: false,
   },
   {
     id: "ai-3",
@@ -44,6 +49,7 @@ const EXAMPLE_AI = [
     emotionSeed: "stress",
     animate: false,
     meta: "30m – Hoog",
+    brilliant: false,
   },
 ];
 
@@ -62,6 +68,7 @@ const Index = () => {
   ]);
   const [input, setInput] = useState("");
   const [showExplain, setShowExplain] = useState(false);
+  const [seedConfetti, setSeedConfetti] = useState(false); // Nieuw
   const { checkInput } = useSeedEngine(); // Seed-engine hook
 
   // Demo: bij verzenden voeg nieuwe user-bubbel en AI-sequence toe
@@ -70,32 +77,44 @@ const Index = () => {
     const nextId = `user-${messages.length + 1}`;
     // Stap 1: check seed
     const matchedSeed = checkInput(input.trim());
-    // Stap 2: AI response afhankelijk van seed
-    const aiResp = matchedSeed
-      ? {
-          id: `ai-seed-${messages.length + 1}`,
-          from: "ai",
-          label: "Valideren",
-          accentColor: "#BFD7FF",
-          content: matchedSeed.response,
-          showExplain: showExplain,
-          explainText: `Seed ‘${matchedSeed.emotion}’. Trigger gevonden: "${matchedSeed.triggers.find(t => input.trim().toLowerCase().includes(t))}"`,
-          emotionSeed: matchedSeed.emotion,
-          animate: true,
-          meta: matchedSeed.meta,
-        }
-      : {
-          id: `ai-new-${messages.length + 1}`,
-          from: "ai",
-          label: "Valideren",
-          accentColor: "#BFD7FF",
-          content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
-          showExplain: showExplain,
-          explainText: "Demo logica: geen seed gevonden.",
-          emotionSeed: null,
-          animate: true,
-          meta: "",
-        };
+
+    // --- BRILJANTFEELING ---
+    let aiResp;
+    if (matchedSeed) {
+      // Trigger een briljant-effect
+      setSeedConfetti(true);
+      toast({
+        title: "Seed gevonden!",
+        description: `De emotie ‘${matchedSeed.emotion}’ werd herkend. 🤩`,
+      });
+      aiResp = {
+        id: `ai-seed-${messages.length + 1}`,
+        from: "ai",
+        label: "Valideren",
+        accentColor: "#BFD7FF",
+        content: matchedSeed.response,
+        showExplain: showExplain,
+        explainText: `Seed ‘${matchedSeed.emotion}’. Trigger gevonden: "${matchedSeed.triggers.find(t => input.trim().toLowerCase().includes(t))}"`,
+        emotionSeed: matchedSeed.emotion,
+        animate: true,
+        meta: matchedSeed.meta,
+        brilliant: true, // highlight & icoon
+      };
+    } else {
+      aiResp = {
+        id: `ai-new-${messages.length + 1}`,
+        from: "ai",
+        label: "Valideren",
+        accentColor: "#BFD7FF",
+        content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+        showExplain: showExplain,
+        explainText: "Demo logica: geen seed gevonden.",
+        emotionSeed: null,
+        animate: true,
+        meta: "",
+        brilliant: false,
+      };
+    }
 
     setMessages([
       ...messages,
@@ -107,6 +126,7 @@ const Index = () => {
 
   return (
     <div className="w-full min-h-screen bg-background font-inter">
+      <SeedConfetti show={seedConfetti} /> {/* Confetti layer */}
       <TopBar />
       <div className="flex">
         {/* Sidebar emotie-historie alleen op desktop */}
@@ -126,6 +146,7 @@ const Index = () => {
                   animate={!!msg.animate}
                   showExplain={showExplain && msg.from === "ai"}
                   explainText={(msg as any).explainText}
+                  brilliant={!!(msg as any).brilliant}
                 >
                   {msg.content}
                 </ChatBubble>

@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Gem } from "lucide-react";
 
 interface ChatBubbleProps {
   from: "user" | "ai";
@@ -11,6 +12,7 @@ interface ChatBubbleProps {
   explainText?: string;
   emotionSeed?: string;
   animate?: boolean;
+  brilliant?: boolean; // Nieuw: highlight voor seed-matching
 }
 
 const LABEL_CLASSES = {
@@ -29,6 +31,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   explainText,
   emotionSeed,
   animate,
+  brilliant,
 }) => {
   const bubbleStyles =
     from === "user"
@@ -39,7 +42,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   return (
     <div
       className={`flex flex-col items-start gap-1 mb-4 ${from === "user" ? "items-end" : "items-start"} ${
-        animate ? "animate-fade-slide-in" : ""
+        animate ? "animate-fade-in" : ""
       }`}
       data-seed={emotionSeed}
     >
@@ -50,32 +53,41 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
           {label}
         </span>
       )}
-
-      <div
-        className={`max-w-[70vw] px-4 py-3 rounded-xl font-inter shadow-card relative text-base leading-snug
-          ${from === "ai"
-            ? accentColor
-              ? ""
-              : "bg-stress/60"
-            : "bg-white"
-          }
-          ${bubbleStyles}
-          ${from === "ai" && animate ? "animate-pulse-accent" : ""}
-        `}
-        style={
-          accentColor && from === "ai"
-            ? { backgroundColor: accentColor, color: "#222" }
-            : undefined
-        }
-        data-ttl={meta}
-      >
-        {children}
-        {/* Uitleg-toggle */}
-        {showExplain && explainText && (
-          <div className="mt-2 text-xs italic opacity-80 transition-all max-h-36 overflow-hidden bubble-ai__explain" style={{ fontFamily: "Inter, sans-serif" }}>
-            {explainText}
-          </div>
+      <div className={`relative w-fit`}>
+        {/* Brilliant/diamond sparkle */}
+        {brilliant && (
+          <span className="absolute -left-6 -top-2 z-10 animate-fade-in pointer-events-none">
+            <Gem size={22} className="text-blue-400 drop-shadow-brilliant" />
+          </span>
         )}
+
+        <div
+          className={`max-w-[70vw] px-4 py-3 rounded-xl font-inter shadow-card relative text-base leading-snug transition-shadow
+            ${from === "ai"
+              ? accentColor
+                ? ""
+                : "bg-stress/60"
+              : "bg-white"
+            }
+            ${bubbleStyles}
+            ${brilliant ? "ring-2 ring-blue-200 ring-offset-2 shadow-lg" : ""}
+            ${from === "ai" && animate ? "animate-pulse-accent" : ""}
+          `}
+          style={
+            accentColor && from === "ai"
+              ? { backgroundColor: accentColor, color: "#222" }
+              : undefined
+          }
+          data-ttl={meta}
+        >
+          {children}
+          {/* Uitleg-toggle */}
+          {showExplain && explainText && (
+            <div className="mt-2 text-xs italic opacity-80 transition-all max-h-36 overflow-hidden bubble-ai__explain" style={{ fontFamily: "Inter, sans-serif" }}>
+              {explainText}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
