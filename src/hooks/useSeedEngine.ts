@@ -1,3 +1,4 @@
+
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import { useAdvancedSeedEngine } from './useAdvancedSeedEngine';
 import seeds from "../seeds.json";
@@ -45,12 +46,18 @@ export function useSeedEngine() {
       
       // Convert AdvancedSeed to Seed interface for backward compatibility
       if (result && 'id' in result && !('confidence' in result)) {
+        // Map the advanced label to legacy label, excluding "Interventie" 
+        let legacyLabel: "Valideren" | "Reflectievraag" | "Suggestie" = "Valideren";
+        if (result.label === "Reflectievraag") legacyLabel = "Reflectievraag";
+        else if (result.label === "Suggestie") legacyLabel = "Suggestie";
+        // "Interventie" will default to "Valideren" for backward compatibility
+        
         return {
           emotion: result.emotion,
           triggers: result.triggers,
           response: result.response.nl,
           meta: `${result.meta.weight}x – ${result.context.severity}`,
-          label: result.label
+          label: legacyLabel
         };
       }
       
