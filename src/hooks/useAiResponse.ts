@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message, ChatHistoryItem } from "../types";
+import { useSymbolicEngine } from "./useSymbolicEngine";
 
 export function useAiResponse(
   messages: Message[],
@@ -13,6 +13,9 @@ export function useAiResponse(
 ) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { checkInput, isLoading: isSeedEngineLoading } = useSeedEngine();
+
+  // Symbolic neurosymbolic features engine
+  const { evaluate: evaluateSymbolic } = useSymbolicEngine();
 
   const generateAiResponse = async (
     userMessage: Message,
@@ -57,7 +60,7 @@ export function useAiResponse(
           feedback: null,
         };
       } else if (matchedResult) {
-        const seedResult = matchedResult as Seed;
+        const seedResult = matchedResult;
         setSeedConfetti(true);
         toast({
           title: "Seed gevonden!",
@@ -104,6 +107,20 @@ export function useAiResponse(
           feedback: null,
         };
       }
+
+      // NEW: Symbolic engine analysis (evaluates using current + the new AI message)
+      const extendedMessages = [...messages, aiResp];
+      const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
+      if (aiSymbolic.length) {
+        // Add property to message object (for display/use in the UI)
+        aiResp = { ...aiResp, symbolicInferences: aiSymbolic };
+        // Optionally: could toast here for demo
+        toast({
+          title: "Symbolische observatie",
+          description: aiSymbolic.join(" "),
+        });
+      }
+
       setMessages((prev) => [...prev, aiResp]);
     } catch (err) {
       console.error("Error processing message:", err);

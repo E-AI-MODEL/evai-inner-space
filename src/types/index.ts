@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   from: "user" | "ai";
@@ -13,6 +12,8 @@ export interface Message {
   brilliant?: boolean;
   replyTo?: string;
   feedback?: "like" | "dislike" | null;
+  // OPTIONAL: Symbolic inferences meta info, for neurosymbolic engine
+  symbolicInferences?: string[];
 }
 
 export type ChatHistoryItem = {
