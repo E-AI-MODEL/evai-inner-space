@@ -1,15 +1,14 @@
-
 import React, { useState, useEffect } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import ChatBubble from "../components/ChatBubble";
 import InputBar from "../components/InputBar";
-import ApiKeyInput from "../components/ApiKeyInput";
 import { useSeedEngine } from "../hooks/useSeedEngine";
 import { toast } from "@/hooks/use-toast";
 import SeedConfetti from "../components/SeedConfetti";
 import IntroAnimation from "../components/IntroAnimation";
 import { getEmotionVisuals } from "../lib/emotion-visuals";
+import SettingsSheet from "../components/SettingsSheet";
 
 interface Message {
   id: string;
@@ -59,10 +58,10 @@ const Index = () => {
   const [seedConfetti, setSeedConfetti] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const { checkInput, isLoading, error } = useSeedEngine();
 
-  // Laad API key uit localStorage bij component mount
   useEffect(() => {
     const savedApiKey = localStorage.getItem('openai-api-key');
     if (savedApiKey) {
@@ -81,6 +80,7 @@ const Index = () => {
         title: "API Key opgeslagen",
         description: "Je OpenAI API key is lokaal opgeslagen.",
       });
+      setIsSettingsOpen(false); // Sluit paneel na opslaan
     }
   };
 
@@ -207,16 +207,18 @@ const Index = () => {
   return (
     <div className="w-full min-h-screen bg-background font-inter">
       <SeedConfetti show={seedConfetti} />
-      <TopBar />
+      <TopBar onSettingsClick={() => setIsSettingsOpen(true)} />
+      <SettingsSheet
+        isOpen={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        apiKey={apiKey}
+        onApiKeyChange={setApiKey}
+        onApiKeySave={saveApiKey}
+      />
       <div className="flex">
         <SidebarEmotionHistory history={emotionHistory} />
         <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
           <div className="flex-1 flex flex-col justify-end max-w-2xl mx-auto w-full">
-            <ApiKeyInput
-              value={apiKey}
-              onChange={setApiKey}
-              onSave={saveApiKey}
-            />
             
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
