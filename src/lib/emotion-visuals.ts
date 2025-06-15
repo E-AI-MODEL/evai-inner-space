@@ -1,17 +1,30 @@
 
-export const EMOTION_VISUALS: { [key: string]: { icon: string; colorClass: string } } = {
-  stress: { icon: "😰", colorClass: "bg-stress" },
-  verdriet: { icon: "😢", colorClass: "bg-blue-200" },
-  blij: { icon: "🙂", colorClass: "bg-yellow-100" },
-  error: { icon: "⚠️", colorClass: "bg-red-200" },
+export const EMOTION_VISUALS: { [key: string]: { icon: keyof typeof import('lucide-react/dynamicIconImports'); colorClass: string } } = {
+  stress: { icon: "cloud-lightning", colorClass: "bg-yellow-200" },
+  verdriet: { icon: "frown", colorClass: "bg-blue-200" },
+  blij: { icon: "smile", colorClass: "bg-green-200" },
+  error: { icon: "alert-triangle", colorClass: "bg-red-200" },
+  angst: { icon: "shield-alert", colorClass: "bg-orange-200" },
+  faalangst: { icon: "shield-alert", colorClass: "bg-orange-200" },
+  onmacht: { icon: "battery-warning", colorClass: "bg-amber-200" },
+  boosheid: { icon: "cloud-off", colorClass: "bg-slate-300" },
+  dankbaarheid: { icon: "heart-handshake", colorClass: "bg-pink-200" },
+  paniek: { icon: "siren", colorClass: "bg-red-300" },
+  onzekerheid: { icon: "glasses", colorClass: "bg-indigo-200" },
 };
 
 export const getEmotionVisuals = (emotion: string | null) => {
   if (!emotion) {
-    return { icon: "💬", colorClass: "bg-zinc-100" };
+    return { icon: "message-square", colorClass: "bg-zinc-100" };
   }
   const lowerCaseEmotion = emotion.toLowerCase();
-  return EMOTION_VISUALS[lowerCaseEmotion] || { icon: "🤔", colorClass: "bg-gray-200" };
+  const foundKey = Object.keys(EMOTION_VISUALS).find(key => lowerCaseEmotion.includes(key));
+  
+  if (foundKey) {
+    return EMOTION_VISUALS[foundKey];
+  }
+
+  return { icon: "help-circle", colorClass: "bg-gray-200" };
 };
 
 export const LABEL_VISUALS: { [key: string]: { accentColor: string } } = {

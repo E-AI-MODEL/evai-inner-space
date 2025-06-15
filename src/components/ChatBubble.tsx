@@ -1,4 +1,3 @@
-
 import React, { forwardRef } from "react";
 import { Gem } from "lucide-react";
 
@@ -41,7 +40,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
       ? "bg-white text-zinc-800 border border-zinc-200"
       : accentColor
       ? ""
-      : "bg-stress/60 text-zinc-800";
+      : "bg-zinc-100 text-zinc-800";
   return (
     <div
       ref={ref}
@@ -70,7 +69,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
             ${from === "ai"
               ? accentColor
                 ? ""
-                : "bg-stress/60"
+                : "bg-zinc-100"
               : "bg-white"
             }
             ${bubbleStyles}

@@ -12,4 +12,5 @@ export interface Message {
   explainText?: string;
   meta?: string;
   brilliant?: boolean;
+  replyTo?: string;
 }

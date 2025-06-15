@@ -1,5 +1,6 @@
 
 import React from "react";
+import Icon from "./Icon";
 
 interface EmotionHistoryItem {
   id: string;
@@ -23,7 +24,7 @@ const SidebarEmotionHistory: React.FC<{
           onClick={() => onFocus?.(item.id)}
           aria-label={`${item.label} om ${item.time}`}
         >
-          <span className="text-xl select-none" aria-label={`Emoji ${item.label.toLowerCase()}`}>{item.icon}</span>
+          <Icon name={item.icon as any} className="text-zinc-700" size={24} />
           <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-xs opacity-0 group-hover:opacity-100 bg-zinc-900 text-white rounded px-2 py-0.5 duration-200 pointer-events-none">{item.label} · {item.time}</span>
         </button>
       ))}

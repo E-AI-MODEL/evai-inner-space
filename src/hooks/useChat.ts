@@ -28,6 +28,7 @@ const initialMessages: Message[] = [
     meta: "Demo",
     brilliant: true,
     timestamp: new Date(Date.now() - 60000),
+    replyTo: "user-1",
   },
 ];
 
@@ -50,7 +51,7 @@ export function useChat(apiKey: string, showExplain: boolean) {
 
     setIsProcessing(true);
     const userMessage: Message = {
-      id: `user-${messages.length + 1}`,
+      id: `user-${Date.now()}`,
       from: "user",
       label: null,
       content: input.trim(),
@@ -78,7 +79,7 @@ export function useChat(apiKey: string, showExplain: boolean) {
 
         const label = matchedResult.label || "Valideren";
         aiResp = {
-          id: `ai-openai-${messages.length + 1}`,
+          id: `ai-openai-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
@@ -90,6 +91,7 @@ export function useChat(apiKey: string, showExplain: boolean) {
           meta: `AI – ${Math.round(matchedResult.confidence * 100)}%`,
           brilliant: true,
           timestamp: new Date(),
+          replyTo: userMessage.id,
         };
       } else if (matchedResult) {
         const seedResult = matchedResult as Seed;
@@ -103,7 +105,7 @@ export function useChat(apiKey: string, showExplain: boolean) {
 
         const label = seedResult.label || "Valideren";
         aiResp = {
-          id: `ai-seed-${messages.length + 1}`,
+          id: `ai-seed-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
@@ -117,11 +119,12 @@ export function useChat(apiKey: string, showExplain: boolean) {
           meta: seedResult.meta || "Lokaal",
           brilliant: true,
           timestamp: new Date(),
+          replyTo: userMessage.id,
         };
       } else {
         const label = "Valideren";
         aiResp = {
-          id: `ai-new-${messages.length + 1}`,
+          id: `ai-new-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
@@ -133,6 +136,7 @@ export function useChat(apiKey: string, showExplain: boolean) {
           meta: "",
           brilliant: false,
           timestamp: new Date(),
+          replyTo: userMessage.id,
         };
       }
       setMessages((prev) => [...prev, aiResp]);
@@ -143,7 +147,7 @@ export function useChat(apiKey: string, showExplain: boolean) {
           ? err.message
           : "Er ging iets mis bij het verwerken van je bericht.";
       const errorResponse: Message = {
-        id: `ai-error-${messages.length + 1}`,
+        id: `ai-error-${Date.now()}`,
         from: "ai",
         label: "Fout",
         content: errorMessage,
@@ -152,6 +156,7 @@ export function useChat(apiKey: string, showExplain: boolean) {
         timestamp: new Date(),
         accentColor: getLabelVisuals("Fout").accentColor,
         brilliant: false,
+        replyTo: userMessage.id,
       };
       setMessages((prev) => [...prev, errorResponse]);
       toast({
