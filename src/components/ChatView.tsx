@@ -11,31 +11,43 @@ interface ChatViewProps {
 }
 
 const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs, focusedMessageId }) => {
+    const messagesById = React.useMemo(() => 
+        messages.reduce((acc, msg) => {
+            acc[msg.id] = msg;
+            return acc;
+        }, {} as Record<string, Message>), 
+    [messages]);
+    
     return (
         <div className="mb-2">
-            {messages.map((msg) => (
-                <ChatBubble
-                    key={msg.id}
-                    ref={(el) => {
-                        if (el) {
-                            messageRefs.current.set(msg.id, el);
-                        } else {
-                            messageRefs.current.delete(msg.id);
-                        }
-                    }}
-                    isFocused={msg.id === focusedMessageId}
-                    from={msg.from}
-                    label={msg.label}
-                    accentColor={msg.accentColor}
-                    meta={msg.meta}
-                    emotionSeed={msg.emotionSeed}
-                    animate={!!msg.animate}
-                    explainText={msg.explainText}
-                    brilliant={!!msg.brilliant}
-                >
-                    {msg.content}
-                </ChatBubble>
-            ))}
+            {messages.map((msg) => {
+                const repliedToMessage = msg.replyTo ? messagesById[msg.replyTo] : undefined;
+
+                return (
+                    <ChatBubble
+                        key={msg.id}
+                        ref={(el) => {
+                            if (el) {
+                                messageRefs.current.set(msg.id, el);
+                            } else {
+                                messageRefs.current.delete(msg.id);
+                            }
+                        }}
+                        isFocused={msg.id === focusedMessageId}
+                        from={msg.from}
+                        label={msg.label}
+                        accentColor={msg.accentColor}
+                        meta={msg.meta}
+                        emotionSeed={msg.emotionSeed}
+                        animate={!!msg.animate}
+                        explainText={msg.explainText}
+                        brilliant={!!msg.brilliant}
+                        repliedToContent={repliedToMessage?.content}
+                    >
+                        {msg.content}
+                    </ChatBubble>
+                );
+            })}
             
             {isProcessing && (
                 <div className="flex justify-start mb-4">

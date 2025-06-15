@@ -7,7 +7,7 @@ export const EMOTION_VISUALS: { [key: string]: { icon: IconName; colorClass: str
   stress: { icon: "cloud-lightning", colorClass: "bg-yellow-200" },
   verdriet: { icon: "frown", colorClass: "bg-blue-200" },
   blij: { icon: "smile", colorClass: "bg-green-200" },
-  error: { icon: "alert-triangle", colorClass: "bg-red-200" },
+  error: { icon: "shield-alert", colorClass: "bg-red-200" },
   angst: { icon: "shield-alert", colorClass: "bg-orange-200" },
   faalangst: { icon: "shield-alert", colorClass: "bg-orange-200" },
   onmacht: { icon: "battery-warning", colorClass: "bg-amber-200" },
@@ -28,7 +28,7 @@ export const getEmotionVisuals = (emotion: string | null): { icon: IconName; col
     return EMOTION_VISUALS[foundKey];
   }
 
-  return { icon: "help-circle", colorClass: "bg-gray-200" };
+  return { icon: "shield-question", colorClass: "bg-gray-200" };
 };
 
 export const LABEL_VISUALS: { [key: string]: { accentColor: string } } = {

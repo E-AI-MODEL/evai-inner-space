@@ -1,6 +1,6 @@
 
 import React, { forwardRef, useState } from "react";
-import { Gem, Info } from "lucide-react";
+import { Gem, Info, CornerDownRight } from "lucide-react";
 
 interface ChatBubbleProps {
   from: "user" | "ai";
@@ -13,6 +13,7 @@ interface ChatBubbleProps {
   animate?: boolean;
   brilliant?: boolean;
   isFocused?: boolean;
+  repliedToContent?: string;
 }
 
 const LABEL_CLASSES = {
@@ -33,6 +34,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
   animate,
   brilliant,
   isFocused,
+  repliedToContent,
 }, ref) => {
   const [isExplainVisible, setIsExplainVisible] = useState(false);
 
@@ -57,16 +59,26 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
           {label}
         </span>
       )}
-      <div className={`relative w-fit`}>
+      <div className={`relative w-fit max-w-[70vw]`}>
         {/* Brilliant/diamond sparkle */}
         {brilliant && (
           <span className="absolute -left-6 -top-2 z-10 animate-fade-in pointer-events-none">
             <Gem size={22} className="text-blue-400 drop-shadow-brilliant" />
           </span>
         )}
+        
+        {/* Quoted reply */}
+        {from === 'ai' && repliedToContent && (
+          <div className="flex items-center gap-2 text-xs italic opacity-70 text-zinc-600 mb-1.5 ml-2">
+            <CornerDownRight size={14} className="flex-shrink-0" />
+            <p className="truncate">
+              {repliedToContent}
+            </p>
+          </div>
+        )}
 
         <div
-          className={`max-w-[70vw] px-4 py-3 rounded-xl font-inter shadow-card relative text-base leading-snug transition-all duration-300
+          className={`px-4 py-3 rounded-xl font-inter shadow-card relative text-base leading-snug transition-all duration-300
             ${from === "ai"
               ? accentColor
                 ? ""
