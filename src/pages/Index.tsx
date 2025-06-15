@@ -11,7 +11,6 @@ import SettingsSheet from "../components/SettingsSheet";
 import { useChat } from "../hooks/useChat";
 import ChatView from "../components/ChatView";
 import RubricsAnalyticsDashboard from "../components/RubricsAnalyticsDashboard";
-import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [showIntro, setShowIntro] = useState(true);
@@ -19,7 +18,6 @@ const Index = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const navigate = useNavigate();
 
   const messageRefs = useRef(new Map<string, HTMLDivElement | null>());
 
@@ -82,7 +80,12 @@ const Index = () => {
   return (
     <div className="w-full min-h-screen bg-background font-inter">
       <SeedConfetti show={seedConfetti} />
-      <TopBar onSettingsClick={() => setIsSettingsOpen(true)} />
+      <TopBar 
+        onSettingsClick={() => setIsSettingsOpen(true)}
+        onRubricsToggle={() => setShowAnalytics(!showAnalytics)}
+        showRubrics={showAnalytics}
+        showRubricsButton={messages.length > 0}
+      />
       <SettingsSheet
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
@@ -98,24 +101,6 @@ const Index = () => {
         />
         <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
           <div className="flex-1 flex flex-col justify-end max-w-4xl mx-auto w-full">
-            {/* Analytics Toggle Button and Admin Link */}
-            {messages.length > 0 && (
-              <div className="mb-4 flex justify-between">
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg text-sm font-medium transition-colors"
-                >
-                  Admin Dashboard
-                </button>
-                <button
-                  onClick={() => setShowAnalytics(!showAnalytics)}
-                  className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors"
-                >
-                  {showAnalytics ? 'Verberg Analyse' : 'Toon EvAI 5.6 Analyse'}
-                </button>
-              </div>
-            )}
-
             {/* Analytics Dashboard */}
             {showAnalytics && (
               <div className="mb-6">
