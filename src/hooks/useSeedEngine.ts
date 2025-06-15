@@ -1,15 +1,16 @@
 
+import { useOpenAI, EmotionDetection } from './useOpenAI';
 import seeds from "../seeds.json";
 
-// Type van 1 seed
+// Behoud de originele Seed interface voor fallback
 export interface Seed {
   emotion: string;
-  triggers: string[];      // Woorden die als trigger werken
-  response: string;        // Suggestie of validatie tekst van seed
-  meta?: string;           // Optioneel, bv. prioriteit/ttl
+  triggers: string[];
+  response: string;
+  meta?: string;
 }
 
-// Functie om triggers te matchen
+// Functie om fallback seeds te matchen (als OpenAI faalt)
 function matchSeed(input: string, seeds: Seed[]): Seed | null {
   const lowered = input.toLowerCase();
   for (const seed of seeds) {
@@ -22,9 +23,26 @@ function matchSeed(input: string, seeds: Seed[]): Seed | null {
   return null;
 }
 
-// De seed-engine hook
 export function useSeedEngine() {
-  // Eventueel kan je seeds fetchen of laten aanpassen, nu statisch
-  const checkInput = (input: string) => matchSeed(input, seeds as Seed[]);
-  return { checkInput };
+  const { detectEmotion, isLoading, error } = useOpenAI();
+
+  const checkInput = async (input: string, apiKey?: string): Promise<EmotionDetection | Seed | null> => {
+    // Als we een API key hebben, probeer OpenAI
+    if (apiKey && apiKey.trim()) {
+      const aiResult = await detectEmotion(input, apiKey);
+      if (aiResult) {
+        return aiResult;
+      }
+      // Als OpenAI faalt, val terug op lokale seeds
+    }
+    
+    // Fallback naar lokale seed matching
+    return matchSeed(input, seeds as Seed[]);
+  };
+
+  return { 
+    checkInput,
+    isLoading,
+    error 
+  };
 }

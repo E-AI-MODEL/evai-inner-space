@@ -1,14 +1,15 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import ChatBubble from "../components/ChatBubble";
 import InputBar from "../components/InputBar";
+import ApiKeyInput from "../components/ApiKeyInput";
 import { useSeedEngine } from "../hooks/useSeedEngine";
 import { toast } from "@/hooks/use-toast";
 import SeedConfetti from "../components/SeedConfetti";
 
-// Voorbeeld chat
+// Behoud voorbeeld chat voor demo
 const EXAMPLE_AI = [
   {
     id: "ai-1",
@@ -17,44 +18,15 @@ const EXAMPLE_AI = [
     accentColor: "#BFD7FF",
     content: "Ik hoor veel stress en onrust in je woorden.",
     showExplain: false,
-    explainText:
-      "Seed ‘Stress’. TTL: 30m. Prioriteit: Hoog. Trigger: ‘stress en paniek’.",
+    explainText: "Demo seed detectie voor 'stress en paniek'.",
     emotionSeed: "stress",
     animate: true,
-    meta: "30m – Hoog",
+    meta: "Demo",
     brilliant: true,
-  },
-  {
-    id: "ai-2",
-    from: "ai",
-    label: "Reflectievraag",
-    accentColor: "#BFD7FF",
-    content: "Wat is op dit moment de grootste trigger voor dat gevoel?",
-    showExplain: false,
-    explainText: "Reflection: vraag uit seed ‘Stress’.",
-    emotionSeed: "stress",
-    animate: false,
-    meta: "30m – Hoog",
-    brilliant: false,
-  },
-  {
-    id: "ai-3",
-    from: "ai",
-    label: "Suggestie",
-    accentColor: "#BFD7FF",
-    content:
-      "Probeer één minuut lang bewust en langzaam adem te halen — 4 tellen in, 4 tellen uit — om je lichaam eerst wat rust te geven.",
-    showExplain: false,
-    explainText: "Coping-suggestie ‘Stress’.",
-    emotionSeed: "stress",
-    animate: false,
-    meta: "30m – Hoog",
-    brilliant: false,
   },
 ];
 
 const Index = () => {
-  // Demo-chat met userprompt + seed-detectie; alles mock
   const [messages, setMessages] = useState([
     {
       id: "user-1",
@@ -66,74 +38,150 @@ const Index = () => {
     },
     ...EXAMPLE_AI,
   ]);
+  
   const [input, setInput] = useState("");
   const [showExplain, setShowExplain] = useState(false);
-  const [seedConfetti, setSeedConfetti] = useState(false); // Nieuw
-  const { checkInput } = useSeedEngine(); // Seed-engine hook
+  const [seedConfetti, setSeedConfetti] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const { checkInput, isLoading, error } = useSeedEngine();
 
-  // Demo: bij verzenden voeg nieuwe user-bubbel en AI-sequence toe
-  const onSend = () => {
-    if (!input.trim()) return;
-    const nextId = `user-${messages.length + 1}`;
-    // Stap 1: check seed
-    const matchedSeed = checkInput(input.trim());
-
-    // --- BRILJANTFEELING ---
-    let aiResp;
-    if (matchedSeed) {
-      // Trigger een briljant-effect
-      setSeedConfetti(true);
-      toast({
-        title: "Seed gevonden!",
-        description: `De emotie ‘${matchedSeed.emotion}’ werd herkend. 🤩`,
-      });
-      aiResp = {
-        id: `ai-seed-${messages.length + 1}`,
-        from: "ai",
-        label: "Valideren",
-        accentColor: "#BFD7FF",
-        content: matchedSeed.response,
-        showExplain: showExplain,
-        explainText: `Seed ‘${matchedSeed.emotion}’. Trigger gevonden: "${matchedSeed.triggers.find(t => input.trim().toLowerCase().includes(t))}"`,
-        emotionSeed: matchedSeed.emotion,
-        animate: true,
-        meta: matchedSeed.meta,
-        brilliant: true, // highlight & icoon
-      };
-    } else {
-      aiResp = {
-        id: `ai-new-${messages.length + 1}`,
-        from: "ai",
-        label: "Valideren",
-        accentColor: "#BFD7FF",
-        content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
-        showExplain: showExplain,
-        explainText: "Demo logica: geen seed gevonden.",
-        emotionSeed: null,
-        animate: true,
-        meta: "",
-        brilliant: false,
-      };
+  // Laad API key uit localStorage bij component mount
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('openai-api-key');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
     }
+  }, []);
 
-    setMessages([
-      ...messages,
-      { id: nextId, from: "user", label: null, content: input.trim(), emotionSeed: null, animate: false },
-      aiResp,
-    ]);
+  const saveApiKey = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem('openai-api-key', apiKey.trim());
+      toast({
+        title: "API Key opgeslagen",
+        description: "Je OpenAI API key is lokaal opgeslagen.",
+      });
+    }
+  };
+
+  const onSend = async () => {
+    if (!input.trim() || isProcessing) return;
+    
+    setIsProcessing(true);
+    const nextId = `user-${messages.length + 1}`;
+    const userMessage = {
+      id: nextId,
+      from: "user",
+      label: null,
+      content: input.trim(),
+      emotionSeed: null,
+      animate: false,
+    };
+
+    // Voeg user message direct toe
+    setMessages(prev => [...prev, userMessage]);
+    const currentInput = input.trim();
     setInput("");
+
+    try {
+      // Check voor emotie met OpenAI of fallback
+      const matchedResult = await checkInput(currentInput, apiKey);
+
+      let aiResp;
+      if (matchedResult && 'confidence' in matchedResult) {
+        // OpenAI detectie
+        setSeedConfetti(true);
+        toast({
+          title: "AI Emotiedetectie",
+          description: `${matchedResult.emotion} gedetecteerd (${Math.round(matchedResult.confidence * 100)}% zekerheid)`,
+        });
+        
+        aiResp = {
+          id: `ai-openai-${messages.length + 1}`,
+          from: "ai",
+          label: "AI Valideren",
+          accentColor: "#BFD7FF",
+          content: matchedResult.response,
+          showExplain: showExplain,
+          explainText: `OpenAI detectie: ${matchedResult.emotion} (${Math.round(matchedResult.confidence * 100)}% zekerheid)`,
+          emotionSeed: matchedResult.emotion,
+          animate: true,
+          meta: `AI – ${Math.round(matchedResult.confidence * 100)}%`,
+          brilliant: true,
+        };
+      } else if (matchedResult) {
+        // Fallback seed detectie
+        setSeedConfetti(true);
+        toast({
+          title: "Seed gevonden!",
+          description: `De emotie '${matchedResult.emotion}' werd herkend.`,
+        });
+        
+        aiResp = {
+          id: `ai-seed-${messages.length + 1}`,
+          from: "ai",
+          label: "Valideren",
+          accentColor: "#BFD7FF",
+          content: matchedResult.response,
+          showExplain: showExplain,
+          explainText: `Lokale seed: ${matchedResult.emotion}`,
+          emotionSeed: matchedResult.emotion,
+          animate: true,
+          meta: matchedResult.meta || "Lokaal",
+          brilliant: true,
+        };
+      } else {
+        // Geen emotie gedetecteerd
+        aiResp = {
+          id: `ai-new-${messages.length + 1}`,
+          from: "ai",
+          label: "Valideren",
+          accentColor: "#BFD7FF",
+          content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+          showExplain: showExplain,
+          explainText: "Geen specifieke emotie gedetecteerd.",
+          emotionSeed: null,
+          animate: true,
+          meta: "",
+          brilliant: false,
+        };
+      }
+
+      setMessages(prev => [...prev, aiResp]);
+      
+    } catch (err) {
+      console.error('Error processing message:', err);
+      toast({
+        title: "Fout",
+        description: "Er ging iets mis bij het verwerken van je bericht.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <div className="w-full min-h-screen bg-background font-inter">
-      <SeedConfetti show={seedConfetti} /> {/* Confetti layer */}
+      <SeedConfetti show={seedConfetti} />
       <TopBar />
       <div className="flex">
-        {/* Sidebar emotie-historie alleen op desktop */}
         <SidebarEmotionHistory />
-        {/* Hoofd chat */}
         <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
           <div className="flex-1 flex flex-col justify-end max-w-2xl mx-auto w-full">
+            <ApiKeyInput
+              value={apiKey}
+              onChange={setApiKey}
+              onSave={saveApiKey}
+            />
+            
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-red-700">OpenAI fout: {error}</p>
+              </div>
+            )}
+            
             <div className="mb-2">
               {messages.map((msg) => (
                 <ChatBubble
@@ -151,7 +199,21 @@ const Index = () => {
                   {msg.content}
                 </ChatBubble>
               ))}
+              
+              {(isLoading || isProcessing) && (
+                <div className="flex justify-start mb-4">
+                  <div className="bg-blue-100 px-4 py-3 rounded-xl">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <span className="text-sm text-blue-700 ml-2">AI analyseert...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+            
             <div className="flex justify-end mb-2">
               <button
                 type="button"
@@ -169,10 +231,12 @@ const Index = () => {
                 >▼</span>
               </button>
             </div>
+            
             <InputBar
               value={input}
               onChange={setInput}
               onSend={onSend}
+              disabled={isProcessing}
             />
           </div>
         </main>
