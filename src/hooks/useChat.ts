@@ -4,6 +4,7 @@ import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message, ChatHistoryItem } from "../types";
 import { loadFeedback, saveFeedback } from "../lib/feedbackStorage";
+import { loadChatHistory, saveChatHistory } from "../lib/chatHistoryStorage";
 
 const initialMessages: Message[] = [
   {
@@ -33,8 +34,8 @@ const initialMessages: Message[] = [
   },
 ];
 
-// Apply stored feedback to initial messages
-const getInitialMessagesWithFeedback = (): Message[] => {
+// Apply stored feedback to initial messages - this is our fallback
+const getDefaultMessages = (): Message[] => {
     const storedFeedback = loadFeedback();
     return initialMessages.map(msg => ({
         ...msg,
@@ -42,12 +43,28 @@ const getInitialMessagesWithFeedback = (): Message[] => {
     }));
 };
 
+// Load from storage or use fallback
+const getInitialMessages = (): Message[] => {
+    const storedHistory = loadChatHistory();
+    // If there's a stored history with at least one message, use it.
+    if (storedHistory && storedHistory.length > 0) {
+        return storedHistory;
+    }
+    // Otherwise, return the default set of messages.
+    return getDefaultMessages();
+};
+
 export function useChat(apiKey: string) {
-  const [messages, setMessages] = useState<Message[]>(getInitialMessagesWithFeedback);
+  const [messages, setMessages] = useState<Message[]>(getInitialMessages);
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [seedConfetti, setSeedConfetti] = useState(false);
   const { checkInput, isLoading } = useSeedEngine();
+
+  useEffect(() => {
+    // Save chat history whenever messages change
+    saveChatHistory(messages);
+  }, [messages]);
 
   useEffect(() => {
     if (seedConfetti) {
@@ -232,6 +249,16 @@ export function useChat(apiKey: string) {
     }
   };
 
+  const clearHistory = () => {
+    // Reset messages to the initial demo state.
+    // The useEffect hook for saving history will then update localStorage.
+    setMessages(getDefaultMessages());
+    toast({
+        title: "Geschiedenis gewist",
+        description: "De chat is teruggezet naar het begin.",
+    });
+  };
+
   return {
     messages,
     input,
@@ -240,5 +267,6 @@ export function useChat(apiKey: string) {
     onSend,
     seedConfetti,
     setFeedback,
+    clearHistory,
   };
 }

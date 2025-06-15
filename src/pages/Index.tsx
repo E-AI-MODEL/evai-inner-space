@@ -26,7 +26,7 @@ const Index = () => {
     }
   }, []);
   
-  const { messages, input, setInput, isProcessing, onSend, seedConfetti, setFeedback } =
+  const { messages, input, setInput, isProcessing, onSend, seedConfetti, setFeedback, clearHistory } =
     useChat(apiKey);
 
   if (showIntro) {
@@ -90,6 +90,7 @@ const Index = () => {
         <SidebarEmotionHistory
           history={emotionHistory}
           onFocus={handleFocusMessage}
+          onClear={clearHistory}
         />
         <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
           <div className="flex-1 flex flex-col justify-end max-w-2xl mx-auto w-full">
