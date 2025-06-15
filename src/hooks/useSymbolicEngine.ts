@@ -1,4 +1,3 @@
-
 import { Message } from '../types';
 
 // Define the interface for a symbolic rule
@@ -68,6 +67,71 @@ const defaultSymbolicRules: SymbolicRule[] = [
       return null;
     },
   },
+  // --- Advanced Symbolic rules ---
+  {
+    name: "AdviceOverload",
+    description: "Detects if multiple suggestions (advice) are given in a row, which can overwhelm the user.",
+    check: (messages, latest) => {
+      if (latest.from !== "ai" || latest.label !== "Suggestie") return null;
+      const aiMsgs = messages.filter(m => m.from === "ai");
+      if (aiMsgs.length < 3) return null;
+      const recent = aiMsgs.slice(-3);
+      const suggestions = recent.filter(m => m.label === "Suggestie").length;
+      if (suggestions === 3) {
+        return "Let op: meerdere suggesties achter elkaar kunnen overweldigend zijn. Overweeg meer ruimte voor reflectie.";
+      }
+      return null;
+    }
+  },
+  {
+    name: "DependencyCycle",
+    description: "Detects if the conversation repeatedly circles around the same stated emotion.",
+    check: (messages, latest) => {
+      if (latest.from !== "user") return null;
+      const lastFour = messages.filter(m => m.emotionSeed).slice(-4);
+      if (lastFour.length < 4) return null;
+      const emotions = lastFour.map(m => m.emotionSeed);
+      if (new Set(emotions).size === 1) {
+        return `Symbolische observatie: emoties lijken te blijven terugkeren rond '${emotions[0]}'. Dit kan wijzen op een cyclisch patroon.`;
+      }
+      return null;
+    }
+  },
+  {
+    name: "EmergingHope",
+    description: "Detects the first mention of hope/optimism after a long negative trend.",
+    check: (messages, latest) => {
+      if (latest.from !== "user" || !latest.content) return null;
+      const hopeWords = ["hoop", "misschien", "toekomst", "beter", "verbetering"];
+      const isHope = hopeWords.some(word => latest.content.toLowerCase().includes(word));
+      if (!isHope) return null;
+      // Has there been a streak of 'negative' emotion?
+      const negatives = ["wanhoop", "paniek", "verdriet", "boos", "frustratie"];
+      const prevNeg = messages.filter(m => m.from === "user").slice(-5, -1);
+      const negativeStreak = prevNeg.every(m =>
+        negatives.some(neg => m.content?.toLowerCase().includes(neg))
+      );
+      if (negativeStreak && prevNeg.length >= 3) {
+        return "Opmerking: Na een periode van negatieve emoties klinkt er nu een teken van hoop. Markeer deze positieve verschuiving!";
+      }
+      return null;
+    }
+  },
+  {
+    name: "FeedbackIgnored",
+    description: "Detects if the same type of disliked answer is repeated even after feedback.",
+    check: (messages, latest) => {
+      if (!(latest.from === "ai" && latest.label)) return null;
+      // Check if the previous AI message with this label got a 'dislike'
+      const aiMsgs = messages.filter(m => m.from === "ai" && m.label === latest.label);
+      if (aiMsgs.length < 2) return null;
+      const prev = aiMsgs[aiMsgs.length - 2];
+      if (prev && prev.feedback === "dislike") {
+        return `Let op: Antwoord van type '${latest.label}' gegeven ondanks eerdere ontevreden feedback. Overweeg een andere aanpak.`;
+      }
+      return null;
+    }
+  }
 ];
 
 export function useSymbolicEngine(rules: SymbolicRule[] = defaultSymbolicRules) {
@@ -86,4 +150,3 @@ export function useSymbolicEngine(rules: SymbolicRule[] = defaultSymbolicRules) 
 
   return { evaluate, rules };
 }
-
