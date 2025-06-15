@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import ChatBubble from "../components/ChatBubble";
@@ -60,8 +59,10 @@ const Index = () => {
   const [apiKey, setApiKey] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
   
   const { checkInput, isLoading } = useSeedEngine();
+  const messageRefs = useRef(new Map<string, HTMLDivElement | null>());
 
   useEffect(() => {
     const savedApiKey = localStorage.getItem('openai-api-key');
@@ -202,6 +203,18 @@ const Index = () => {
     }
   };
 
+  const handleFocusMessage = (id: string) => {
+    const node = messageRefs.current.get(id);
+    if (node) {
+      node.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      setFocusedMessageId(id);
+      setTimeout(() => setFocusedMessageId(null), 2500); // Highlight for 2.5 seconds
+    }
+  };
+
   const emotionHistory = messages
     .filter((msg) => msg.from === "ai" && msg.emotionSeed)
     .map((msg) => {
@@ -233,7 +246,7 @@ const Index = () => {
         onApiKeySave={saveApiKey}
       />
       <div className="flex">
-        <SidebarEmotionHistory history={emotionHistory} />
+        <SidebarEmotionHistory history={emotionHistory} onFocus={handleFocusMessage} />
         <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
           <div className="flex-1 flex flex-col justify-end max-w-2xl mx-auto w-full">
             
@@ -241,6 +254,14 @@ const Index = () => {
               {messages.map((msg) => (
                 <ChatBubble
                   key={msg.id}
+                  ref={(el) => {
+                    if (el) {
+                      messageRefs.current.set(msg.id, el);
+                    } else {
+                      messageRefs.current.delete(msg.id);
+                    }
+                  }}
+                  isFocused={msg.id === focusedMessageId}
                   from={msg.from as "user" | "ai"}
                   label={msg.label as any}
                   accentColor={(msg as any).accentColor}

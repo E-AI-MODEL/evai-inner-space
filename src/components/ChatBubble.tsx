@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { forwardRef } from "react";
 import { Gem } from "lucide-react";
 
 interface ChatBubbleProps {
@@ -12,6 +13,7 @@ interface ChatBubbleProps {
   emotionSeed?: string;
   animate?: boolean;
   brilliant?: boolean; // Nieuw: highlight voor seed-matching
+  isFocused?: boolean;
 }
 
 const LABEL_CLASSES = {
@@ -21,7 +23,7 @@ const LABEL_CLASSES = {
   Fout: "bg-red-100 text-red-900",
 };
 
-const ChatBubble: React.FC<ChatBubbleProps> = ({
+const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
   from,
   label,
   accentColor,
@@ -32,7 +34,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
   emotionSeed,
   animate,
   brilliant,
-}) => {
+  isFocused,
+}, ref) => {
   const bubbleStyles =
     from === "user"
       ? "bg-white text-zinc-800 border border-zinc-200"
@@ -41,6 +44,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       : "bg-stress/60 text-zinc-800";
   return (
     <div
+      ref={ref}
       className={`flex flex-col items-start gap-1 mb-4 ${from === "user" ? "items-end" : "items-start"} ${
         animate ? "animate-fade-in" : ""
       }`}
@@ -62,7 +66,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
         )}
 
         <div
-          className={`max-w-[70vw] px-4 py-3 rounded-xl font-inter shadow-card relative text-base leading-snug transition-shadow
+          className={`max-w-[70vw] px-4 py-3 rounded-xl font-inter shadow-card relative text-base leading-snug transition-all duration-300
             ${from === "ai"
               ? accentColor
                 ? ""
@@ -71,6 +75,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
             }
             ${bubbleStyles}
             ${brilliant ? "ring-2 ring-blue-200 ring-offset-2 shadow-lg" : ""}
+            ${isFocused ? "ring-2 ring-yellow-400 ring-offset-2" : ""}
             ${from === "ai" && animate ? "animate-pulse-accent" : ""}
           `}
           style={
@@ -91,6 +96,8 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ChatBubble.displayName = "ChatBubble";
 
 export default ChatBubble;
