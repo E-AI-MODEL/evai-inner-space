@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -25,7 +26,7 @@ const Index = () => {
     }
   }, []);
   
-  const { messages, input, setInput, isProcessing, onSend, seedConfetti } =
+  const { messages, input, setInput, isProcessing, onSend, seedConfetti, setFeedback } =
     useChat(apiKey);
 
   if (showIntro) {
@@ -97,6 +98,7 @@ const Index = () => {
               isProcessing={isProcessing}
               messageRefs={messageRefs}
               focusedMessageId={focusedMessageId}
+              onFeedback={setFeedback}
             />
 
             <InputBar

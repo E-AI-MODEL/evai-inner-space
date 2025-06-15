@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { toast } from "@/hooks/use-toast";
@@ -13,6 +14,7 @@ const initialMessages: Message[] = [
     emotionSeed: null,
     animate: false,
     timestamp: new Date(Date.now() - 120000),
+    feedback: null,
   },
   {
     id: "ai-1",
@@ -27,6 +29,7 @@ const initialMessages: Message[] = [
     brilliant: true,
     timestamp: new Date(Date.now() - 60000),
     replyTo: "user-1",
+    feedback: null,
   },
 ];
 
@@ -44,6 +47,19 @@ export function useChat(apiKey: string) {
     }
   }, [seedConfetti]);
 
+  const setFeedback = (messageId: string, feedback: 'like' | 'dislike') => {
+    setMessages(prevMessages =>
+      prevMessages.map(msg => {
+        if (msg.id === messageId) {
+          // Allow toggling feedback off
+          const newFeedback = msg.feedback === feedback ? null : feedback;
+          return { ...msg, feedback: newFeedback };
+        }
+        return msg;
+      })
+    );
+  };
+
   const onSend = async () => {
     if (!input.trim() || isProcessing) return;
 
@@ -56,6 +72,7 @@ export function useChat(apiKey: string) {
       emotionSeed: null,
       animate: false,
       timestamp: new Date(),
+      feedback: null,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -89,6 +106,7 @@ export function useChat(apiKey: string) {
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
+          feedback: null,
         };
       } else if (matchedResult) {
         const seedResult = matchedResult as Seed;
@@ -116,6 +134,7 @@ export function useChat(apiKey: string) {
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
+          feedback: null,
         };
       } else {
         const label = "Valideren";
@@ -132,6 +151,7 @@ export function useChat(apiKey: string) {
           brilliant: false,
           timestamp: new Date(),
           replyTo: userMessage.id,
+          feedback: null,
         };
       }
       setMessages((prev) => [...prev, aiResp]);
@@ -152,6 +172,7 @@ export function useChat(apiKey: string) {
         accentColor: getLabelVisuals("Fout").accentColor,
         brilliant: false,
         replyTo: userMessage.id,
+        feedback: null,
       };
       setMessages((prev) => [...prev, errorResponse]);
       toast({
@@ -171,5 +192,6 @@ export function useChat(apiKey: string) {
     isProcessing: isProcessing || isLoading,
     onSend,
     seedConfetti,
+    setFeedback,
   };
 }

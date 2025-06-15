@@ -1,6 +1,6 @@
 
 import React, { forwardRef, useState } from "react";
-import { Gem, Info, CornerDownRight } from "lucide-react";
+import { Gem, Info, CornerDownRight, ThumbsUp, ThumbsDown } from "lucide-react";
 
 interface ChatBubbleProps {
   from: "user" | "ai";
@@ -14,6 +14,8 @@ interface ChatBubbleProps {
   brilliant?: boolean;
   isFocused?: boolean;
   repliedToContent?: string;
+  feedback?: "like" | "dislike" | null;
+  onFeedback?: (feedback: "like" | "dislike") => void;
 }
 
 const LABEL_CLASSES = {
@@ -35,6 +37,8 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
   brilliant,
   isFocused,
   repliedToContent,
+  feedback,
+  onFeedback,
 }, ref) => {
   const [isExplainVisible, setIsExplainVisible] = useState(false);
 
@@ -99,15 +103,38 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
         >
           {children}
           
-          {/* Uitleg-toggle per bericht */}
-          {from === 'ai' && explainText && (
-            <button 
-              onClick={() => setIsExplainVisible(v => !v)} 
-              className="absolute -bottom-3 -right-2 bg-white border border-zinc-200 rounded-full p-1.5 shadow-sm hover:bg-zinc-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
-              aria-label={isExplainVisible ? "Verberg redenatie" : "Toon redenatie"}
-            >
-              <Info size={14} className="text-zinc-500" />
-            </button>
+          {/* Uitleg & Feedback Toggles */}
+          {from === 'ai' && (explainText || onFeedback) && (
+            <div className="absolute -bottom-3 -right-2 flex items-center gap-2">
+              {explainText && (
+                <button 
+                  onClick={() => setIsExplainVisible(v => !v)} 
+                  className="bg-white border border-zinc-200 rounded-full p-1.5 shadow-sm hover:bg-zinc-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  aria-label={isExplainVisible ? "Verberg redenatie" : "Toon redenatie"}
+                >
+                  <Info size={14} className="text-zinc-500" />
+                </button>
+              )}
+              {onFeedback && (
+                <div className="flex items-center bg-white border border-zinc-200 rounded-full shadow-sm p-0.5">
+                  <button
+                    onClick={() => onFeedback('like')}
+                    className={`p-1 rounded-full transition-colors ${feedback === 'like' ? 'bg-green-100 text-green-600' : 'text-zinc-500 hover:bg-green-50'}`}
+                    aria-label="Antwoord is nuttig"
+                  >
+                    <ThumbsUp size={14} />
+                  </button>
+                  <div className="w-px h-4 bg-zinc-200 mx-0.5" />
+                  <button
+                    onClick={() => onFeedback('dislike')}
+                    className={`p-1 rounded-full transition-colors ${feedback === 'dislike' ? 'bg-red-100 text-red-600' : 'text-zinc-500 hover:bg-red-50'}`}
+                    aria-label="Antwoord is niet nuttig"
+                  >
+                    <ThumbsDown size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
         {/* Uitleg-tekst */}

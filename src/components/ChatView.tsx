@@ -8,9 +8,10 @@ interface ChatViewProps {
     isProcessing: boolean;
     messageRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
     focusedMessageId: string | null;
+    onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs, focusedMessageId }) => {
+const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs, focusedMessageId, onFeedback }) => {
     const messagesById = React.useMemo(() => 
         messages.reduce((acc, msg) => {
             acc[msg.id] = msg;
@@ -43,6 +44,8 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
                         explainText={msg.explainText}
                         brilliant={!!msg.brilliant}
                         repliedToContent={repliedToMessage?.content}
+                        feedback={msg.feedback}
+                        onFeedback={msg.from === 'ai' && onFeedback ? (feedbackType) => onFeedback(msg.id, feedbackType) : undefined}
                     >
                         {msg.content}
                     </ChatBubble>

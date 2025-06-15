@@ -12,4 +12,5 @@ export interface Message {
   meta?: string;
   brilliant?: boolean;
   replyTo?: string;
+  feedback?: "like" | "dislike" | null;
 }
