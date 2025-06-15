@@ -7,7 +7,7 @@ import { useSeedEngine } from "../hooks/useSeedEngine";
 import { toast } from "@/hooks/use-toast";
 import SeedConfetti from "../components/SeedConfetti";
 import IntroAnimation from "../components/IntroAnimation";
-import { getEmotionVisuals } from "../lib/emotion-visuals";
+import { getEmotionVisuals, getLabelVisuals } from "../lib/emotion-visuals";
 import SettingsSheet from "../components/SettingsSheet";
 
 interface Message {
@@ -41,7 +41,7 @@ const Index = () => {
       id: "ai-1",
       from: "ai",
       label: "Valideren",
-      accentColor: "#BFD7FF",
+      accentColor: getLabelVisuals("Valideren").accentColor,
       content: "Ik hoor veel stress en onrust in je woorden.",
       showExplain: false,
       explainText: "Demo seed detectie voor 'stress en paniek'.",
@@ -119,11 +119,12 @@ const Index = () => {
           description: `${matchedResult.emotion} gedetecteerd (${Math.round(matchedResult.confidence * 100)}% zekerheid)`,
         });
         
+        const label = matchedResult.label || "Valideren";
         aiResp = {
           id: `ai-openai-${messages.length + 1}`,
           from: "ai",
-          label: matchedResult.label || "Valideren",
-          accentColor: "#BFD7FF",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
           content: matchedResult.response,
           showExplain: showExplain,
           explainText: `OpenAI detectie: ${matchedResult.emotion} (${Math.round(matchedResult.confidence * 100)}% zekerheid)`,
@@ -141,11 +142,12 @@ const Index = () => {
           description: `De emotie '${(matchedResult as any).emotion}' werd herkend.`,
         });
         
+        const label = (matchedResult as any).label || "Valideren";
         aiResp = {
           id: `ai-seed-${messages.length + 1}`,
           from: "ai",
-          label: (matchedResult as any).label || "Valideren",
-          accentColor: "#BFD7FF",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
           content: (matchedResult as any).response,
           showExplain: showExplain,
           explainText: `Lokale seed: ${(matchedResult as any).emotion}`,
@@ -157,11 +159,12 @@ const Index = () => {
         };
       } else {
         // Geen emotie gedetecteerd
+        const label = "Valideren";
         aiResp = {
           id: `ai-new-${messages.length + 1}`,
           from: "ai",
-          label: "Valideren",
-          accentColor: "#BFD7FF",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
           content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
           showExplain: showExplain,
           explainText: "Geen specifieke emotie gedetecteerd.",
@@ -187,7 +190,7 @@ const Index = () => {
         emotionSeed: 'error',
         animate: true,
         timestamp: new Date(),
-        accentColor: '#FECACA', // Light red
+        accentColor: getLabelVisuals("Fout").accentColor,
         brilliant: false,
       };
 
