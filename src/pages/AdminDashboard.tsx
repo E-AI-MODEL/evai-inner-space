@@ -9,9 +9,11 @@ import AdminAnalytics from '../components/admin/AdminAnalytics';
 import AdminSystemMonitor from '../components/admin/AdminSystemMonitor';
 import AdminAutoSeedGenerator from '../components/admin/AdminAutoSeedGenerator';
 import AdminRubricsView from '../components/admin/AdminRubricsView';
+import LiveMonitoringDashboard from '../components/admin/LiveMonitoringDashboard';
+import SelfLearningControls from '../components/admin/SelfLearningControls';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Settings, Database, BarChart, Cpu, Zap, Brain, MessageSquare, Target } from 'lucide-react';
+import { Settings, Database, BarChart, Cpu, Zap, Brain, MessageSquare, Target, Activity, Sparkles } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("openai-api-key") || "");
@@ -25,7 +27,7 @@ const AdminDashboard = () => {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">EvAI Admin Dashboard</h1>
-            <p className="text-gray-600">Beheer seeds, monitor prestaties en analyseer rubrieken</p>
+            <p className="text-gray-600">Beheer seeds, monitor prestaties en analyseer rubrieken met AI-powered learning</p>
           </div>
           <Button
             onClick={() => navigate('/')}
@@ -37,8 +39,18 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="advanced-seeds" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-6">
+        <Tabs defaultValue="live-monitoring" className="w-full">
+          <TabsList className="grid w-full grid-cols-9 mb-6">
+            <TabsTrigger value="live-monitoring" className="flex items-center gap-2 text-xs sm:text-sm">
+              <Activity size={16} />
+              <span className="hidden sm:inline">Live Monitor</span>
+              <span className="sm:hidden">Live</span>
+            </TabsTrigger>
+            <TabsTrigger value="self-learning" className="flex items-center gap-2 text-xs sm:text-sm">
+              <Sparkles size={16} />
+              <span className="hidden sm:inline">Self-Learning</span>
+              <span className="sm:hidden">Learning</span>
+            </TabsTrigger>
             <TabsTrigger value="advanced-seeds" className="flex items-center gap-2 text-xs sm:text-sm">
               <Brain size={16} />
               <span className="hidden sm:inline">Advanced Seeds</span>
@@ -77,6 +89,23 @@ const AdminDashboard = () => {
           </TabsList>
 
           <div className="min-h-[600px]">
+            <TabsContent value="live-monitoring" className="mt-0">
+              <div className="bg-white rounded-lg border shadow-sm p-6">
+                <LiveMonitoringDashboard />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="self-learning" className="mt-0">
+              <div className="bg-white rounded-lg border shadow-sm p-6">
+                <SelfLearningControls 
+                  messages={messages}
+                  onLearningUpdate={() => {
+                    // Optionally refresh data or show notifications
+                  }}
+                />
+              </div>
+            </TabsContent>
+
             <TabsContent value="advanced-seeds" className="mt-0">
               <div className="bg-white rounded-lg border shadow-sm">
                 <AdvancedSeedManager />

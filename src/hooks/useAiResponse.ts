@@ -1,9 +1,12 @@
+
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message, ChatHistoryItem } from "../types";
 import { useSymbolicEngine } from "./useSymbolicEngine";
+import { useLiveMonitoring } from "./useLiveMonitoring";
+import { useLearningEngine } from "./useLearningEngine";
 
 export function useAiResponse(
   messages: Message[],
@@ -13,6 +16,8 @@ export function useAiResponse(
 ) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { checkInput, isLoading: isSeedEngineLoading } = useSeedEngine();
+  const { recordInteraction } = useLiveMonitoring();
+  const { learnFromConversation } = useLearningEngine();
 
   // Symbolic neurosymbolic features engine
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
@@ -21,7 +26,9 @@ export function useAiResponse(
     userMessage: Message,
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
   ) => {
+    const startTime = Date.now();
     setIsProcessing(true);
+    
     try {
       const messageIndex = messages.findIndex(m => m.id === userMessage.id);
       const history: ChatHistoryItem[] = messages
@@ -108,20 +115,32 @@ export function useAiResponse(
         };
       }
 
-      // NEW: Symbolic engine analysis (evaluates using current + the new AI message)
+      // Record interaction metrics
+      const responseTime = Date.now() - startTime;
+      recordInteraction(aiResp, responseTime);
+
+      // Symbolic engine analysis (evaluates using current + the new AI message)
       const extendedMessages = [...messages, aiResp];
       const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
       if (aiSymbolic.length) {
-        // Add property to message object (for display/use in the UI)
         aiResp = { ...aiResp, symbolicInferences: aiSymbolic };
-        // Optionally: could toast here for demo
         toast({
           title: "Symbolische observatie",
           description: aiSymbolic.join(" "),
         });
       }
 
-      setMessages((prev) => [...prev, aiResp]);
+      setMessages((prev) => {
+        const updatedMessages = [...prev, aiResp];
+        
+        // Trigger learning from the updated conversation
+        setTimeout(() => {
+          learnFromConversation(updatedMessages);
+        }, 1000);
+        
+        return updatedMessages;
+      });
+      
     } catch (err) {
       console.error("Error processing message:", err);
       const errorMessage =
@@ -141,6 +160,11 @@ export function useAiResponse(
         replyTo: userMessage.id,
         feedback: null,
       };
+      
+      // Record error metrics
+      const responseTime = Date.now() - startTime;
+      recordInteraction(errorResponse, responseTime);
+      
       setMessages((prev) => [...prev, errorResponse]);
       toast({
         title: "Fout bij analyse",
