@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Message } from "../types";
 import { loadChatHistory, saveChatHistory } from "../lib/chatHistoryStorage";
@@ -9,7 +10,7 @@ const initialMessages: Message[] = [
     id: "user-1",
     from: "user",
     label: null,
-    content: "Ik voel stress en paniek, alles wordt me te veel.",
+    content: "Hoi EvAI, ik zou graag even willen praten.",
     emotionSeed: null,
     animate: false,
     timestamp: new Date(Date.now() - 120000),
@@ -18,14 +19,14 @@ const initialMessages: Message[] = [
   {
     id: "ai-1",
     from: "ai",
-    label: "Valideren",
-    accentColor: getLabelVisuals("Valideren").accentColor,
-    content: "Ik hoor veel stress en onrust in je woorden.",
-    explainText: "Demo seed detectie voor 'stress en paniek'.",
-    emotionSeed: "stress",
+    label: null,
+    accentColor: undefined,
+    content: "Natuurlijk! Ik ben er om naar je te luisteren. Vertel, wat houdt je bezig op dit moment?",
+    explainText: "Dit is een startbericht om je te verwelkomen.",
+    emotionSeed: null,
     animate: true,
-    meta: "Demo",
-    brilliant: true,
+    meta: "Welkom",
+    brilliant: false,
     timestamp: new Date(Date.now() - 60000),
     replyTo: "user-1",
     feedback: null,
