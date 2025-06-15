@@ -23,15 +23,15 @@ const AdminDashboard = () => {
   return (
     <div className="w-full min-h-screen bg-background">
       <TopBar onSettingsClick={() => {}} />
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-7xl">
+        <div className="mb-4 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">EvAI Admin Dashboard</h1>
-            <p className="text-gray-600">Beheer seeds, monitor prestaties en analyseer rubrieken met AI-powered learning</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">EvAI Admin Dashboard</h1>
+            <p className="text-sm sm:text-base text-gray-600">Beheer seeds, monitor prestaties en analyseer rubrieken met AI-powered learning</p>
           </div>
           <Button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto"
             variant="outline"
           >
             <MessageSquare size={16} />
@@ -40,63 +40,65 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="live-monitoring" className="w-full">
-          <TabsList className="grid w-full grid-cols-9 mb-6">
-            <TabsTrigger value="live-monitoring" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Activity size={16} />
-              <span className="hidden sm:inline">Live Monitor</span>
-              <span className="sm:hidden">Live</span>
-            </TabsTrigger>
-            <TabsTrigger value="self-learning" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Sparkles size={16} />
-              <span className="hidden sm:inline">Self-Learning</span>
-              <span className="sm:hidden">Learning</span>
-            </TabsTrigger>
-            <TabsTrigger value="advanced-seeds" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Brain size={16} />
-              <span className="hidden sm:inline">Advanced Seeds</span>
-              <span className="sm:hidden">Advanced</span>
-            </TabsTrigger>
-            <TabsTrigger value="rubrics" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Target size={16} />
-              <span className="hidden sm:inline">Rubrieken</span>
-              <span className="sm:hidden">Rubrics</span>
-            </TabsTrigger>
-            <TabsTrigger value="seeds" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Database size={16} />
-              <span className="hidden sm:inline">Legacy Seeds</span>
-              <span className="sm:hidden">Legacy</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2 text-xs sm:text-sm">
-              <BarChart size={16} />
-              <span className="hidden sm:inline">Analytics</span>
-              <span className="sm:hidden">Stats</span>
-            </TabsTrigger>
-            <TabsTrigger value="monitor" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Cpu size={16} />
-              <span className="hidden sm:inline">Monitor</span>
-              <span className="sm:hidden">System</span>
-            </TabsTrigger>
-            <TabsTrigger value="generator" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Zap size={16} />
-              <span className="hidden sm:inline">Auto-Generator</span>
-              <span className="sm:hidden">Auto</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Settings size={16} />
-              <span className="hidden sm:inline">Settings</span>
-              <span className="sm:hidden">Config</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto mb-6">
+            <TabsList className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 w-full min-w-[600px] lg:min-w-0">
+              <TabsTrigger value="live-monitoring" className="flex items-center gap-1 sm:gap-2 text-xs px-2 py-1">
+                <Activity size={14} />
+                <span className="hidden sm:inline text-xs">Live Monitor</span>
+                <span className="sm:hidden text-xs">Live</span>
+              </TabsTrigger>
+              <TabsTrigger value="self-learning" className="flex items-center gap-1 sm:gap-2 text-xs px-2 py-1">
+                <Sparkles size={14} />
+                <span className="hidden sm:inline text-xs">Self-Learning</span>
+                <span className="sm:hidden text-xs">Learn</span>
+              </TabsTrigger>
+              <TabsTrigger value="advanced-seeds" className="flex items-center gap-1 sm:gap-2 text-xs px-2 py-1">
+                <Brain size={14} />
+                <span className="hidden sm:inline text-xs">Advanced Seeds</span>
+                <span className="sm:hidden text-xs">Seeds</span>
+              </TabsTrigger>
+              <TabsTrigger value="rubrics" className="flex items-center gap-1 sm:gap-2 text-xs px-2 py-1">
+                <Target size={14} />
+                <span className="hidden sm:inline text-xs">Rubrieken</span>
+                <span className="sm:hidden text-xs">Rules</span>
+              </TabsTrigger>
+              <TabsTrigger value="seeds" className="flex items-center gap-1 sm:gap-2 text-xs px-2 py-1">
+                <Database size={14} />
+                <span className="hidden sm:inline text-xs">Legacy Seeds</span>
+                <span className="sm:hidden text-xs">Legacy</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-1 sm:gap-2 text-xs px-2 py-1">
+                <BarChart size={14} />
+                <span className="hidden sm:inline text-xs">Analytics</span>
+                <span className="sm:hidden text-xs">Stats</span>
+              </TabsTrigger>
+              <TabsTrigger value="monitor" className="flex items-center gap-1 sm:gap-2 text-xs px-2 py-1">
+                <Cpu size={14} />
+                <span className="hidden sm:inline text-xs">Monitor</span>
+                <span className="sm:hidden text-xs">System</span>
+              </TabsTrigger>
+              <TabsTrigger value="generator" className="flex items-center gap-1 sm:gap-2 text-xs px-2 py-1">
+                <Zap size={14} />
+                <span className="hidden sm:inline text-xs">Auto-Generator</span>
+                <span className="sm:hidden text-xs">Auto</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-1 sm:gap-2 text-xs px-2 py-1">
+                <Settings size={14} />
+                <span className="hidden sm:inline text-xs">Settings</span>
+                <span className="sm:hidden text-xs">Config</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <div className="min-h-[600px]">
+          <div className="min-h-[400px] sm:min-h-[600px]">
             <TabsContent value="live-monitoring" className="mt-0">
-              <div className="bg-white rounded-lg border shadow-sm p-6">
+              <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6">
                 <LiveMonitoringDashboard />
               </div>
             </TabsContent>
 
             <TabsContent value="self-learning" className="mt-0">
-              <div className="bg-white rounded-lg border shadow-sm p-6">
+              <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6">
                 <SelfLearningControls 
                   messages={messages}
                   onLearningUpdate={() => {
@@ -113,7 +115,7 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="rubrics" className="mt-0">
-              <div className="bg-white rounded-lg border shadow-sm p-6">
+              <div className="bg-white rounded-lg border shadow-sm p-3 sm:p-6">
                 <AdminRubricsView messages={messages} />
               </div>
             </TabsContent>
@@ -143,12 +145,12 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="settings" className="mt-0">
-              <div className="bg-white rounded-lg p-6 border shadow-sm">
+              <div className="bg-white rounded-lg p-3 sm:p-6 border shadow-sm">
                 <h3 className="text-lg font-semibold mb-4">Systeem Instellingen</h3>
                 <div className="space-y-4">
                   <button
                     onClick={clearHistory}
-                    className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto"
                   >
                     Wis Alle Chat Geschiedenis
                   </button>

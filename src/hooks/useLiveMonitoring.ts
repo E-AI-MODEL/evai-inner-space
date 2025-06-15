@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Message } from '../types';
 import { AdvancedSeed } from '../types/seed';
@@ -19,28 +20,52 @@ interface AlertConfig {
   enabled: boolean;
 }
 
+interface InteractionRecord {
+  timestamp: Date;
+  responseTime: number;
+  success: boolean;
+  emotionDetected: boolean;
+}
+
 export function useLiveMonitoring() {
   const [metrics, setMetrics] = useState<SystemMetrics[]>([]);
+  const [interactions, setInteractions] = useState<InteractionRecord[]>([]);
   const [alerts, setAlerts] = useState<AlertConfig[]>([
-    { id: 'response-time', type: 'performance', threshold: 1000, enabled: true },
-    { id: 'error-rate', type: 'error', threshold: 0.1, enabled: true },
-    { id: 'memory-usage', type: 'performance', threshold: 80, enabled: true }
+    { id: 'response-time', type: 'performance', threshold: 2000, enabled: true },
+    { id: 'error-rate', type: 'error', threshold: 0.15, enabled: true },
+    { id: 'memory-usage', type: 'performance', threshold: 85, enabled: true }
   ]);
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [activeAlerts, setActiveAlerts] = useState<string[]>([]);
 
-  const collectMetrics = useCallback(() => {
+  const collectRealMetrics = useCallback(() => {
     const seeds = loadAdvancedSeeds();
     const now = new Date();
     
-    // Simulate metrics collection (in real app this would come from actual monitoring)
+    // Calculate real metrics from recent interactions
+    const recentInteractions = interactions.slice(-10);
+    const avgResponseTime = recentInteractions.length > 0
+      ? recentInteractions.reduce((sum, i) => sum + i.responseTime, 0) / recentInteractions.length
+      : 500;
+    
+    const errorRate = recentInteractions.length > 0
+      ? recentInteractions.filter(i => !i.success).length / recentInteractions.length
+      : 0;
+    
+    const throughput = recentInteractions.filter(i => 
+      now.getTime() - i.timestamp.getTime() < 60000
+    ).length; // Interactions per minute
+    
+    // Estimate memory usage based on seeds and interaction history
+    const memoryUsage = Math.min(90, 40 + (seeds.length * 0.1) + (interactions.length * 0.01));
+    
     const newMetric: SystemMetrics = {
       timestamp: now,
-      responseTime: 200 + Math.random() * 300,
-      memoryUsage: 45 + Math.random() * 20,
+      responseTime: avgResponseTime,
+      memoryUsage,
       activeSeeds: seeds.filter(s => s.isActive).length,
-      errorRate: Math.random() * 0.05,
-      throughput: 5 + Math.random() * 10
+      errorRate,
+      throughput
     };
     
     setMetrics(prev => {
@@ -51,7 +76,7 @@ export function useLiveMonitoring() {
     
     // Check alerts
     checkAlerts(newMetric);
-  }, []);
+  }, [interactions]);
 
   const checkAlerts = (metric: SystemMetrics) => {
     const triggeredAlerts: string[] = [];
@@ -91,9 +116,9 @@ export function useLiveMonitoring() {
   useEffect(() => {
     if (!isMonitoring) return;
     
-    const interval = setInterval(collectMetrics, 2000);
+    const interval = setInterval(collectRealMetrics, 5000);
     return () => clearInterval(interval);
-  }, [isMonitoring, collectMetrics]);
+  }, [isMonitoring, collectRealMetrics]);
 
   const getRealtimeStats = () => {
     if (metrics.length === 0) return null;
@@ -112,17 +137,19 @@ export function useLiveMonitoring() {
   };
 
   const recordInteraction = (message: Message, responseTime: number) => {
-    // This would be called after each AI interaction
-    const metric: SystemMetrics = {
+    const interaction: InteractionRecord = {
       timestamp: new Date(),
       responseTime,
-      memoryUsage: 50 + Math.random() * 15,
-      activeSeeds: loadAdvancedSeeds().filter(s => s.isActive).length,
-      errorRate: message.emotionSeed === 'error' ? 1 : 0,
-      throughput: 1
+      success: message.emotionSeed !== 'error',
+      emotionDetected: !!message.emotionSeed && message.emotionSeed !== 'error'
     };
     
-    setMetrics(prev => [...prev.slice(-49), metric]);
+    setInteractions(prev => [...prev.slice(-99), interaction]); // Keep last 100 interactions
+    
+    // If monitoring is active, update metrics immediately
+    if (isMonitoring) {
+      setTimeout(collectRealMetrics, 100);
+    }
   };
 
   return {
@@ -134,6 +161,7 @@ export function useLiveMonitoring() {
     stopMonitoring,
     getRealtimeStats,
     recordInteraction,
-    setAlerts
+    setAlerts,
+    interactions
   };
 }

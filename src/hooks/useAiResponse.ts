@@ -7,6 +7,8 @@ import { Message, ChatHistoryItem } from "../types";
 import { useSymbolicEngine } from "./useSymbolicEngine";
 import { useLiveMonitoring } from "./useLiveMonitoring";
 import { useLearningEngine } from "./useLearningEngine";
+import { useSeedInjection } from "./useSeedInjection";
+import { useEvAI56Rubrics } from "./useEvAI56Rubrics";
 
 export function useAiResponse(
   messages: Message[],
@@ -16,8 +18,10 @@ export function useAiResponse(
 ) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { checkInput, isLoading: isSeedEngineLoading } = useSeedEngine();
-  const { recordInteraction } = useLiveMonitoring();
+  const { recordInteraction, startMonitoring } = useLiveMonitoring();
   const { learnFromConversation } = useLearningEngine();
+  const { analyzeForInjectionNeeds } = useSeedInjection();
+  const { assessMessage } = useEvAI56Rubrics();
 
   // Symbolic neurosymbolic features engine
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
@@ -29,6 +33,9 @@ export function useAiResponse(
     const startTime = Date.now();
     setIsProcessing(true);
     
+    // Start live monitoring if not already active
+    startMonitoring();
+    
     try {
       const messageIndex = messages.findIndex(m => m.id === userMessage.id);
       const history: ChatHistoryItem[] = messages
@@ -37,6 +44,13 @@ export function useAiResponse(
           role: msg.from === 'user' ? 'user' : 'assistant',
           content: msg.content
         }));
+
+      // Analyze for seed injection needs
+      analyzeForInjectionNeeds([...messages, userMessage]);
+
+      // Assess message with rubrics
+      const rubricAssessments = assessMessage(userMessage.content);
+      console.log('Rubric assessments:', rubricAssessments);
 
       const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
       let aiResp: Message;
@@ -128,6 +142,18 @@ export function useAiResponse(
           title: "Symbolische observatie",
           description: aiSymbolic.join(" "),
         });
+      }
+
+      // Add rubric insights if any high-risk factors detected
+      if (rubricAssessments.length > 0) {
+        const highRiskAssessments = rubricAssessments.filter(a => a.overallScore > 1.5);
+        if (highRiskAssessments.length > 0) {
+          toast({
+            title: "Rubric Alert",
+            description: `${highRiskAssessments.length} risicofactor(en) gedetecteerd`,
+            variant: "destructive"
+          });
+        }
       }
 
       setMessages((prev) => {
