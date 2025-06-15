@@ -31,6 +31,12 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ value, onChange, onSave }) =>
             Voer je OpenAI API key in om AI-gedreven emotiedetectie te gebruiken. 
             De key wordt lokaal opgeslagen in je browser.
           </p>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2">
+             <p className="text-xs text-yellow-800">
+               <span className="font-semibold">Let op:</span> Je bent zelf verantwoordelijk voor het gebruik en de kosten van je API key. Deel deze nooit en bewaar hem veilig.
+             </p>
+          </div>
           
           <div className="flex gap-2">
             <div className="relative flex-1">
