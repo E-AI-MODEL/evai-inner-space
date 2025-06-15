@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -8,27 +9,26 @@ import { useSeedEngine } from "../hooks/useSeedEngine";
 import { toast } from "@/hooks/use-toast";
 import SeedConfetti from "../components/SeedConfetti";
 import IntroAnimation from "../components/IntroAnimation";
+import { getEmotionVisuals } from "../lib/emotion-visuals";
 
-// Behoud voorbeeld chat voor demo
-const EXAMPLE_AI = [
-  {
-    id: "ai-1",
-    from: "ai",
-    label: "Valideren",
-    accentColor: "#BFD7FF",
-    content: "Ik hoor veel stress en onrust in je woorden.",
-    showExplain: false,
-    explainText: "Demo seed detectie voor 'stress en paniek'.",
-    emotionSeed: "stress",
-    animate: true,
-    meta: "Demo",
-    brilliant: true,
-  },
-];
+interface Message {
+  id: string;
+  from: "user" | "ai";
+  label: string | null;
+  content: string;
+  emotionSeed: string | null;
+  animate: boolean;
+  timestamp: Date;
+  accentColor?: string;
+  showExplain?: boolean;
+  explainText?: string;
+  meta?: string;
+  brilliant?: boolean;
+}
 
 const Index = () => {
   const [showIntro, setShowIntro] = useState(true);
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: "user-1",
       from: "user",
@@ -36,8 +36,22 @@ const Index = () => {
       content: "Ik voel stress en paniek, alles wordt me te veel.",
       emotionSeed: null,
       animate: false,
+      timestamp: new Date(Date.now() - 120000),
     },
-    ...EXAMPLE_AI,
+    {
+      id: "ai-1",
+      from: "ai",
+      label: "Valideren",
+      accentColor: "#BFD7FF",
+      content: "Ik hoor veel stress en onrust in je woorden.",
+      showExplain: false,
+      explainText: "Demo seed detectie voor 'stress en paniek'.",
+      emotionSeed: "stress",
+      animate: true,
+      meta: "Demo",
+      brilliant: true,
+      timestamp: new Date(Date.now() - 60000),
+    },
   ]);
   
   const [input, setInput] = useState("");
@@ -75,13 +89,14 @@ const Index = () => {
     
     setIsProcessing(true);
     const nextId = `user-${messages.length + 1}`;
-    const userMessage = {
+    const userMessage: Message = {
       id: nextId,
       from: "user",
       label: null,
       content: input.trim(),
       emotionSeed: null,
       animate: false,
+      timestamp: new Date(),
     };
 
     // Voeg user message direct toe
@@ -93,7 +108,7 @@ const Index = () => {
       // Check voor emotie met OpenAI of fallback
       const matchedResult = await checkInput(currentInput, apiKey);
 
-      let aiResp;
+      let aiResp: Message;
       if (matchedResult && 'confidence' in matchedResult) {
         // OpenAI detectie
         setSeedConfetti(true);
@@ -114,6 +129,7 @@ const Index = () => {
           animate: true,
           meta: `AI – ${Math.round(matchedResult.confidence * 100)}%`,
           brilliant: true,
+          timestamp: new Date(),
         };
       } else if (matchedResult) {
         // Fallback seed detectie
@@ -128,13 +144,14 @@ const Index = () => {
           from: "ai",
           label: "Valideren",
           accentColor: "#BFD7FF",
-          content: matchedResult.response,
+          content: (matchedResult as any).response,
           showExplain: showExplain,
-          explainText: `Lokale seed: ${matchedResult.emotion}`,
-          emotionSeed: matchedResult.emotion,
+          explainText: `Lokale seed: ${(matchedResult as any).emotion}`,
+          emotionSeed: (matchedResult as any).emotion,
           animate: true,
-          meta: matchedResult.meta || "Lokaal",
+          meta: (matchedResult as any).meta || "Lokaal",
           brilliant: true,
+          timestamp: new Date(),
         };
       } else {
         // Geen emotie gedetecteerd
@@ -150,6 +167,7 @@ const Index = () => {
           animate: true,
           meta: "",
           brilliant: false,
+          timestamp: new Date(),
         };
       }
 
@@ -167,12 +185,31 @@ const Index = () => {
     }
   };
 
+  const emotionHistory = messages
+    .filter((msg) => msg.from === "ai" && msg.emotionSeed)
+    .map((msg) => {
+      const visual = getEmotionVisuals(msg.emotionSeed);
+      const messageTimestamp = msg.timestamp || new Date();
+      const emotionLabel = msg.emotionSeed!;
+      return {
+        id: msg.id,
+        icon: visual.icon,
+        label: emotionLabel.charAt(0).toUpperCase() + emotionLabel.slice(1),
+        colorClass: visual.colorClass,
+        time: messageTimestamp.toLocaleTimeString("nl-NL", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+    })
+    .reverse();
+
   return (
     <div className="w-full min-h-screen bg-background font-inter">
       <SeedConfetti show={seedConfetti} />
       <TopBar />
       <div className="flex">
-        <SidebarEmotionHistory />
+        <SidebarEmotionHistory history={emotionHistory} />
         <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
           <div className="flex-1 flex flex-col justify-end max-w-2xl mx-auto w-full">
             <ApiKeyInput

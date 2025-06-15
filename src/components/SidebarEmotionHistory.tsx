@@ -9,27 +9,10 @@ interface EmotionHistoryItem {
   time: string;
 }
 
-const defaultHistory: EmotionHistoryItem[] = [
-  {
-    id: "1",
-    icon: "😰",
-    label: "Stress",
-    colorClass: "bg-stress",
-    time: "14:02",
-  },
-  {
-    id: "2",
-    icon: "🙂",
-    label: "Blij",
-    colorClass: "bg-yellow-100",
-    time: "13:55",
-  },
-];
-
 const SidebarEmotionHistory: React.FC<{
   history?: EmotionHistoryItem[];
   onFocus?: (id: string) => void;
-}> = ({ history = defaultHistory, onFocus }) => (
+}> = ({ history = [], onFocus }) => (
   <aside className="hidden md:flex flex-col bg-sidebar w-20 py-6 px-2 border-r border-zinc-200 min-h-[calc(100vh-56px)]" style={{ fontFamily: "Inter, sans-serif" }}>
     <div className="flex flex-col gap-4 items-center">
       {history.map((item) => (
