@@ -5,6 +5,28 @@ import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message } from "../types";
 
+const FEEDBACK_STORAGE_KEY = 'evai-message-feedback';
+
+// Load feedback from localStorage
+const loadFeedback = (): Record<string, 'like' | 'dislike' | null> => {
+  try {
+    const stored = localStorage.getItem(FEEDBACK_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch (e) {
+    console.error("Failed to load feedback from localStorage", e);
+    return {};
+  }
+};
+
+// Save feedback to localStorage
+const saveFeedback = (feedbackStore: Record<string, 'like' | 'dislike' | null>) => {
+  try {
+    localStorage.setItem(FEEDBACK_STORAGE_KEY, JSON.stringify(feedbackStore));
+  } catch (e) {
+    console.error("Failed to save feedback to localStorage", e);
+  }
+};
+
 const initialMessages: Message[] = [
   {
     id: "user-1",
@@ -33,8 +55,17 @@ const initialMessages: Message[] = [
   },
 ];
 
+// Apply stored feedback to initial messages
+const getInitialMessagesWithFeedback = (): Message[] => {
+    const storedFeedback = loadFeedback();
+    return initialMessages.map(msg => ({
+        ...msg,
+        feedback: storedFeedback[msg.id] || null
+    }));
+};
+
 export function useChat(apiKey: string) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>(getInitialMessagesWithFeedback);
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [seedConfetti, setSeedConfetti] = useState(false);
@@ -48,11 +79,17 @@ export function useChat(apiKey: string) {
   }, [seedConfetti]);
 
   const setFeedback = (messageId: string, feedback: 'like' | 'dislike') => {
+    const storedFeedback = loadFeedback();
+    const currentFeedbackForMessage = storedFeedback[messageId];
+    // Allow toggling feedback off
+    const newFeedback = currentFeedbackForMessage === feedback ? null : feedback;
+    
+    const updatedFeedbackStore = { ...storedFeedback, [messageId]: newFeedback };
+    saveFeedback(updatedFeedbackStore);
+
     setMessages(prevMessages =>
       prevMessages.map(msg => {
         if (msg.id === messageId) {
-          // Allow toggling feedback off
-          const newFeedback = msg.feedback === feedback ? null : feedback;
           return { ...msg, feedback: newFeedback };
         }
         return msg;
