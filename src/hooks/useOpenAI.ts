@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChatHistoryItem } from '../types';
 
 export interface EmotionDetection {
   emotion: string;
@@ -16,7 +17,8 @@ export function useOpenAI() {
   const detectEmotion = async (
     message: string, 
     apiKey: string,
-    context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
+    context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
+    history: ChatHistoryItem[] = []
   ): Promise<EmotionDetection> => {
     if (!apiKey.trim()) {
       throw new Error('OpenAI API key is vereist. Stel deze in via de instellingen.');
@@ -29,18 +31,10 @@ export function useOpenAI() {
       : message;
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
-          messages: [
-            {
-              role: 'system',
-              content: `Je bent EvAI, een geavanceerde en empathische AI-assistent gespecialiseerd in emotionele reflectie en validatie, gebaseerd op de EvAI 5.6 rubrieken. Je doel is om gebruikers te helpen hun emoties te begrijpen en te valideren. Analyseer het bericht van de gebruiker diepgaand.
+      const apiMessages = [
+        {
+          role: 'system',
+          content: `Je bent EvAI, een geavanceerde en empathische AI-assistent gespecialiseerd in emotionele reflectie en validatie, gebaseerd op de EvAI 5.6 rubrieken. Je doel is om gebruikers te helpen hun emoties te begrijpen en te valideren. Gebruik de voorgaande gespreksgeschiedenis voor context om herhaling te voorkomen en een natuurlijkere conversatie te voeren. Analyseer het laatste bericht van de gebruiker diepgaand in de context van het gesprek.
 
 Je respons MOET een van de volgende drie categorieën ('labels') volgen:
 - **Valideren**: Gebruik dit label om de emoties van de gebruiker te erkennen en te normaliseren. De 'response' moet direct de genoemde gevoelens spiegelen. Bv: 'Ik hoor dat je je X voelt, en dat is een heel begrijpelijke reactie.'
@@ -61,12 +55,23 @@ Geef ALTIJD een JSON-object terug met de volgende structuur:
 }
 
 Focus op nuances en de onderliggende gevoelens. De 'response' moet warm, niet-oordelend en ondersteunend zijn. De 'emotion' moet de kern van het gevoel van de gebruiker vastleggen.`
-            },
-            {
-              role: 'user',
-              content: userMessageContent
-            }
-          ],
+        },
+        ...history,
+        {
+          role: 'user',
+          content: userMessageContent
+        }
+      ];
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4.1-2025-04-14',
+          messages: apiMessages,
           temperature: 0.4,
           max_tokens: 300,
         }),

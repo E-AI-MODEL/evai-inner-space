@@ -14,3 +14,8 @@ export interface Message {
   replyTo?: string;
   feedback?: "like" | "dislike" | null;
 }
+
+export type ChatHistoryItem = {
+  role: "user" | "assistant";
+  content: string;
+};

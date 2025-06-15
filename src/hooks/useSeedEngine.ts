@@ -1,5 +1,6 @@
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import seeds from "../seeds.json";
+import { ChatHistoryItem } from '../types';
 
 // Behoud de originele Seed interface voor fallback
 export interface Seed {
@@ -29,11 +30,12 @@ export function useSeedEngine() {
   const checkInput = async (
     input: string, 
     apiKey?: string,
-    context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
+    context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
+    history?: ChatHistoryItem[]
   ): Promise<EmotionDetection | Seed | null> => {
     // Als we een API key hebben, probeer OpenAI
     if (apiKey && apiKey.trim()) {
-      const aiResult = await detectEmotion(input, apiKey, context);
+      const aiResult = await detectEmotion(input, apiKey, context, history);
       return aiResult;
     }
     

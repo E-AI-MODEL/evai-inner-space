@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
-import { Message } from "../types";
+import { Message, ChatHistoryItem } from "../types";
 import { loadFeedback, saveFeedback } from "../lib/feedbackStorage";
 
 const initialMessages: Message[] = [
@@ -63,7 +62,15 @@ export function useChat(apiKey: string) {
   ) => {
     setIsProcessing(true);
     try {
-      const matchedResult = await checkInput(userMessage.content, apiKey, context);
+      const messageIndex = messages.findIndex(m => m.id === userMessage.id);
+      const history: ChatHistoryItem[] = messages
+        .slice(0, messageIndex >= 0 ? messageIndex : messages.length)
+        .map(msg => ({
+          role: msg.from === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }));
+
+      const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
       let aiResp: Message;
 
       if (matchedResult && "confidence" in matchedResult) {
