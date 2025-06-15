@@ -10,12 +10,14 @@ import { getEmotionVisuals } from "../lib/emotion-visuals";
 import SettingsSheet from "../components/SettingsSheet";
 import { useChat } from "../hooks/useChat";
 import ChatView from "../components/ChatView";
+import RubricsAnalyticsDashboard from "../components/RubricsAnalyticsDashboard";
 
 const Index = () => {
   const [showIntro, setShowIntro] = useState(true);
   const [apiKey, setApiKey] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   const messageRefs = useRef(new Map<string, HTMLDivElement | null>());
 
@@ -93,21 +95,42 @@ const Index = () => {
           onClear={clearHistory}
         />
         <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
-          <div className="flex-1 flex flex-col justify-end max-w-2xl mx-auto w-full">
-            <ChatView
-              messages={messages}
-              isProcessing={isProcessing}
-              messageRefs={messageRefs}
-              focusedMessageId={focusedMessageId}
-              onFeedback={setFeedback}
-            />
+          <div className="flex-1 flex flex-col justify-end max-w-4xl mx-auto w-full">
+            {/* Analytics Toggle Button */}
+            {messages.length > 0 && (
+              <div className="mb-4 flex justify-end">
+                <button
+                  onClick={() => setShowAnalytics(!showAnalytics)}
+                  className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors"
+                >
+                  {showAnalytics ? 'Verberg Analyse' : 'Toon EvAI 5.6 Analyse'}
+                </button>
+              </div>
+            )}
 
-            <InputBar
-              value={input}
-              onChange={setInput}
-              onSend={onSend}
-              disabled={isProcessing}
-            />
+            {/* Analytics Dashboard */}
+            {showAnalytics && (
+              <div className="mb-6">
+                <RubricsAnalyticsDashboard messages={messages} />
+              </div>
+            )}
+
+            <div className="max-w-2xl mx-auto w-full">
+              <ChatView
+                messages={messages}
+                isProcessing={isProcessing}
+                messageRefs={messageRefs}
+                focusedMessageId={focusedMessageId}
+                onFeedback={setFeedback}
+              />
+
+              <InputBar
+                value={input}
+                onChange={setInput}
+                onSend={onSend}
+                disabled={isProcessing}
+              />
+            </div>
           </div>
         </main>
       </div>

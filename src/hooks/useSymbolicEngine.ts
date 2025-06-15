@@ -1,5 +1,6 @@
 
 import { Message } from '../types';
+import { useRubricSymbolicRules } from './useRubricSymbolicRules';
 
 // Define the interface for a symbolic rule
 export interface SymbolicRule {
@@ -163,18 +164,23 @@ const defaultSymbolicRules: SymbolicRule[] = [
 ];
 
 export function useSymbolicEngine(rules: SymbolicRule[] = defaultSymbolicRules) {
+  const { rubricBasedRules } = useRubricSymbolicRules();
+  
+  // Combine default rules with rubric-based rules
+  const allRules = [...rules, ...rubricBasedRules];
+  
   /**
    * Annotate a message with all symbolic inferences that apply.
    * Returns an array of symbolic inference strings or empty array.
    */
   const evaluate = (messages: Message[], latest: Message): string[] => {
     const results: string[] = [];
-    for (const rule of rules) {
+    for (const rule of allRules) {
       const inference = rule.check(messages, latest);
       if (inference) results.push(inference);
     }
     return results;
   };
 
-  return { evaluate, rules };
+  return { evaluate, rules: allRules };
 }
