@@ -49,15 +49,26 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
                         >
                             {msg.content}
                         </ChatBubble>
-                        {/* NEW: Show symbolic inferences under related message */}
+                        
+                        {/* Enhanced symbolic inferences display */}
                         {msg.symbolicInferences && msg.symbolicInferences.length > 0 && (
-                            <div className="ml-8 mt-1 px-3 py-2 rounded-md border-l-4 border-blue-400 bg-blue-50 text-blue-800 text-xs shadow transition-all duration-300">
-                                {msg.symbolicInferences.map((inf, idx) => (
-                                    <div key={idx} className="mb-0.5 last:mb-0 flex items-center gap-2">
-                                      <span role="img" aria-label="symbolisch">🧠</span>
-                                      <span>{inf}</span>
+                            <div className="ml-8 mt-2 mb-4">
+                                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-400 rounded-r-lg shadow-sm">
+                                    <div className="px-4 py-3">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-lg">🧠</span>
+                                            <span className="text-sm font-semibold text-indigo-800">Neurosymbolische Observatie</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {msg.symbolicInferences.map((inf, idx) => (
+                                                <div key={idx} className="text-sm text-indigo-700 flex items-start gap-2">
+                                                    <span className="text-indigo-400 mt-0.5">•</span>
+                                                    <span className="flex-1">{inf}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                ))}
+                                </div>
                             </div>
                         )}
                     </div>
