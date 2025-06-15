@@ -8,9 +8,10 @@ import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
 import AdminAnalytics from '../components/admin/AdminAnalytics';
 import AdminSystemMonitor from '../components/admin/AdminSystemMonitor';
 import AdminAutoSeedGenerator from '../components/admin/AdminAutoSeedGenerator';
+import AdminRubricsView from '../components/admin/AdminRubricsView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Settings, Database, BarChart, Cpu, Zap, Brain, MessageSquare } from 'lucide-react';
+import { Settings, Database, BarChart, Cpu, Zap, Brain, MessageSquare, Target } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("openai-api-key") || "");
@@ -24,7 +25,7 @@ const AdminDashboard = () => {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">EvAI Admin Dashboard</h1>
-            <p className="text-gray-600">Beheer seeds, monitor prestaties en genereer nieuwe content</p>
+            <p className="text-gray-600">Beheer seeds, monitor prestaties en analyseer rubrieken</p>
           </div>
           <Button
             onClick={() => navigate('/')}
@@ -37,11 +38,16 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="advanced-seeds" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6">
+          <TabsList className="grid w-full grid-cols-7 mb-6">
             <TabsTrigger value="advanced-seeds" className="flex items-center gap-2 text-xs sm:text-sm">
               <Brain size={16} />
               <span className="hidden sm:inline">Advanced Seeds</span>
               <span className="sm:hidden">Advanced</span>
+            </TabsTrigger>
+            <TabsTrigger value="rubrics" className="flex items-center gap-2 text-xs sm:text-sm">
+              <Target size={16} />
+              <span className="hidden sm:inline">Rubrieken</span>
+              <span className="sm:hidden">Rubrics</span>
             </TabsTrigger>
             <TabsTrigger value="seeds" className="flex items-center gap-2 text-xs sm:text-sm">
               <Database size={16} />
@@ -74,6 +80,12 @@ const AdminDashboard = () => {
             <TabsContent value="advanced-seeds" className="mt-0">
               <div className="bg-white rounded-lg border shadow-sm">
                 <AdvancedSeedManager />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="rubrics" className="mt-0">
+              <div className="bg-white rounded-lg border shadow-sm p-6">
+                <AdminRubricsView messages={messages} />
               </div>
             </TabsContent>
 

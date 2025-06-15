@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Database, Upload } from 'lucide-react';
+import { Database, Upload, BarChart, TrendingUp } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AdvancedSeed, LegacySeed } from '../../types/seed';
 import { 
@@ -19,6 +19,7 @@ import AdvancedSeedTable from './AdvancedSeedTable';
 import AdvancedSeedEditor from './AdvancedSeedEditor';
 import AdvancedSeedStats from './AdvancedSeedStats';
 import AdvancedSeedFilters from './AdvancedSeedFilters';
+import SeedPerformanceMonitor from './SeedPerformanceMonitor';
 
 const AdvancedSeedManager = () => {
   const [seedsData, setSeedsData] = useState<AdvancedSeed[]>([]);
@@ -102,8 +103,9 @@ const AdvancedSeedManager = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="manage" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="manage">Beheer</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="migration">Migratie</TabsTrigger>
           <TabsTrigger value="settings">Instellingen</TabsTrigger>
@@ -140,6 +142,23 @@ const AdvancedSeedManager = () => {
                 onEdit={setEditingSeed}
                 onDelete={handleDeleteSeed}
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="performance" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp size={20} />
+                Seed Performance Monitor
+              </CardTitle>
+              <CardDescription>
+                Monitor seed gebruik en prestaties voor optimalisatie
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SeedPerformanceMonitor seeds={seedsData} />
             </CardContent>
           </Card>
         </TabsContent>
