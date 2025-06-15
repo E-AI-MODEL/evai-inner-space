@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { toast } from "@/hooks/use-toast";
@@ -78,46 +77,13 @@ export function useChat(apiKey: string) {
     }
   }, [seedConfetti]);
 
-  const setFeedback = (messageId: string, feedback: 'like' | 'dislike') => {
-    const storedFeedback = loadFeedback();
-    const currentFeedbackForMessage = storedFeedback[messageId];
-    // Allow toggling feedback off
-    const newFeedback = currentFeedbackForMessage === feedback ? null : feedback;
-    
-    const updatedFeedbackStore = { ...storedFeedback, [messageId]: newFeedback };
-    saveFeedback(updatedFeedbackStore);
-
-    setMessages(prevMessages =>
-      prevMessages.map(msg => {
-        if (msg.id === messageId) {
-          return { ...msg, feedback: newFeedback };
-        }
-        return msg;
-      })
-    );
-  };
-
-  const onSend = async () => {
-    if (!input.trim() || isProcessing) return;
-
+  const generateAiResponse = async (
+    userMessage: Message,
+    context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
+  ) => {
     setIsProcessing(true);
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      from: "user",
-      label: null,
-      content: input.trim(),
-      emotionSeed: null,
-      animate: false,
-      timestamp: new Date(),
-      feedback: null,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    const currentInput = input.trim();
-    setInput("");
-
     try {
-      const matchedResult = await checkInput(currentInput, apiKey);
+      const matchedResult = await checkInput(userMessage.content, apiKey, context);
       let aiResp: Message;
 
       if (matchedResult && "confidence" in matchedResult) {
@@ -176,15 +142,17 @@ export function useChat(apiKey: string) {
       } else {
         const label = "Valideren";
         aiResp = {
-          id: `ai-new-${Date.now()}`,
+          id: context?.dislikedLabel ? `ai-feedback-${Date.now()}`: `ai-new-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
-          content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
-          explainText: "Geen specifieke emotie gedetecteerd.",
+          content: context?.dislikedLabel 
+            ? "Het spijt me dat mijn vorige antwoord niet hielp. Ik zal proberen hier rekening mee te houden." 
+            : "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+          explainText: context?.dislikedLabel ? "Nieuw antwoord na feedback." : "Geen specifieke emotie gedetecteerd.",
           emotionSeed: null,
           animate: true,
-          meta: "",
+          meta: context?.dislikedLabel ? "Feedback" : "",
           brilliant: false,
           timestamp: new Date(),
           replyTo: userMessage.id,
@@ -219,6 +187,61 @@ export function useChat(apiKey: string) {
       });
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const onSend = async () => {
+    if (!input.trim() || isProcessing) return;
+
+    setIsProcessing(true); // Prevent input while creating user message
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      from: "user",
+      label: null,
+      content: input.trim(),
+      emotionSeed: null,
+      animate: false,
+      timestamp: new Date(),
+      feedback: null,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    await generateAiResponse(userMessage);
+  };
+  
+  const handleDislike = async (dislikedMessage: Message) => {
+    const originalUserMessage = messages.find(m => m.id === dislikedMessage.replyTo);
+
+    if (!originalUserMessage || !dislikedMessage.label || !['Valideren', 'Reflectievraag', 'Suggestie'].includes(dislikedMessage.label)) {
+      return;
+    }
+    
+    await generateAiResponse(originalUserMessage, { dislikedLabel: dislikedMessage.label });
+  };
+  
+  const setFeedback = (messageId: string, feedback: 'like' | 'dislike') => {
+    const storedFeedback = loadFeedback();
+    const currentFeedbackForMessage = storedFeedback[messageId];
+    const newFeedback = currentFeedbackForMessage === feedback ? null : feedback;
+    
+    const updatedFeedbackStore = { ...storedFeedback, [messageId]: newFeedback };
+    saveFeedback(updatedFeedbackStore);
+
+    let dislikedMessage: Message | undefined;
+    setMessages(prevMessages =>
+      prevMessages.map(msg => {
+        if (msg.id === messageId) {
+          // Clone the message to avoid mutation issues before passing to handler
+          dislikedMessage = { ...msg, feedback: newFeedback };
+          return { ...msg, feedback: newFeedback };
+        }
+        return msg;
+      })
+    );
+    
+    if (newFeedback === 'dislike' && dislikedMessage) {
+      handleDislike(dislikedMessage);
     }
   };
 

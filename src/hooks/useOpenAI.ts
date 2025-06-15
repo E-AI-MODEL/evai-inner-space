@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 
 export interface EmotionDetection {
@@ -14,12 +13,20 @@ export interface EmotionDetection {
 export function useOpenAI() {
   const [isLoading, setIsLoading] = useState(false);
 
-  const detectEmotion = async (message: string, apiKey: string): Promise<EmotionDetection> => {
+  const detectEmotion = async (
+    message: string, 
+    apiKey: string,
+    context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
+  ): Promise<EmotionDetection> => {
     if (!apiKey.trim()) {
       throw new Error('OpenAI API key is vereist. Stel deze in via de instellingen.');
     }
 
     setIsLoading(true);
+
+    const userMessageContent = context?.dislikedLabel
+      ? `The user's original message is: "${message}". My previous response had the label '${context.dislikedLabel}', which the user disliked. Please generate a new, alternative response. Your new response MUST have a different label than '${context.dislikedLabel}'.`
+      : message;
 
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -57,7 +64,7 @@ Focus op nuances en de onderliggende gevoelens. De 'response' moet warm, niet-oo
             },
             {
               role: 'user',
-              content: message
+              content: userMessageContent
             }
           ],
           temperature: 0.4,

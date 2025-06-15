@@ -26,14 +26,22 @@ function matchSeed(input: string, seeds: Seed[]): Seed | null {
 export function useSeedEngine() {
   const { detectEmotion, isLoading } = useOpenAI();
 
-  const checkInput = async (input: string, apiKey?: string): Promise<EmotionDetection | Seed | null> => {
+  const checkInput = async (
+    input: string, 
+    apiKey?: string,
+    context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
+  ): Promise<EmotionDetection | Seed | null> => {
     // Als we een API key hebben, probeer OpenAI
     if (apiKey && apiKey.trim()) {
-      const aiResult = await detectEmotion(input, apiKey);
+      const aiResult = await detectEmotion(input, apiKey, context);
       return aiResult;
     }
     
     // Fallback naar lokale seed matching als er geen API key is
+    // Als er feedback is gegeven, kan de lokale engine geen alternatief bieden.
+    if (context?.dislikedLabel) {
+      return null;
+    }
     return matchSeed(input, seeds as Seed[]);
   };
 
