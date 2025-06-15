@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import TopBar from '../components/TopBar';
 import AdminSeedManager from '../components/admin/AdminSeedManager';
+import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
 import AdminAnalytics from '../components/admin/AdminAnalytics';
 import AdminSystemMonitor from '../components/admin/AdminSystemMonitor';
 import AdminAutoSeedGenerator from '../components/admin/AdminAutoSeedGenerator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Database, BarChart, Cpu, Zap } from 'lucide-react';
+import { Settings, Database, BarChart, Cpu, Zap, Brain } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("openai-api-key") || "");
@@ -22,11 +23,15 @@ const AdminDashboard = () => {
           <p className="text-gray-600">Beheer seeds, monitor prestaties en genereer nieuwe content</p>
         </div>
 
-        <Tabs defaultValue="seeds" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="advanced-seeds" className="w-full">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="advanced-seeds" className="flex items-center gap-2">
+              <Brain size={16} />
+              Advanced Seeds
+            </TabsTrigger>
             <TabsTrigger value="seeds" className="flex items-center gap-2">
               <Database size={16} />
-              Seeds
+              Legacy Seeds
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart size={16} />
@@ -45,6 +50,10 @@ const AdminDashboard = () => {
               Settings
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="advanced-seeds" className="mt-6">
+            <AdvancedSeedManager />
+          </TabsContent>
 
           <TabsContent value="seeds" className="mt-6">
             <AdminSeedManager />

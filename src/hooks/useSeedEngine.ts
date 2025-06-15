@@ -1,8 +1,10 @@
 import { useOpenAI, EmotionDetection } from './useOpenAI';
+import { useAdvancedSeedEngine } from './useAdvancedSeedEngine';
 import seeds from "../seeds.json";
 import { ChatHistoryItem } from '../types';
+import { loadAdvancedSeeds } from '../lib/advancedSeedStorage';
 
-// Behoud de originele Seed interface voor fallback
+// Keep the original Seed interface for backward compatibility
 export interface Seed {
   emotion: string;
   triggers: string[];
@@ -11,7 +13,7 @@ export interface Seed {
   label?: "Valideren" | "Reflectievraag" | "Suggestie";
 }
 
-// Functie om fallback seeds te matchen (als OpenAI faalt)
+// Fallback function for legacy seed matching
 function matchSeed(input: string, seeds: Seed[]): Seed | null {
   const lowered = input.toLowerCase();
   for (const seed of seeds) {
@@ -26,6 +28,7 @@ function matchSeed(input: string, seeds: Seed[]): Seed | null {
 
 export function useSeedEngine() {
   const { detectEmotion, isLoading } = useOpenAI();
+  const { checkInput: checkAdvancedInput } = useAdvancedSeedEngine();
 
   const checkInput = async (
     input: string, 
@@ -33,17 +36,37 @@ export function useSeedEngine() {
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
     history?: ChatHistoryItem[]
   ): Promise<EmotionDetection | Seed | null> => {
-    // Als we een API key hebben, probeer OpenAI
+    // Check if we have advanced seeds available
+    const advancedSeeds = loadAdvancedSeeds();
+    
+    if (advancedSeeds.length > 0) {
+      // Use advanced seed engine
+      const result = await checkAdvancedInput(input, apiKey, context, history);
+      
+      // Convert AdvancedSeed to Seed interface for backward compatibility
+      if (result && 'id' in result && !('confidence' in result)) {
+        return {
+          emotion: result.emotion,
+          triggers: result.triggers,
+          response: result.response.nl,
+          meta: `${result.meta.weight}x – ${result.context.severity}`,
+          label: result.label
+        };
+      }
+      
+      return result as EmotionDetection | null;
+    }
+    
+    // Fallback to original logic
     if (apiKey && apiKey.trim()) {
       const aiResult = await detectEmotion(input, apiKey, context, history);
       return aiResult;
     }
     
-    // Fallback naar lokale seed matching als er geen API key is
-    // Als er feedback is gegeven, kan de lokale engine geen alternatief bieden.
     if (context?.dislikedLabel) {
       return null;
     }
+    
     return matchSeed(input, seeds as Seed[]);
   };
 
