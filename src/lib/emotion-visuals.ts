@@ -1,8 +1,8 @@
-
 export const EMOTION_VISUALS: { [key: string]: { icon: string; colorClass: string } } = {
   stress: { icon: "😰", colorClass: "bg-stress" },
   verdriet: { icon: "😢", colorClass: "bg-blue-200" },
   blij: { icon: "🙂", colorClass: "bg-yellow-100" },
+  error: { icon: "⚠️", colorClass: "bg-red-200" },
 };
 
 export const getEmotionVisuals = (emotion: string | null) => {

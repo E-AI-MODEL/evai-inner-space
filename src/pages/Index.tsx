@@ -60,7 +60,7 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
-  const { checkInput, isLoading, error } = useSeedEngine();
+  const { checkInput, isLoading } = useSeedEngine();
 
   useEffect(() => {
     const savedApiKey = localStorage.getItem('openai-api-key');
@@ -175,9 +175,25 @@ const Index = () => {
       
     } catch (err) {
       console.error('Error processing message:', err);
+      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij het verwerken van je bericht.";
+
+      const errorResponse: Message = {
+        id: `ai-error-${messages.length + 1}`,
+        from: "ai",
+        label: "Fout",
+        content: errorMessage,
+        emotionSeed: 'error',
+        animate: true,
+        timestamp: new Date(),
+        accentColor: '#FECACA', // Light red
+        brilliant: false,
+      };
+
+      setMessages(prev => [...prev, errorResponse]);
+      
       toast({
-        title: "Fout",
-        description: "Er ging iets mis bij het verwerken van je bericht.",
+        title: "Fout bij analyse",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -219,12 +235,6 @@ const Index = () => {
         <SidebarEmotionHistory history={emotionHistory} />
         <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
           <div className="flex-1 flex flex-col justify-end max-w-2xl mx-auto w-full">
-            
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <p className="text-sm text-red-700">OpenAI fout: {error}</p>
-              </div>
-            )}
             
             <div className="mb-2">
               {messages.map((msg) => (

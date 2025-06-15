@@ -1,10 +1,9 @@
-
 import React from "react";
 import { Gem } from "lucide-react";
 
 interface ChatBubbleProps {
   from: "user" | "ai";
-  label: "Valideren" | "Reflectievraag" | "Suggestie" | null;
+  label: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" | null;
   accentColor?: string;
   children: React.ReactNode;
   meta?: React.ReactNode;
@@ -19,6 +18,7 @@ const LABEL_CLASSES = {
   Valideren: "bg-blue-100 text-blue-900",
   Reflectievraag: "bg-green-100 text-green-900",
   Suggestie: "bg-purple-100 text-purple-800",
+  Fout: "bg-red-100 text-red-900",
 };
 
 const ChatBubble: React.FC<ChatBubbleProps> = ({

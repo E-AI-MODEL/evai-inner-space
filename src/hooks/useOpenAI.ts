@@ -11,16 +11,13 @@ export interface EmotionDetection {
 
 export function useOpenAI() {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const detectEmotion = async (message: string, apiKey: string): Promise<EmotionDetection | null> => {
+  const detectEmotion = async (message: string, apiKey: string): Promise<EmotionDetection> => {
     if (!apiKey.trim()) {
-      setError('OpenAI API key is required');
-      return null;
+      throw new Error('OpenAI API key is vereist. Stel deze in via de instellingen.');
     }
 
     setIsLoading(true);
-    setError(null);
 
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -58,25 +55,34 @@ Focus op nuances en de onderliggende gevoelens. De 'response' moet warm, niet-oo
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        let errorMessage = errorData.error?.message || `OpenAI API error: ${response.status}`;
+        
+        if (response.status === 401) {
+          errorMessage = 'Ongeldige of verlopen OpenAI API key. Controleer de key in de instellingen.';
+        } else if (response.status === 429) {
+          errorMessage = 'API rate limit of quotum overschreden. Wacht even of controleer je OpenAI account.';
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       const content = data.choices[0]?.message?.content;
       
       if (!content) {
-        throw new Error('Geen response van OpenAI ontvangen');
+        throw new Error('Geen geldige response van OpenAI ontvangen.');
+      }
+      
+      try {
+        const emotionData = JSON.parse(content);
+        return emotionData;
+      } catch (e) {
+        console.error("Failed to parse OpenAI JSON response:", content);
+        throw new Error("Kon het antwoord van de AI niet verwerken. Het was geen geldig JSON-formaat.");
       }
 
-      // Parse JSON response
-      const emotionData = JSON.parse(content);
-      return emotionData;
-
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Onbekende fout bij emotiedetectie';
-      setError(errorMessage);
-      console.error('OpenAI API error:', err);
-      return null;
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -85,6 +91,5 @@ Focus op nuances en de onderliggende gevoelens. De 'response' moet warm, niet-oo
   return {
     detectEmotion,
     isLoading,
-    error,
   };
 }

@@ -1,4 +1,3 @@
-
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import seeds from "../seeds.json";
 
@@ -24,25 +23,21 @@ function matchSeed(input: string, seeds: Seed[]): Seed | null {
 }
 
 export function useSeedEngine() {
-  const { detectEmotion, isLoading, error } = useOpenAI();
+  const { detectEmotion, isLoading } = useOpenAI();
 
   const checkInput = async (input: string, apiKey?: string): Promise<EmotionDetection | Seed | null> => {
     // Als we een API key hebben, probeer OpenAI
     if (apiKey && apiKey.trim()) {
       const aiResult = await detectEmotion(input, apiKey);
-      if (aiResult) {
-        return aiResult;
-      }
-      // Als OpenAI faalt, val terug op lokale seeds
+      return aiResult;
     }
     
-    // Fallback naar lokale seed matching
+    // Fallback naar lokale seed matching als er geen API key is
     return matchSeed(input, seeds as Seed[]);
   };
 
   return { 
     checkInput,
     isLoading,
-    error 
   };
 }
