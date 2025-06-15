@@ -213,7 +213,7 @@ export function useChat(apiKey: string) {
   const handleDislike = async (dislikedMessage: Message) => {
     const originalUserMessage = messages.find(m => m.id === dislikedMessage.replyTo);
 
-    if (!originalUserMessage || !dislikedMessage.label || !['Valideren', 'Reflectievraag', 'Suggestie'].includes(dislikedMessage.label)) {
+    if (!originalUserMessage || !dislikedMessage.label || dislikedMessage.label === 'Fout') {
       return;
     }
     
