@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useChat } from '../hooks/useChat';
+import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
 import AdminSeedManager from '../components/admin/AdminSeedManager';
 import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
@@ -8,19 +9,31 @@ import AdminAnalytics from '../components/admin/AdminAnalytics';
 import AdminSystemMonitor from '../components/admin/AdminSystemMonitor';
 import AdminAutoSeedGenerator from '../components/admin/AdminAutoSeedGenerator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Database, BarChart, Cpu, Zap, Brain } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Settings, Database, BarChart, Cpu, Zap, Brain, MessageSquare } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("openai-api-key") || "");
   const { messages, clearHistory } = useChat(apiKey);
+  const navigate = useNavigate();
 
   return (
     <div className="w-full min-h-screen bg-background">
       <TopBar onSettingsClick={() => {}} />
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">EvAI Admin Dashboard</h1>
-          <p className="text-gray-600">Beheer seeds, monitor prestaties en genereer nieuwe content</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">EvAI Admin Dashboard</h1>
+            <p className="text-gray-600">Beheer seeds, monitor prestaties en genereer nieuwe content</p>
+          </div>
+          <Button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <MessageSquare size={16} />
+            Terug naar Chat
+          </Button>
         </div>
 
         <Tabs defaultValue="advanced-seeds" className="w-full">
