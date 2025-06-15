@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -120,7 +121,7 @@ const Index = () => {
         aiResp = {
           id: `ai-openai-${messages.length + 1}`,
           from: "ai",
-          label: "AI Valideren",
+          label: matchedResult.label || "Valideren",
           accentColor: "#BFD7FF",
           content: matchedResult.response,
           showExplain: showExplain,
@@ -136,13 +137,13 @@ const Index = () => {
         setSeedConfetti(true);
         toast({
           title: "Seed gevonden!",
-          description: `De emotie '${matchedResult.emotion}' werd herkend.`,
+          description: `De emotie '${(matchedResult as any).emotion}' werd herkend.`,
         });
         
         aiResp = {
           id: `ai-seed-${messages.length + 1}`,
           from: "ai",
-          label: "Valideren",
+          label: (matchedResult as any).label || "Valideren",
           accentColor: "#BFD7FF",
           content: (matchedResult as any).response,
           showExplain: showExplain,

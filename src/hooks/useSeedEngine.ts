@@ -7,6 +7,7 @@ export interface Seed {
   triggers: string[];
   response: string;
   meta?: string;
+  label?: "Valideren" | "Reflectievraag" | "Suggestie";
 }
 
 // Functie om fallback seeds te matchen (als OpenAI faalt)
