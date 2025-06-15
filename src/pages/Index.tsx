@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -8,6 +7,7 @@ import ApiKeyInput from "../components/ApiKeyInput";
 import { useSeedEngine } from "../hooks/useSeedEngine";
 import { toast } from "@/hooks/use-toast";
 import SeedConfetti from "../components/SeedConfetti";
+import IntroAnimation from "../components/IntroAnimation";
 
 // Behoud voorbeeld chat voor demo
 const EXAMPLE_AI = [
@@ -27,6 +27,7 @@ const EXAMPLE_AI = [
 ];
 
 const Index = () => {
+  const [showIntro, setShowIntro] = useState(true);
   const [messages, setMessages] = useState([
     {
       id: "user-1",
@@ -54,6 +55,10 @@ const Index = () => {
       setApiKey(savedApiKey);
     }
   }, []);
+
+  if (showIntro) {
+    return <IntroAnimation onFinished={() => setShowIntro(false)} />;
+  }
 
   const saveApiKey = () => {
     if (apiKey.trim()) {
