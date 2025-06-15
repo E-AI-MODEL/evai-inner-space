@@ -8,7 +8,6 @@ export interface Message {
   animate: boolean;
   timestamp: Date;
   accentColor?: string;
-  showExplain?: boolean;
   explainText?: string;
   meta?: string;
   brilliant?: boolean;

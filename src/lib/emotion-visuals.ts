@@ -1,5 +1,9 @@
 
-export const EMOTION_VISUALS: { [key: string]: { icon: keyof typeof import('lucide-react/dynamicIconImports'); colorClass: string } } = {
+import dynamicIconImports from 'lucide-react/dynamicIconImports';
+
+type IconName = keyof typeof dynamicIconImports;
+
+export const EMOTION_VISUALS: { [key: string]: { icon: IconName; colorClass: string } } = {
   stress: { icon: "cloud-lightning", colorClass: "bg-yellow-200" },
   verdriet: { icon: "frown", colorClass: "bg-blue-200" },
   blij: { icon: "smile", colorClass: "bg-green-200" },
@@ -13,7 +17,7 @@ export const EMOTION_VISUALS: { [key: string]: { icon: keyof typeof import('luci
   onzekerheid: { icon: "glasses", colorClass: "bg-indigo-200" },
 };
 
-export const getEmotionVisuals = (emotion: string | null) => {
+export const getEmotionVisuals = (emotion: string | null): { icon: IconName; colorClass: string } => {
   if (!emotion) {
     return { icon: "message-square", colorClass: "bg-zinc-100" };
   }

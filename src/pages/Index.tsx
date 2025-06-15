@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -10,11 +9,9 @@ import { getEmotionVisuals } from "../lib/emotion-visuals";
 import SettingsSheet from "../components/SettingsSheet";
 import { useChat } from "../hooks/useChat";
 import ChatView from "../components/ChatView";
-import ChatActions from "../components/ChatActions";
 
 const Index = () => {
   const [showIntro, setShowIntro] = useState(true);
-  const [showExplain, setShowExplain] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
@@ -29,7 +26,7 @@ const Index = () => {
   }, []);
   
   const { messages, input, setInput, isProcessing, onSend, seedConfetti } =
-    useChat(apiKey, showExplain);
+    useChat(apiKey);
 
   if (showIntro) {
     return <IntroAnimation onFinished={() => setShowIntro(false)} />;
@@ -100,12 +97,6 @@ const Index = () => {
               isProcessing={isProcessing}
               messageRefs={messageRefs}
               focusedMessageId={focusedMessageId}
-              showExplain={showExplain}
-            />
-
-            <ChatActions
-              showExplain={showExplain}
-              setShowExplain={setShowExplain}
             />
 
             <InputBar

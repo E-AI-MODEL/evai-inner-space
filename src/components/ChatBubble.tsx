@@ -1,5 +1,6 @@
-import React, { forwardRef } from "react";
-import { Gem } from "lucide-react";
+
+import React, { forwardRef, useState } from "react";
+import { Gem, Info } from "lucide-react";
 
 interface ChatBubbleProps {
   from: "user" | "ai";
@@ -7,11 +8,10 @@ interface ChatBubbleProps {
   accentColor?: string;
   children: React.ReactNode;
   meta?: React.ReactNode;
-  showExplain?: boolean;
   explainText?: string;
   emotionSeed?: string;
   animate?: boolean;
-  brilliant?: boolean; // Nieuw: highlight voor seed-matching
+  brilliant?: boolean;
   isFocused?: boolean;
 }
 
@@ -28,13 +28,14 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
   accentColor,
   children,
   meta,
-  showExplain,
   explainText,
   emotionSeed,
   animate,
   brilliant,
   isFocused,
 }, ref) => {
+  const [isExplainVisible, setIsExplainVisible] = useState(false);
+
   const bubbleStyles =
     from === "user"
       ? "bg-white text-zinc-800 border border-zinc-200"
@@ -85,13 +86,24 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
           data-ttl={meta}
         >
           {children}
-          {/* Uitleg-toggle */}
-          {showExplain && explainText && (
-            <div className="mt-2 text-xs italic opacity-80 transition-all max-h-36 overflow-hidden bubble-ai__explain" style={{ fontFamily: "Inter, sans-serif" }}>
-              {explainText}
-            </div>
+          
+          {/* Uitleg-toggle per bericht */}
+          {from === 'ai' && explainText && (
+            <button 
+              onClick={() => setIsExplainVisible(v => !v)} 
+              className="absolute -bottom-3 -right-2 bg-white border border-zinc-200 rounded-full p-1.5 shadow-sm hover:bg-zinc-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+              aria-label={isExplainVisible ? "Verberg redenatie" : "Toon redenatie"}
+            >
+              <Info size={14} className="text-zinc-500" />
+            </button>
           )}
         </div>
+        {/* Uitleg-tekst */}
+        {isExplainVisible && explainText && (
+          <div className="mt-2 text-xs italic opacity-80 transition-all max-w-[70vw] p-3 bg-zinc-50 border rounded-lg ml-2" style={{ fontFamily: "Inter, sans-serif" }}>
+            {explainText}
+          </div>
+        )}
       </div>
     </div>
   );

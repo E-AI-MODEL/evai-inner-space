@@ -8,10 +8,9 @@ interface ChatViewProps {
     isProcessing: boolean;
     messageRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
     focusedMessageId: string | null;
-    showExplain: boolean;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs, focusedMessageId, showExplain }) => {
+const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs, focusedMessageId }) => {
     return (
         <div className="mb-2">
             {messages.map((msg) => (
@@ -31,7 +30,6 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
                     meta={msg.meta}
                     emotionSeed={msg.emotionSeed}
                     animate={!!msg.animate}
-                    showExplain={showExplain && msg.from === "ai"}
                     explainText={msg.explainText}
                     brilliant={!!msg.brilliant}
                 >

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { toast } from "@/hooks/use-toast";
@@ -21,7 +20,6 @@ const initialMessages: Message[] = [
     label: "Valideren",
     accentColor: getLabelVisuals("Valideren").accentColor,
     content: "Ik hoor veel stress en onrust in je woorden.",
-    showExplain: false,
     explainText: "Demo seed detectie voor 'stress en paniek'.",
     emotionSeed: "stress",
     animate: true,
@@ -32,7 +30,7 @@ const initialMessages: Message[] = [
   },
 ];
 
-export function useChat(apiKey: string, showExplain: boolean) {
+export function useChat(apiKey: string) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -84,7 +82,6 @@ export function useChat(apiKey: string, showExplain: boolean) {
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
           content: matchedResult.response,
-          showExplain: showExplain,
           explainText: matchedResult.reasoning,
           emotionSeed: matchedResult.emotion,
           animate: true,
@@ -110,7 +107,6 @@ export function useChat(apiKey: string, showExplain: boolean) {
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
           content: seedResult.response,
-          showExplain: showExplain,
           explainText: `Lokale herkenning: Woorden zoals '${seedResult.triggers.join(
             ", "
           )}' duiden op de emotie '${seedResult.emotion}'.`,
@@ -129,7 +125,6 @@ export function useChat(apiKey: string, showExplain: boolean) {
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
           content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
-          showExplain: showExplain,
           explainText: "Geen specifieke emotie gedetecteerd.",
           emotionSeed: null,
           animate: true,
