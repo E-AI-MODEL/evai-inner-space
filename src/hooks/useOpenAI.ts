@@ -8,6 +8,7 @@ export interface EmotionDetection {
   triggers: string[];
   meta: string;
   label: "Valideren" | "Reflectievraag" | "Suggestie";
+  reasoning: string;
 }
 
 export function useOpenAI() {
@@ -48,7 +49,8 @@ Geef ALTIJD een JSON-object terug met de volgende structuur:
   "response": "Een empathische, validerende en inzichtelijke reactie in het Nederlands, passend bij het gekozen label. Geef daarna een korte reflectie die de gebruiker aan het denken zet.",
   "triggers": ["Een array van specifieke woorden of zinsdelen uit de gebruikerstekst die de emotie-detectie hebben getriggerd."],
   "meta": "Een korte metadata string, bijvoorbeeld '60m – Hoog' om de diepte van de analyse aan te duiden.",
-  "label": "De gekozen categorie van de reactie ('Valideren', 'Reflectievraag', of 'Suggestie')."
+  "label": "De gekozen categorie van de reactie ('Valideren', 'Reflectievraag', of 'Suggestie').",
+  "reasoning": "Een korte, heldere uitleg waarom voor dit label en deze respons is gekozen, gebaseerd op de 'triggers'. Bijvoorbeeld: 'De gebruiker noemt 'paniek' en 'te veel', wat duidt op stress. Daarom is een validerende aanpak gekozen om dit gevoel eerst te erkennen.'"
 }
 
 Focus op nuances en de onderliggende gevoelens. De 'response' moet warm, niet-oordelend en ondersteunend zijn. De 'emotion' moet de kern van het gevoel van de gebruiker vastleggen.`

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useSeedEngine } from "./useSeedEngine";
+import { useSeedEngine, Seed } from "./useSeedEngine";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message } from "../types";
@@ -84,9 +84,7 @@ export function useChat(apiKey: string, showExplain: boolean) {
           accentColor: getLabelVisuals(label).accentColor,
           content: matchedResult.response,
           showExplain: showExplain,
-          explainText: `OpenAI detectie: ${
-            matchedResult.emotion
-          } (${Math.round(matchedResult.confidence * 100)}% zekerheid)`,
+          explainText: matchedResult.reasoning,
           emotionSeed: matchedResult.emotion,
           animate: true,
           meta: `AI – ${Math.round(matchedResult.confidence * 100)}%`,
@@ -94,26 +92,29 @@ export function useChat(apiKey: string, showExplain: boolean) {
           timestamp: new Date(),
         };
       } else if (matchedResult) {
+        const seedResult = matchedResult as Seed;
         setSeedConfetti(true);
         toast({
           title: "Seed gevonden!",
           description: `De emotie '${
-            (matchedResult as any).emotion
+            seedResult.emotion
           }' werd herkend.`,
         });
 
-        const label = (matchedResult as any).label || "Valideren";
+        const label = seedResult.label || "Valideren";
         aiResp = {
           id: `ai-seed-${messages.length + 1}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
-          content: (matchedResult as any).response,
+          content: seedResult.response,
           showExplain: showExplain,
-          explainText: `Lokale seed: ${(matchedResult as any).emotion}`,
-          emotionSeed: (matchedResult as any).emotion,
+          explainText: `Lokale herkenning: Woorden zoals '${seedResult.triggers.join(
+            ", "
+          )}' duiden op de emotie '${seedResult.emotion}'.`,
+          emotionSeed: seedResult.emotion,
           animate: true,
-          meta: (matchedResult as any).meta || "Lokaal",
+          meta: seedResult.meta || "Lokaal",
           brilliant: true,
           timestamp: new Date(),
         };
