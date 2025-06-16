@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { AdvancedSeed } from '../types/seed';
-import { loadAdvancedSeeds, incrementSeedUsage } from '../lib/advancedSeedStorage';
+import { incrementSeedUsage } from '../lib/advancedSeedStorage';
 
 interface MatchingContext {
   userAge?: 'child' | 'teen' | 'adult' | 'senior';
@@ -16,18 +16,19 @@ export function useAdvancedSeedMatcher() {
 
   const findBestMatch = (
     input: string,
+    seeds: AdvancedSeed[],
     context?: MatchingContext
   ): AdvancedSeed | null => {
     setIsMatching(true);
-    
+
     try {
-      const seeds = loadAdvancedSeeds().filter(seed => seed.isActive);
-      if (seeds.length === 0) return null;
+      const activeSeeds = seeds.filter(seed => seed.isActive);
+      if (activeSeeds.length === 0) return null;
 
       const inputLower = input.toLowerCase();
       const candidates: Array<{ seed: AdvancedSeed; score: number }> = [];
 
-      for (const seed of seeds) {
+      for (const seed of activeSeeds) {
         let score = 0;
         
         // Check trigger matches
@@ -93,14 +94,14 @@ export function useAdvancedSeedMatcher() {
       for (const candidate of topCandidates) {
         random -= candidate.score;
         if (random <= 0) {
-          incrementSeedUsage(candidate.seed.id);
+          void incrementSeedUsage(candidate.seed.id);
           return candidate.seed;
         }
       }
       
       // Fallback to highest scored
       const selected = candidates[0].seed;
-      incrementSeedUsage(selected.id);
+      void incrementSeedUsage(selected.id);
       return selected;
       
     } finally {

@@ -35,8 +35,8 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
     loadSeedDatabase();
   }, []);
 
-  const loadSeedDatabase = () => {
-    const seeds = loadAdvancedSeeds();
+  const loadSeedDatabase = async () => {
+    const seeds = await loadAdvancedSeeds();
     setSeedDatabase(seeds);
   };
 

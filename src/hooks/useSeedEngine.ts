@@ -1,7 +1,6 @@
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import { useAdvancedSeedEngine } from './useAdvancedSeedEngine';
 import { ChatHistoryItem } from '../types';
-import { loadAdvancedSeeds } from '../lib/advancedSeedStorage';
 
 // Keep the original Seed interface for backward compatibility
 export interface Seed {
@@ -22,15 +21,13 @@ export function useSeedEngine() {
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
     history?: ChatHistoryItem[]
   ): Promise<EmotionDetection | Seed | null> => {
-    // Check if we have advanced seeds available
-    const advancedSeeds = loadAdvancedSeeds();
-    
-    if (advancedSeeds.length > 0) {
+    // Check if we have advanced seeds available via the advanced engine
+    const result = await checkAdvancedInput(input, apiKey, context, history);
+
+    if (result) {
       // Use advanced seed engine
-      const result = await checkAdvancedInput(input, apiKey, context, history);
-      
       // Convert AdvancedSeed to Seed interface for backward compatibility
-      if (result && 'id' in result && !('confidence' in result)) {
+      if ('id' in result && !('confidence' in result)) {
         // Map the advanced label to legacy label, excluding "Interventie" 
         let legacyLabel: "Valideren" | "Reflectievraag" | "Suggestie" = "Valideren";
         if (result.label === "Reflectievraag") legacyLabel = "Reflectievraag";

@@ -244,7 +244,7 @@ Focus op Nederlandse emoties die therapeutisch relevant zijn.`;
 
   const injectSeedToDatabase = async (seed: AdvancedSeed): Promise<boolean> => {
     try {
-      addAdvancedSeed(seed);
+      await addAdvancedSeed(seed);
       console.log('✅ Seed injected to database:', seed.emotion);
       return true;
     } catch (error) {

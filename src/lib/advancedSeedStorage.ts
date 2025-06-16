@@ -1,22 +1,20 @@
-
+import { supabase } from '@/integrations/supabase/client';
 import { AdvancedSeed } from '../types/seed';
 
-const ADVANCED_SEEDS_KEY = 'evai-advanced-seeds';
-
-export function loadAdvancedSeeds(): AdvancedSeed[] {
+export async function loadAdvancedSeeds(): Promise<AdvancedSeed[]> {
   try {
-    const stored = localStorage.getItem(ADVANCED_SEEDS_KEY);
-    if (!stored) return [];
-    
-    const seeds = JSON.parse(stored);
-    return seeds.map((seed: any) => ({
+    const { data, error } = await supabase
+      .from('emotion_seeds')
+      .select('*')
+      .eq('active', true)
+      .order('weight', { ascending: false });
+
+    if (error) throw error;
+
+    return (data ?? []).map((seed: any) => ({
       ...seed,
-      createdAt: new Date(seed.createdAt),
-      updatedAt: new Date(seed.updatedAt),
-      meta: {
-        ...seed.meta,
-        lastUsed: seed.meta.lastUsed ? new Date(seed.meta.lastUsed) : undefined
-      }
+      createdAt: seed.created_at ? new Date(seed.created_at) : new Date(),
+      updatedAt: seed.updated_at ? new Date(seed.updated_at) : new Date(),
     }));
   } catch (error) {
     console.error('Error loading advanced seeds:', error);
@@ -24,41 +22,29 @@ export function loadAdvancedSeeds(): AdvancedSeed[] {
   }
 }
 
-export function saveAdvancedSeeds(seeds: AdvancedSeed[]): void {
-  try {
-    localStorage.setItem(ADVANCED_SEEDS_KEY, JSON.stringify(seeds));
-  } catch (error) {
-    console.error('Error saving advanced seeds:', error);
-  }
+export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
+  const { error } = await supabase.from('emotion_seeds').insert({
+    ...seed,
+    created_at: seed.createdAt.toISOString(),
+    updated_at: seed.updatedAt.toISOString(),
+  });
+  if (error) console.error('Error adding advanced seed:', error);
 }
 
-export function addAdvancedSeed(seed: AdvancedSeed): void {
-  const seeds = loadAdvancedSeeds();
-  seeds.push(seed);
-  saveAdvancedSeeds(seeds);
+export async function updateAdvancedSeed(seed: AdvancedSeed): Promise<void> {
+  const { error } = await supabase
+    .from('emotion_seeds')
+    .update({ ...seed, updated_at: new Date().toISOString() })
+    .eq('id', seed.id);
+  if (error) console.error('Error updating advanced seed:', error);
 }
 
-export function updateAdvancedSeed(updatedSeed: AdvancedSeed): void {
-  const seeds = loadAdvancedSeeds();
-  const index = seeds.findIndex(s => s.id === updatedSeed.id);
-  if (index !== -1) {
-    seeds[index] = { ...updatedSeed, updatedAt: new Date() };
-    saveAdvancedSeeds(seeds);
-  }
+export async function deleteAdvancedSeed(seedId: string): Promise<void> {
+  const { error } = await supabase.from('emotion_seeds').delete().eq('id', seedId);
+  if (error) console.error('Error deleting advanced seed:', error);
 }
 
-export function deleteAdvancedSeed(seedId: string): void {
-  const seeds = loadAdvancedSeeds();
-  const filtered = seeds.filter(s => s.id !== seedId);
-  saveAdvancedSeeds(filtered);
-}
-
-export function incrementSeedUsage(seedId: string): void {
-  const seeds = loadAdvancedSeeds();
-  const seed = seeds.find(s => s.id === seedId);
-  if (seed) {
-    seed.meta.usageCount += 1;
-    seed.meta.lastUsed = new Date();
-    saveAdvancedSeeds(seeds);
-  }
+export async function incrementSeedUsage(seedId: string): Promise<void> {
+  const { error } = await supabase.rpc('increment_seed_usage', { seed_id: seedId });
+  if (error) console.error('Error incrementing seed usage:', error);
 }
