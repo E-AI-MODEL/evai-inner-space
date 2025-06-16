@@ -46,10 +46,11 @@ Geef het resultaat als JSON met:
 
 Focus op Nederlandse therapeutische context.`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+      const response = await fetch('/api/google-gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': apiKey
         },
         body: JSON.stringify({
           contents: [{
@@ -131,10 +132,11 @@ Maak een empathische Nederlandse response van 50-80 woorden die:
 
 Geef alleen de response tekst terug, geen JSON.`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+      const response = await fetch('/api/google-gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': apiKey
         },
         body: JSON.stringify({
           contents: [{
