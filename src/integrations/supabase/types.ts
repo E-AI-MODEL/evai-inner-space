@@ -9,13 +9,136 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      emotion_seeds: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          emotion: string
+          expires_at: string | null
+          id: string
+          label: string | null
+          meta: Json | null
+          response: Json | null
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          emotion: string
+          expires_at?: string | null
+          id?: string
+          label?: string | null
+          meta?: Json | null
+          response?: Json | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          emotion?: string
+          expires_at?: string | null
+          id?: string
+          label?: string | null
+          meta?: Json | null
+          response?: Json | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      rubrics: {
+        Row: {
+          code: string | null
+          id: string
+          rubric_json: Json | null
+        }
+        Insert: {
+          code?: string | null
+          id?: string
+          rubric_json?: Json | null
+        }
+        Update: {
+          code?: string | null
+          id?: string
+          rubric_json?: Json | null
+        }
+        Relationships: []
+      }
+      seed_feedback: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          rating: string | null
+          seed_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          rating?: string | null
+          seed_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          rating?: string | null
+          seed_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seed_feedback_seed_id_fkey"
+            columns: ["seed_id"]
+            isOneToOne: false
+            referencedRelation: "emotion_seeds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seed_rubrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          rubric: string | null
+          score: number | null
+          seed_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          rubric?: string | null
+          score?: number | null
+          seed_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          rubric?: string | null
+          score?: number | null
+          seed_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seed_rubrics_seed_id_fkey"
+            columns: ["seed_id"]
+            isOneToOne: false
+            referencedRelation: "emotion_seeds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_seed_usage: {
+        Args: { seed_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
