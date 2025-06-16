@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { useSeedEngine, Seed } from "./useSeedEngine";
+import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
 import { useOpenAISeedGenerator } from "./useOpenAISeedGenerator";
+import { v4 as uuidv4 } from "uuid";
+import { AdvancedSeed } from "../types/seed";
 import { useEvAI56Rubrics, RubricAssessment } from "./useEvAI56Rubrics";
 import { useCoTFeedbackAnalyzer } from "./useCoTFeedbackAnalyzer";
 import { toast } from "@/hooks/use-toast";
@@ -137,11 +139,54 @@ export function useAiResponse(
                 await injectSeedToDatabase(generatedSeed);
                 newSeedsGenerated++;
                 console.log(`✅ EvAI-VALIDATED SEED INJECTED: "${emotion}"`);
-                
+
                 toast({
                   title: "🌱 EvAI LEERMODE: Nieuwe Rubrics-Seed!",
                   description: `"${emotion}" geleerd met EvAI validatie!`,
                 });
+
+                // 👉 NEW: Generate additional seed with OpenAI secondary
+                if (hasOpenAi2) {
+                  try {
+                    const secondaryText = await generateSeed(
+                      emotion,
+                      userMessage.content,
+                      openAiKey2!
+                    );
+                    if (secondaryText) {
+                      const secondarySeed: AdvancedSeed = {
+                        id: uuidv4(),
+                        emotion,
+                        type: 'validation',
+                        label: 'Valideren',
+                        triggers: [emotion],
+                        response: { nl: secondaryText },
+                        context: {
+                          severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium',
+                          situation: 'therapy'
+                        },
+                        meta: {
+                          priority: 1,
+                          weight: 1.0,
+                          confidence: 0.75,
+                          usageCount: 0
+                        },
+                        tags: ['openai-secondary', 'auto-generated'],
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        createdBy: 'ai',
+                        isActive: true,
+                        version: '1.0.0'
+                      };
+
+                      await injectSeedToDatabase(secondarySeed);
+                      newSeedsGenerated++;
+                      console.log(`✅ OpenAI secondary seed injected: "${emotion}"`);
+                    }
+                  } catch (secError) {
+                    console.error('🔴 OpenAI secondary seed generation failed:', secError);
+                  }
+                }
               }
             }
             
