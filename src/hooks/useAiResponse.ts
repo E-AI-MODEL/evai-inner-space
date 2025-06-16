@@ -283,7 +283,7 @@ export function useAiResponse(
           // Look for feedback patterns in recent messages
           const recentMessages = messages.slice(-5);
           const feedbackMessages = recentMessages.filter(m => 
-            m.feedback && (m.feedback.type === 'dislike' || m.feedback.type === 'like')
+            m.feedback && (m.feedback === 'dislike' || m.feedback === 'like')
           );
 
           if (feedbackMessages.length > 0) {
@@ -291,7 +291,7 @@ export function useAiResponse(
             
             // Analyze negative feedback for learning
             const negativePatterns = feedbackMessages
-              .filter(m => m.feedback?.type === 'dislike')
+              .filter(m => m.feedback === 'dislike')
               .map(m => ({
                 label: m.label,
                 content: m.content,

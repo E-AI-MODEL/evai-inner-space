@@ -30,7 +30,7 @@ export function useCoTFeedbackAnalyzer() {
           content: m.content,
           label: m.label,
           emotion: m.emotionSeed,
-          feedback: m.feedback?.type,
+          feedback: m.feedback, // This is now just a string: "like" | "dislike"
           reasoning: m.explainText || ''
         }));
 
