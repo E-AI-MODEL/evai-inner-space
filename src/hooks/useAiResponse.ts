@@ -1,108 +1,156 @@
-
 import { useState } from "react";
-import { Message } from "../types";
+import { useSeedEngine, Seed } from "./useSeedEngine";
 import { toast } from "@/hooks/use-toast";
-import { useSystemBootstrap } from "./useSystemBootstrap";
-import { useLiveMonitoring } from "./useLiveMonitoring";
-import { useAiResponseCore } from "./useAiResponseCore";
-import { useAiResponseProcessing } from "./useAiResponseProcessing";
-import { useAiResponseMetrics } from "./useAiResponseMetrics";
-import { useAiResponseSymbolic } from "./useAiResponseSymbolic";
-import { useAiResponseAdvanced } from "./useAiResponseAdvanced";
+import { getLabelVisuals } from "../lib/emotion-visuals";
+import { Message, ChatHistoryItem } from "../types";
+import { useSymbolicEngine } from "./useSymbolicEngine";
 
 export function useAiResponse(
   messages: Message[],
-  addMessage: (message: Message) => void,
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   apiKey: string,
   setSeedConfetti: (show: boolean) => void
 ) {
-  const { isSystemReady } = useSystemBootstrap();
-  const { isMonitoring, startMonitoring } = useLiveMonitoring();
-  
-  const { 
-    isProcessing, 
-    setIsProcessing, 
-    generateAiMessage, 
-    createErrorMessage, 
-    isLoading 
-  } = useAiResponseCore(messages, apiKey, setSeedConfetti);
-  
-  const { prepareHistory } = useAiResponseProcessing();
-  const { recordResponseMetrics } = useAiResponseMetrics();
-  const { processSymbolicInferences } = useAiResponseSymbolic();
-  const { processAdvancedFeatures, triggerLearning } = useAiResponseAdvanced();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { checkInput, isLoading: isSeedEngineLoading } = useSeedEngine();
+
+  // Symbolic neurosymbolic features engine
+  const { evaluate: evaluateSymbolic } = useSymbolicEngine();
 
   const generateAiResponse = async (
     userMessage: Message,
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
   ) => {
-    console.log('useAiResponse: generateAiResponse called', { userMessage, context });
-    const startTime = Date.now();
     setIsProcessing(true);
-    
-    // Add user message first
-    console.log('useAiResponse: Adding user message');
-    addMessage(userMessage);
-    
-    // Ensure monitoring is active if system is ready
-    if (isSystemReady && !isMonitoring) {
-      console.log('useAiResponse: Starting monitoring');
-      startMonitoring();
-    }
-    
     try {
-      const history = prepareHistory(messages, userMessage);
-      console.log('useAiResponse: Prepared history, length:', history.length);
+      const messageIndex = messages.findIndex(m => m.id === userMessage.id);
+      const history: ChatHistoryItem[] = messages
+        .slice(0, messageIndex >= 0 ? messageIndex : messages.length)
+        .map(msg => ({
+          role: msg.from === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }));
 
-      // Only run advanced features if system is ready
-      if (isSystemReady) {
-        console.log('useAiResponse: Processing advanced features');
-        processAdvancedFeatures(messages, userMessage, isSystemReady);
+      const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
+      let aiResp: Message;
+
+      if (matchedResult && "confidence" in matchedResult) {
+        setSeedConfetti(true);
+        toast({
+          title: "AI Emotiedetectie",
+          description: `${matchedResult.emotion} gedetecteerd (${Math.round(
+            matchedResult.confidence * 100
+          )}% zekerheid)`,
+        });
+
+        const label = matchedResult.label || "Valideren";
+        aiResp = {
+          id: `ai-openai-${Date.now()}`,
+          from: "ai",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
+          content: matchedResult.response,
+          explainText: matchedResult.reasoning,
+          emotionSeed: matchedResult.emotion,
+          animate: true,
+          meta: `AI – ${Math.round(matchedResult.confidence * 100)}%`,
+          brilliant: true,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+        };
+      } else if (matchedResult) {
+        const seedResult = matchedResult;
+        setSeedConfetti(true);
+        toast({
+          title: "Seed gevonden!",
+          description: `De emotie '${
+            seedResult.emotion
+          }' werd herkend.`,
+        });
+
+        const label = seedResult.label || "Valideren";
+        aiResp = {
+          id: `ai-seed-${Date.now()}`,
+          from: "ai",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
+          content: seedResult.response,
+          explainText: `Lokale herkenning: Woorden zoals '${seedResult.triggers.join(
+            ", "
+          )}' duiden op de emotie '${seedResult.emotion}'.`,
+          emotionSeed: seedResult.emotion,
+          animate: true,
+          meta: seedResult.meta || "Lokaal",
+          brilliant: true,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+        };
+      } else {
+        const label = "Valideren";
+        aiResp = {
+          id: context?.dislikedLabel ? `ai-feedback-${Date.now()}`: `ai-new-${Date.now()}`,
+          from: "ai",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
+          content: context?.dislikedLabel 
+            ? "Het spijt me dat mijn vorige antwoord niet hielp. Ik zal proberen hier rekening mee te houden." 
+            : "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+          explainText: context?.dislikedLabel ? "Nieuw antwoord na feedback." : "Geen specifieke emotie gedetecteerd.",
+          emotionSeed: null,
+          animate: true,
+          meta: context?.dislikedLabel ? "Feedback" : "",
+          brilliant: false,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+        };
       }
 
-      console.log('useAiResponse: Generating AI message');
-      let aiResp = await generateAiMessage(userMessage, context, history);
-      console.log('useAiResponse: AI response generated', aiResp);
-
-      // Record interaction metrics
-      const responseTime = Date.now() - startTime;
-      recordResponseMetrics(aiResp, responseTime, isSystemReady);
-
-      // Symbolic engine analysis (only if system ready)
-      aiResp = processSymbolicInferences(messages, aiResp, isSystemReady);
-
-      console.log('useAiResponse: Adding AI response');
-      addMessage(aiResp);
-      
-      // Trigger learning from the updated conversation (only if system ready)
-      if (isSystemReady) {
-        triggerLearning(messages, userMessage, aiResp, isSystemReady);
+      // NEW: Symbolic engine analysis (evaluates using current + the new AI message)
+      const extendedMessages = [...messages, aiResp];
+      const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
+      if (aiSymbolic.length) {
+        // Add property to message object (for display/use in the UI)
+        aiResp = { ...aiResp, symbolicInferences: aiSymbolic };
+        // Optionally: could toast here for demo
+        toast({
+          title: "Symbolische observatie",
+          description: aiSymbolic.join(" "),
+        });
       }
-      
+
+      setMessages((prev) => [...prev, aiResp]);
     } catch (err) {
-      console.error("useAiResponse: Error processing message:", err);
+      console.error("Error processing message:", err);
       const errorMessage =
         err instanceof Error
           ? err.message
           : "Er ging iets mis bij het verwerken van je bericht.";
-      
-      const errorResponse = createErrorMessage(userMessage, errorMessage);
-      
-      // Record error metrics
-      const responseTime = Date.now() - startTime;
-      recordResponseMetrics(errorResponse, responseTime, isSystemReady);
-      
-      addMessage(errorResponse);
+      const errorResponse: Message = {
+        id: `ai-error-${Date.now()}`,
+        from: "ai",
+        label: "Fout",
+        content: errorMessage,
+        emotionSeed: "error",
+        animate: true,
+        timestamp: new Date(),
+        accentColor: getLabelVisuals("Fout").accentColor,
+        brilliant: false,
+        replyTo: userMessage.id,
+        feedback: null,
+      };
+      setMessages((prev) => [...prev, errorResponse]);
       toast({
         title: "Fout bij analyse",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
-      console.log('useAiResponse: Processing complete');
       setIsProcessing(false);
     }
   };
 
-  return { generateAiResponse, isGenerating: isProcessing || isLoading };
+  return { generateAiResponse, isGenerating: isProcessing || isSeedEngineLoading };
 }

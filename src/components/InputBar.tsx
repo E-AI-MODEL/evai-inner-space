@@ -1,113 +1,53 @@
 
-import React, { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Zap, AlertCircle } from "lucide-react";
-import { Message } from "../types";
-import { toast } from "@/hooks/use-toast";
+import React, { useRef } from "react";
+import { Send } from "lucide-react";
 
-interface InputBarProps {
-  onSendMessage: (message: Message, context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }) => void;
-  isGenerating: boolean;
-  apiKey: string;
-  isSystemReady?: boolean;
-}
+const InputBar: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+  onSend: () => void;
+  disabled?: boolean;
+}> = ({ value, onChange, onSend, disabled }) => {
+  const ref = useRef<HTMLTextAreaElement>(null);
 
-const InputBar: React.FC<InputBarProps> = ({ onSendMessage, isGenerating, apiKey, isSystemReady = true }) => {
-  const [input, setInput] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [input]);
-
-  const handleSubmit = () => {
-    console.log('InputBar: handleSubmit called', { input: input.trim(), isGenerating });
-    
-    if (!input.trim() || isGenerating) {
-      console.log('InputBar: Submit blocked - empty input or generating');
-      return;
-    }
-
-    // Allow sending without API key - system will handle gracefully
-    console.log('InputBar: Creating user message');
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      from: "user",
-      content: input.trim(),
-      timestamp: new Date(),
-      feedback: null,
-      label: null,
-      emotionSeed: null,
-      animate: false,
-    };
-
-    console.log('InputBar: Sending message', userMessage);
-    onSendMessage(userMessage);
-    setInput("");
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  // Ctrl+Enter snel verzenden
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      handleSubmit();
+      if (!disabled && value.trim()) onSend();
     }
+    // Automatische hoogtes (optioneel, basic via CSS)
   };
 
   return (
-    <div className="border-t bg-white p-4">
-      <div className="max-w-4xl mx-auto">
-        {!isSystemReady && (
-          <div className="mb-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
-            <div className="flex items-center gap-2 text-orange-800 text-sm">
-              <AlertCircle size={16} />
-              <span>System is initializing advanced features. Basic functionality available.</span>
-            </div>
-          </div>
-        )}
-        
-        <div className="flex gap-2 items-end">
-          <div className="flex-1 relative">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => {
-                console.log('InputBar: Text changed:', e.target.value);
-                setInput(e.target.value);
-              }}
-              onKeyPress={handleKeyPress}
-              placeholder={isSystemReady ? "Deel je gedachten of gevoelens..." : "Type your message (basic mode)..."}
-              disabled={isGenerating}
-              className="w-full p-3 pr-12 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[48px] max-h-32 text-gray-900"
-              rows={1}
-            />
-            {isSystemReady && (
-              <div className="absolute right-3 bottom-3">
-                <Zap size={16} className="text-blue-500" />
-              </div>
-            )}
-          </div>
-          <button
-            onClick={handleSubmit}
-            disabled={!input.trim() || isGenerating}
-            className="p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[48px] h-12"
-          >
-            {isGenerating ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <Send size={20} />
-            )}
-          </button>
-        </div>
-        
-        {isSystemReady && (
-          <div className="mt-2 text-xs text-gray-500 text-center">
-            EvAI Advanced System Active • Real-time Learning • Smart Seed Matching
-          </div>
-        )}
-      </div>
-    </div>
+    <form
+      className="flex gap-3 items-end bg-white shadow-card rounded-xl px-4 py-2 my-4 border border-zinc-200"
+      onSubmit={e => {
+        e.preventDefault();
+        if (!disabled && value.trim()) onSend();
+      }}
+      style={{ fontFamily: "Inter, sans-serif" }}
+    >
+      <textarea
+        ref={ref}
+        rows={1}
+        className="resize-none w-full border-none bg-transparent outline-none p-0 text-base min-h-[36px] max-h-[120px] font-inter flex-1"
+        placeholder="Vertel wat je voelt…"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        disabled={disabled}
+        onKeyDown={handleKeyDown}
+        aria-label="Typ je gevoel"
+      />
+      <button
+        type="submit"
+        disabled={disabled || !value.trim()}
+        className="ml-1 p-2 rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors disabled:opacity-60"
+        aria-label="Verzenden"
+      >
+        <Send size={20} className="text-blue-700" />
+      </button>
+    </form>
   );
 };
 

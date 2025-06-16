@@ -4,7 +4,7 @@ import { loadFeedback, saveFeedback } from '../lib/feedbackStorage';
 
 type GenerateAiResponseFn = (
     userMessage: Message,
-    context: { dislikedLabel: "Valideren" | "Reflectievraag" | "Suggestie" | "Configuratie" | "OpenAI" }
+    context: { dislikedLabel: "Valideren" | "Reflectievraag" | "Suggestie" }
 ) => Promise<void>;
 
 export function useFeedbackHandler(
