@@ -43,6 +43,18 @@ VITE_SUPABASE_URL=<your-supabase-url>
 VITE_SUPABASE_ANON_KEY=<your-anon-key>
 ```
 
+### Supabase setup
+
+Create the tables `emotion_seeds`, `seed_feedback`, `seed_rubrics` and `rubrics`
+in your Supabase project. Example schemas are provided in `docs/supabase.sql`.
+After setting up the tables you can import rubric JSON files with:
+
+```bash
+node scripts/importRubrics.ts
+```
+
+User feedback on messages is stored in the `seed_feedback` table.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
