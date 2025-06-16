@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
+import { useGoogleGemini } from "./useGoogleGemini";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message, ChatHistoryItem } from "../types";
@@ -14,6 +15,7 @@ export function useAiResponse(
 ) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { checkInput, isLoading: isSeedEngineLoading } = useSeedEngine();
+  const { analyzeNeurosymbolic, generateSeed, isAnalyzing } = useGoogleGemini();
 
   // Symbolic neurosymbolic features engine
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
@@ -72,6 +74,54 @@ export function useAiResponse(
           replyTo: userMessage.id,
           feedback: null,
         };
+
+        // ✨ NEW: Google Gemini neurosymbolic analysis
+        if (hasGoogle) {
+          console.log('🚀 Running Google Gemini neurosymbolic analysis...');
+          try {
+            const contextString = history.map(h => `${h.role}: ${h.content}`).join('\n');
+            const geminiAnalysis = await analyzeNeurosymbolic(
+              userMessage.content, 
+              contextString, 
+              googleApiKey!
+            );
+            
+            if (geminiAnalysis) {
+              aiResp.symbolicInferences = [
+                ...geminiAnalysis.patterns,
+                ...geminiAnalysis.insights
+              ];
+              
+              toast({
+                title: "🧠 Neurosymbolische Analyse (Google)",
+                description: `${geminiAnalysis.patterns.length} patronen, ${geminiAnalysis.insights.length} inzichten (${Math.round(geminiAnalysis.confidence * 100)}%)`,
+              });
+
+              // Enhance response if Google suggests better seed
+              if (geminiAnalysis.seedSuggestion && geminiAnalysis.confidence > 0.8) {
+                const enhancedSeed = await generateSeed(
+                  geminiAnalysis.seedSuggestion,
+                  userMessage.content,
+                  googleApiKey!
+                );
+                
+                if (enhancedSeed) {
+                  aiResp.content = enhancedSeed;
+                  aiResp.meta = `OpenAI + Google Enhanced – ${Math.round(matchedResult.confidence * geminiAnalysis.confidence * 100)}%`;
+                  console.log('✅ Response enhanced by Google Gemini');
+                }
+              }
+            }
+          } catch (geminiError) {
+            console.error('🔴 Google Gemini analysis failed:', geminiError);
+            toast({
+              title: "Google AI Fout",
+              description: "Neurosymbolische analyse mislukt, maar OpenAI werkt nog.",
+              variant: "destructive"
+            });
+          }
+        }
+
       } else if (matchedResult) {
         const seedResult = matchedResult;
         setSeedConfetti(true);
@@ -97,44 +147,96 @@ export function useAiResponse(
           feedback: null,
         };
       } else {
-        const label = "Valideren";
-        aiResp = {
-          id: context?.dislikedLabel ? `ai-feedback-${Date.now()}`: `ai-new-${Date.now()}`,
-          from: "ai",
-          label: label,
-          accentColor: getLabelVisuals(label).accentColor,
-          content: context?.dislikedLabel 
-            ? "Het spijt me dat mijn vorige antwoord niet hielp. Ik zal proberen hier rekening mee te houden." 
-            : "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
-          explainText: context?.dislikedLabel ? "Nieuw antwoord na feedback." : "Geen specifieke emotie gedetecteerd.",
-          emotionSeed: null,
-          animate: true,
-          meta: context?.dislikedLabel ? "Feedback" : "Basis",
-          brilliant: false,
-          timestamp: new Date(),
-          replyTo: userMessage.id,
-          feedback: null,
-        };
-      }
-
-      // Enhanced Symbolic engine analysis (works with Google API if available)
-      const extendedMessages = [...messages, aiResp];
-      const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
-      if (aiSymbolic.length) {
-        aiResp = { ...aiResp, symbolicInferences: aiSymbolic };
-        
-        // Show neurosymbolic toast only if Google API is active
-        if (hasGoogle) {
-          toast({
-            title: "🧠 Neurosymbolische Analyse (Google)",
-            description: aiSymbolic.join(" • "),
-          });
+        // ✨ NEW: Fallback to Google-only if OpenAI not available
+        if (hasGoogle && !hasOpenAI) {
+          console.log('🟡 OpenAI not available, trying Google-only response...');
+          try {
+            const generatedResponse = await generateSeed(
+              'onzekerheid', // Default emotion for unknown inputs
+              userMessage.content,
+              googleApiKey!
+            );
+            
+            if (generatedResponse) {
+              aiResp = {
+                id: `ai-google-${Date.now()}`,
+                from: "ai",
+                label: "Valideren",
+                accentColor: getLabelVisuals("Valideren").accentColor,
+                content: generatedResponse,
+                explainText: "Google Gemini therapeutische response",
+                emotionSeed: 'onzekerheid',
+                animate: true,
+                meta: "Google Only",
+                brilliant: true,
+                timestamp: new Date(),
+                replyTo: userMessage.id,
+                feedback: null,
+              };
+              
+              toast({
+                title: "🤖 Google AI Response",
+                description: "Therapeutische response gegenereerd door Google Gemini",
+              });
+            } else {
+              throw new Error('No response from Google');
+            }
+          } catch (googleError) {
+            console.error('🔴 Google-only response failed:', googleError);
+            // Final fallback
+            const label = "Valideren";
+            aiResp = {
+              id: `ai-fallback-${Date.now()}`,
+              from: "ai",
+              label: label,
+              accentColor: getLabelVisuals(label).accentColor,
+              content: "Het spijt me, beide AI systemen zijn momenteel niet beschikbaar. Probeer later opnieuw.",
+              explainText: "Geen AI beschikbaar",
+              emotionSeed: null,
+              animate: true,
+              meta: "Fallback",
+              brilliant: false,
+              timestamp: new Date(),
+              replyTo: userMessage.id,
+              feedback: null,
+            };
+          }
+        } else {
+          const label = "Valideren";
+          aiResp = {
+            id: context?.dislikedLabel ? `ai-feedback-${Date.now()}`: `ai-new-${Date.now()}`,
+            from: "ai",
+            label: label,
+            accentColor: getLabelVisuals(label).accentColor,
+            content: context?.dislikedLabel 
+              ? "Het spijt me dat mijn vorige antwoord niet hielp. Ik zal proberen hier rekening mee te houden." 
+              : "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+            explainText: context?.dislikedLabel ? "Nieuw antwoord na feedback." : "Geen specifieke emotie gedetecteerd.",
+            emotionSeed: null,
+            animate: true,
+            meta: context?.dislikedLabel ? "Feedback" : "Basis",
+            brilliant: false,
+            timestamp: new Date(),
+            replyTo: userMessage.id,
+            feedback: null,
+          };
         }
       }
 
+      // Enhanced Symbolic engine analysis (local rules)
+      const extendedMessages = [...messages, aiResp];
+      const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
+      if (aiSymbolic.length) {
+        aiResp.symbolicInferences = [...(aiResp.symbolicInferences || []), ...aiSymbolic];
+      }
+
       // Integration success notification
-      if (hasOpenAI && hasGoogle && matchedResult) {
+      if (hasOpenAI && hasGoogle && matchedResult && "confidence" in matchedResult) {
         console.log('✅ Full AI Integration Active: OpenAI + Google working together');
+        toast({
+          title: "🚀 Volledige AI Integratie",
+          description: "OpenAI en Google werken samen voor optimale analyse",
+        });
       }
 
       setMessages((prev) => [...prev, aiResp]);
@@ -168,5 +270,5 @@ export function useAiResponse(
     }
   };
 
-  return { generateAiResponse, isGenerating: isProcessing || isSeedEngineLoading };
+  return { generateAiResponse, isGenerating: isProcessing || isSeedEngineLoading || isAnalyzing };
 }
