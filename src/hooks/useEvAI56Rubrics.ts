@@ -132,16 +132,35 @@ export interface RubricAssessment {
 }
 
 export function useEvAI56Rubrics() {
+  const synonymMap: Record<string, string[]> = {
+    overweldigende: ["overweldigend"],
+    overweldigend: ["overweldigende"]
+  };
+
+  const tokenize = (text: string): string[] =>
+    text.toLowerCase().match(/[\p{L}\d']+/gu) || [];
+
+  const wordMatches = (word: string, tokens: Set<string>): boolean => {
+    if (tokens.has(word)) return true;
+    const syns = synonymMap[word] || [];
+    return syns.some(s => tokens.has(s));
+  };
+
+  const factorMatches = (factor: string, tokens: Set<string>): boolean => {
+    const words = tokenize(factor);
+    return words.every(w => wordMatches(w, tokens));
+  };
+
   const assessMessage = (content: string): RubricAssessment[] => {
     const assessments: RubricAssessment[] = [];
-    const lowerContent = content.toLowerCase();
+    const tokens = new Set(tokenize(content));
 
     evai56Rubrics.forEach(rubric => {
-      const riskTriggers = rubric.riskFactors.filter(factor => 
-        lowerContent.includes(factor.toLowerCase())
+      const riskTriggers = rubric.riskFactors.filter(factor =>
+        factorMatches(factor, tokens)
       );
-      const protectiveTriggers = rubric.protectiveFactors.filter(factor => 
-        lowerContent.includes(factor.toLowerCase())
+      const protectiveTriggers = rubric.protectiveFactors.filter(factor =>
+        factorMatches(factor, tokens)
       );
 
       if (riskTriggers.length > 0 || protectiveTriggers.length > 0) {
