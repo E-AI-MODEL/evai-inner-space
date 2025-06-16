@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { useGoogleGemini } from "./useGoogleGemini";
 import { useOpenAISeedGenerator } from "./useOpenAISeedGenerator";
 import { useEvAI56Rubrics } from "./useEvAI56Rubrics";
+import { useCoTFeedbackAnalyzer } from "./useCoTFeedbackAnalyzer";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message, ChatHistoryItem } from "../types";
@@ -26,6 +28,7 @@ export function useAiResponse(
   } = useOpenAISeedGenerator();
   const { assessMessage, calculateOverallRisk } = useEvAI56Rubrics();
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
+  const { analyzeCoTFeedback, generateCoTImprovements, isAnalyzing: isCoTAnalyzing } = useCoTFeedbackAnalyzer();
 
   const generateAiResponse = async (
     userMessage: Message,
@@ -37,7 +40,7 @@ export function useAiResponse(
     const hasOpenAI = apiKey && apiKey.trim().length > 0;
     const hasGoogle = googleApiKey && googleApiKey.trim().length > 0;
     
-    console.log('🧠 Starting enhanced self-learning AI analysis...');
+    console.log('🔥 ULTRA AGGRESSIVE LEARNING MODE ACTIVATED 🔥');
 
     try {
       const messageIndex = messages.findIndex(m => m.id === userMessage.id);
@@ -48,7 +51,7 @@ export function useAiResponse(
           content: msg.content
         }));
 
-      // 🔥 STEP 1: EvAI 5.6 Rubrics Analysis (Always run first)
+      // 🔥 STEP 1: EvAI 5.6 Rubrics Analysis
       console.log('📊 Running EvAI 5.6 Rubrics analysis...');
       const rubricsAssessments = assessMessage(userMessage.content);
       const overallRisk = calculateOverallRisk(rubricsAssessments);
@@ -59,296 +62,250 @@ export function useAiResponse(
           `${assessment.rubricId}: Risk ${assessment.riskScore.toFixed(1)}, Protective ${assessment.protectiveScore.toFixed(1)}`
         );
         console.log(`🎯 Rubrics detected ${rubricsAssessments.length} areas, overall risk: ${overallRisk.toFixed(1)}%`);
-      } else {
-        console.log('⚠️ No rubrics triggered - this might indicate content needs review');
       }
 
-      // 🔥 STEP 2: Load current seeds for prompt injection context
+      // 🔥 STEP 2: AGGRESSIVE SEED ANALYSIS & GENERATION
+      let newSeedsGenerated = 0;
       const currentSeeds = loadAdvancedSeeds();
-      const seedContext = currentSeeds.length > 0 
-        ? `Available therapeutic seeds: ${currentSeeds.slice(0, 5).map(s => `${s.emotion}(${s.label})`).join(', ')}`
-        : 'No custom seeds available yet - generating first seed';
-
-      // 🔥 STEP 3: AGGRESSIVE SEED GENERATION - Always create new seeds for learning
-      let newSeedGenerated = false;
+      
       if (hasOpenAI) {
-        console.log('🌱 AGGRESSIVE: Generating new seed for every interaction...');
-        try {
-          const dominantEmotion = detectEmotionFromRubrics(rubricsAssessments, userMessage.content);
-          
-          // Check if we already have this exact emotion
-          const existingSeed = currentSeeds.find(s => 
-            s.emotion.toLowerCase() === dominantEmotion.toLowerCase()
-          );
-
-          if (!existingSeed) {
-            console.log(`🚀 NEW SEED NEEDED: No existing seed for "${dominantEmotion}"`);
-            
-            const generatedSeed = await generateOpenAISeed({
-              emotion: dominantEmotion,
-              context: `User message: "${userMessage.content}" | Rubrics risk: ${overallRisk.toFixed(1)}% | CoT Learning Context`,
-              conversationHistory: history.slice(-3).map(h => h.content),
-              severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium'
-            }, apiKey);
-            
-            if (generatedSeed) {
-              await injectSeedToDatabase(generatedSeed);
-              newSeedGenerated = true;
-              console.log(`✅ NEW SEED CREATED: "${dominantEmotion}" successfully injected`);
-              
-              toast({
-                title: "🌱 Nieuwe Seed Gegenereerd!",
-                description: `"${dominantEmotion}" toegevoegd aan AI brain`,
-              });
-            }
-          } else {
-            console.log(`⚡ EXISTING SEED: "${dominantEmotion}" already exists, using for prompt injection`);
-          }
-        } catch (seedError) {
-          console.error('🔴 Aggressive seed generation failed:', seedError);
-        }
-      }
-
-      // 🔥 STEP 4: Check existing seeds with enhanced prompt injection
-      const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
-      let aiResp: Message;
-
-      if (matchedResult && "confidence" in matchedResult) {
-        // OpenAI seed match found - Apply enhanced prompt injection
-        setSeedConfetti(true);
-        toast({
-          title: "🧠 AI + Rubrics + Prompt Injection",
-          description: `${matchedResult.emotion} (${Math.round(matchedResult.confidence * 100)}%) | Risk: ${overallRisk.toFixed(1)}%`,
-        });
-
-        // 🚀 ENHANCED PROMPT INJECTION: Include CoT and learning feedback
-        let enhancedResponse = matchedResult.response;
-        const updatedSeeds = loadAdvancedSeeds(); // Reload after potential new seed
+        console.log('🌱 EXTREME AGGRESSIVE MODE: Analyzing EVERY emotion possibility...');
         
-        if (updatedSeeds.length > 0) {
-          const relatedSeeds = updatedSeeds.filter(seed => 
-            seed.emotion.toLowerCase().includes(matchedResult.emotion.toLowerCase()) ||
-            matchedResult.emotion.toLowerCase().includes(seed.emotion.toLowerCase())
-          );
-          
-          if (relatedSeeds.length > 0) {
-            console.log(`🎯 PROMPT INJECTION: Found ${relatedSeeds.length} related seeds for enhanced response`);
-            enhancedResponse = `${matchedResult.response}\n\n*[AI learning: Gebaseerd op ${relatedSeeds.length} therapeutische patronen + real-time analyse]*`;
-          }
-        }
-
-        if (newSeedGenerated) {
-          enhancedResponse += `\n\n*[System update: Nieuw patroon geleerd en toegepast]*`;
-        }
-
-        const label = matchedResult.label || "Valideren";
-        aiResp = {
-          id: `ai-enhanced-${Date.now()}`,
-          from: "ai",
-          label: label,
-          accentColor: getLabelVisuals(label).accentColor,
-          content: enhancedResponse,
-          explainText: `${matchedResult.reasoning} | Rubrics Risk: ${overallRisk.toFixed(1)}% | Seeds: ${updatedSeeds.length}`,
-          emotionSeed: matchedResult.emotion,
-          animate: true,
-          meta: `CoT Learning + Prompt Injection – ${Math.round(matchedResult.confidence * 100)}%`,
-          brilliant: true,
-          timestamp: new Date(),
-          replyTo: userMessage.id,
-          feedback: null,
-          symbolicInferences: [
-            ...rubricInsights,
-            `🎯 Overall risk assessment: ${overallRisk.toFixed(1)}%`,
-            `🧠 Prompt injection: ${updatedSeeds.length} seeds in context`,
-            `🌱 New seed this session: ${newSeedGenerated ? 'YES' : 'NO'}`,
-            `🔄 CoT Learning: Active and improving`,
-            seedContext
-          ]
-        };
-
-      } else if (matchedResult) {
-        // Advanced seed match with prompt injection
-        const seedResult = matchedResult;
-        setSeedConfetti(true);
+        // Generate multiple seeds per message based on different emotion aspects
+        const emotionVariants = detectAllEmotions(userMessage.content, rubricsAssessments);
+        console.log(`🎯 Detected ${emotionVariants.length} emotion variants:`, emotionVariants);
         
-        const label = seedResult.label || "Valideren";
-        aiResp = {
-          id: `ai-seed-enhanced-${Date.now()}`,
-          from: "ai",
-          label: label,
-          accentColor: getLabelVisuals(label).accentColor,
-          content: `${seedResult.response}\n\n*[Therapeutisch patroon + CoT learning toegepast]*`,
-          explainText: `Advanced Seed + Rubrics + CoT: ${seedResult.triggers.join(", ")} | Risk: ${overallRisk.toFixed(1)}%`,
-          emotionSeed: seedResult.emotion,
-          animate: true,
-          meta: `Seed + CoT Learning – ${overallRisk.toFixed(1)}%`,
-          brilliant: true,
-          timestamp: new Date(),
-          replyTo: userMessage.id,
-          feedback: null,
-          symbolicInferences: [
-            ...rubricInsights,
-            `🧠 Prompt injection: Advanced seed applied`,
-            `🌱 New seed this session: ${newSeedGenerated ? 'YES' : 'NO'}`,
-            seedContext
-          ]
-        };
-
-      } else {
-        // 🔥 STEP 5: No existing seed - FORCE generate new one
-        if (hasOpenAI) {
-          console.log('🎯 NO SEED MATCH: Force generating intelligent new seed...');
+        for (const emotion of emotionVariants) {
           try {
-            const dominantEmotion = detectEmotionFromRubrics(rubricsAssessments, userMessage.content);
-
-            const generatedSeed = await generateOpenAISeed({
-              emotion: dominantEmotion,
-              context: `FORCED GENERATION: "${userMessage.content}" | Rubrics risk: ${overallRisk.toFixed(1)}% | CoT Context`,
-              conversationHistory: history.slice(-2).map(h => h.content),
-              severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium'
-            }, apiKey);
+            // Check if this exact emotion exists
+            const existingSeed = currentSeeds.find(s => 
+              s.emotion.toLowerCase() === emotion.toLowerCase()
+            );
             
-            if (generatedSeed) {
-              await injectSeedToDatabase(generatedSeed);
-              newSeedGenerated = true;
+            if (!existingSeed) {
+              console.log(`🚀 GENERATING NEW SEED: "${emotion}"`);
               
-              const mappedLabel: "Valideren" | "Reflectievraag" | "Suggestie" = 
-                generatedSeed.label === "Interventie" ? "Suggestie" : generatedSeed.label as "Valideren" | "Reflectievraag" | "Suggestie";
+              const generatedSeed = await generateOpenAISeed({
+                emotion,
+                context: `ULTRA LEARNING: "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}% | Conversation Learning`,
+                conversationHistory: history.slice(-2).map(h => h.content),
+                severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium'
+              }, apiKey);
               
-              aiResp = {
-                id: `ai-generated-cot-${Date.now()}`,
-                from: "ai",
-                label: mappedLabel,
-                accentColor: getLabelVisuals(mappedLabel).accentColor,
-                content: `${generatedSeed.response.nl}\n\n*[NIEUW: Therapeutisch patroon gegenereerd, geleerd en direct toegepast via CoT]*`,
-                explainText: `CoT Self-learning: New seed for '${generatedSeed.emotion}' | Risk: ${overallRisk.toFixed(1)}%`,
-                emotionSeed: generatedSeed.emotion,
-                animate: true,
-                meta: "CoT Generated + Immediate Application",
-                brilliant: true,
-                timestamp: new Date(),
-                replyTo: userMessage.id,
-                feedback: null,
-                symbolicInferences: [
-                  ...rubricInsights,
-                  `🌱 FORCED seed creation: "${generatedSeed.emotion}"`,
-                  `📊 Risk-adapted response (${overallRisk.toFixed(1)}%)`,
-                  `🧠 CoT Learning: Pattern recognition active`,
-                  `🔄 Prompt injection: Database expanded and applied`,
-                  `✨ System evolution: Immediate learning cycle`
-                ]
-              };
-              
-              toast({
-                title: "🚀 CoT Zelf-lerend Systeem",
-                description: `NIEUW patroon '${generatedSeed.emotion}' direct toegepast!`,
-              });
-            } else {
-              throw new Error('Forced seed generation failed');
+              if (generatedSeed) {
+                await injectSeedToDatabase(generatedSeed);
+                newSeedsGenerated++;
+                console.log(`✅ NEW SEED INJECTED: "${emotion}"`);
+                
+                toast({
+                  title: "🌱 LEERMODE: Nieuwe Seed!",
+                  description: `"${emotion}" geleerd en toegevoegd!`,
+                });
+              }
             }
-          } catch (generationError) {
-            console.error('🔴 FORCED seed generation failed:', generationError);
-            // Enhanced fallback
-            const label = overallRisk > 50 ? "Suggestie" : "Valideren";
-            aiResp = {
-              id: `ai-fallback-cot-${Date.now()}`,
-              from: "ai",
-              label: label,
-              accentColor: getLabelVisuals(label).accentColor,
-              content: overallRisk > 50 
-                ? "Ik merk dat je in een uitdagende situatie zit. Laten we samen kijken hoe we dit kunnen aanpakken. *[CoT Learning: Systeem analyseert voor toekomstige verbetering]*"
-                : "Ik hoor iets bijzonders in je bericht, vertel gerust meer. *[CoT: Systeem leert van elk gesprek]*",
-              explainText: `CoT-aware fallback | Risk: ${overallRisk.toFixed(1)}% | Learning: Active`,
-              emotionSeed: null,
-              animate: true,
-              meta: "CoT Fallback + Learning Mode",
-              brilliant: false,
-              timestamp: new Date(),
-              replyTo: userMessage.id,
-              feedback: null,
-              symbolicInferences: [
-                ...rubricInsights,
-                `🧠 CoT Learning: Fallback mode but still learning`,
-                seedContext
-              ]
-            };
+            
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (error) {
+            console.error(`❌ Failed to generate seed for ${emotion}:`, error);
           }
         }
-      }
-
-      // 🔥 STEP 6: CoT Feedback Integration - Use feedback for learning
-      if (hasOpenAI && messages.length > 1) {
-        console.log('🔍 CoT FEEDBACK: Analyzing previous interactions...');
-        try {
-          // Look for feedback patterns in recent messages
-          const recentMessages = messages.slice(-5);
-          const feedbackMessages = recentMessages.filter(m => 
-            m.feedback && (m.feedback === 'dislike' || m.feedback === 'like')
-          );
-
-          if (feedbackMessages.length > 0) {
-            console.log(`📊 CoT FEEDBACK: Found ${feedbackMessages.length} feedback patterns`);
+        
+        // 🔥 STEP 3: CoT FEEDBACK LEARNING
+        if (messages.length > 1) {
+          console.log('🧠 CoT FEEDBACK ANALYSIS...');
+          try {
+            const feedbackPatterns = await analyzeCoTFeedback(messages, apiKey);
             
-            // Analyze negative feedback for learning
-            const negativePatterns = feedbackMessages
-              .filter(m => m.feedback === 'dislike')
-              .map(m => ({
-                label: m.label,
-                content: m.content,
-                emotion: m.emotionSeed
-              }));
-
-            if (negativePatterns.length > 0) {
-              aiResp.symbolicInferences = [
-                ...(aiResp.symbolicInferences || []),
-                `🔄 CoT Learning: ${negativePatterns.length} negative feedback patterns analyzed`,
-                `📈 Adaptation: Avoiding patterns: ${negativePatterns.map(p => p.label).join(', ')}`,
-                `🧠 Feedback integration: Learning from user preferences`
-              ];
+            if (feedbackPatterns.length > 0) {
+              console.log(`📊 CoT patterns found: ${feedbackPatterns.length}`);
+              
+              // Generate improvements based on feedback
+              const improvements = await generateCoTImprovements(
+                feedbackPatterns, 
+                userMessage.content, 
+                apiKey
+              );
+              
+              if (improvements.length > 0) {
+                console.log('🎯 CoT improvements generated:', improvements);
+              }
             }
+          } catch (cotError) {
+            console.error('🔴 CoT feedback analysis failed:', cotError);
           }
-        } catch (feedbackError) {
-          console.error('🔴 CoT feedback analysis failed:', feedbackError);
         }
-      }
-
-      // 🔥 STEP 7: Continuous learning with lower threshold
-      if (hasOpenAI && messages.length > 1 && overallRisk > 10) { // Lowered threshold
-        console.log('🔍 CONTINUOUS LEARNING: Analyzing for missing patterns...');
+        
+        // 🔥 STEP 4: CONVERSATION GAP ANALYSIS
+        console.log('🔍 ANALYZING CONVERSATION GAPS...');
         try {
           const missingEmotions = await analyzeConversationForSeeds(messages, apiKey);
           
           if (missingEmotions.length > 0) {
-            console.log('🎯 LEARNING GAPS:', missingEmotions);
+            console.log(`🎯 MISSING EMOTIONS FOUND: ${missingEmotions.length}`);
             
             // Generate seed for highest priority missing emotion
             const priorityEmotion = missingEmotions[0];
             const learningSeed = await generateOpenAISeed({
               emotion: priorityEmotion,
-              context: `CoT Learning from conversation: ${userMessage.content} | Risk context: ${overallRisk.toFixed(1)}%`,
+              context: `GAP ANALYSIS: Missing from conversation patterns | Risk: ${overallRisk.toFixed(1)}%`,
               conversationHistory: history.slice(-3).map(h => h.content),
               severity: overallRisk > 60 ? 'high' : 'medium'
             }, apiKey);
 
             if (learningSeed) {
               await injectSeedToDatabase(learningSeed);
-              aiResp.symbolicInferences = [
-                ...(aiResp.symbolicInferences || []),
-                `🎓 CoT Learning seed: "${priorityEmotion}" (${learningSeed.label})`,
-                `📈 Conversation gap filled: ${missingEmotions.length} total gaps identified`,
-                `🔄 Self-improving: Continuous learning active`,
-                `🧠 Next-level AI: Predictive pattern generation`
-              ];
-              
-              console.log(`✅ CoT LEARNING: New seed "${priorityEmotion}" generated from conversation analysis`);
+              newSeedsGenerated++;
+              console.log(`✅ GAP FILLED: New seed "${priorityEmotion}" generated`);
             }
           }
-        } catch (learningError) {
-          console.error('🔴 Continuous learning failed:', learningError);
+        } catch (gapError) {
+          console.error('🔴 Gap analysis failed:', gapError);
         }
       }
 
-      // 🔥 STEP 8: Enhanced Google Gemini integration (if available)
+      // 🔥 STEP 5: Enhanced Seed Matching
+      const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
+      let aiResp: Message;
+
+      if (matchedResult && "confidence" in matchedResult) {
+        // OpenAI seed match - Enhanced with learning context
+        setSeedConfetti(true);
+        
+        const enhancedResponse = `${matchedResult.response}\n\n*[AI Evolution: ${newSeedsGenerated} nieuwe patronen geleerd + toegepast]*`;
+        
+        const label = matchedResult.label || "Valideren";
+        aiResp = {
+          id: `ai-learning-${Date.now()}`,
+          from: "ai",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
+          content: enhancedResponse,
+          explainText: `${matchedResult.reasoning} | Risk: ${overallRisk.toFixed(1)}% | Seeds: +${newSeedsGenerated}`,
+          emotionSeed: matchedResult.emotion,
+          animate: true,
+          meta: `LEARNING MODE: +${newSeedsGenerated} seeds – ${Math.round(matchedResult.confidence * 100)}%`,
+          brilliant: true,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+          symbolicInferences: [
+            ...rubricInsights,
+            `🌱 NEUE SEEDS: ${newSeedsGenerated} patterns learned this session`,
+            `🧠 Total seeds: ${currentSeeds.length + newSeedsGenerated}`,
+            `🔥 ULTRA LEARNING: Active pattern recognition`,
+            `📊 Risk-adapted learning: ${overallRisk.toFixed(1)}%`,
+            `🚀 CoT Evolution: Continuous improvement cycle`
+          ]
+        };
+
+      } else if (matchedResult) {
+        // Advanced seed match
+        const seedResult = matchedResult;
+        setSeedConfetti(true);
+        
+        const label = seedResult.label || "Valideren";
+        aiResp = {
+          id: `ai-seed-learning-${Date.now()}`,
+          from: "ai",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
+          content: `${seedResult.response}\n\n*[Leerproces: ${newSeedsGenerated} nieuwe patronen tijdens dit gesprek]*`,
+          explainText: `Advanced Seed + Learning: ${seedResult.triggers.join(", ")} | Risk: ${overallRisk.toFixed(1)}%`,
+          emotionSeed: seedResult.emotion,
+          animate: true,
+          meta: `Seed Evolution: +${newSeedsGenerated} – Learning Active`,
+          brilliant: true,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+          symbolicInferences: [
+            ...rubricInsights,
+            `🌱 NEW SEEDS: ${newSeedsGenerated} generated this interaction`,
+            `🧠 Advanced matching + continuous learning`,
+            `📈 Database growth: ${currentSeeds.length} → ${currentSeeds.length + newSeedsGenerated}`
+          ]
+        };
+
+      } else {
+        // 🔥 FORCE GENERATE - No match means immediate learning opportunity
+        if (hasOpenAI) {
+          console.log('🎯 NO MATCH = LEARNING OPPORTUNITY: Force generating...');
+          try {
+            const dominantEmotion = detectAllEmotions(userMessage.content, rubricsAssessments)[0] || 'onzekerheid';
+
+            const forcedSeed = await generateOpenAISeed({
+              emotion: dominantEmotion,
+              context: `FORCE LEARN: No existing pattern for "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}%`,
+              conversationHistory: history.slice(-2).map(h => h.content),
+              severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium'
+            }, apiKey);
+            
+            if (forcedSeed) {
+              await injectSeedToDatabase(forcedSeed);
+              newSeedsGenerated++;
+              
+              const mappedLabel: "Valideren" | "Reflectievraag" | "Suggestie" = 
+                forcedSeed.label === "Interventie" ? "Suggestie" : forcedSeed.label as "Valideren" | "Reflectievraag" | "Suggestie";
+              
+              aiResp = {
+                id: `ai-force-learn-${Date.now()}`,
+                from: "ai",
+                label: mappedLabel,
+                accentColor: getLabelVisuals(mappedLabel).accentColor,
+                content: `${forcedSeed.response.nl}\n\n*[🔥 REAL-TIME LEREN: Nieuw patroon "${dominantEmotion}" gegenereerd en direct toegepast!]*`,
+                explainText: `Force Learning: New "${forcedSeed.emotion}" pattern | Risk: ${overallRisk.toFixed(1)}%`,
+                emotionSeed: forcedSeed.emotion,
+                animate: true,
+                meta: `FORCE LEARNING: Immediate Pattern Generation`,
+                brilliant: true,
+                timestamp: new Date(),
+                replyTo: userMessage.id,
+                feedback: null,
+                symbolicInferences: [
+                  ...rubricInsights,
+                  `🚀 FORCE LEARNING: "${forcedSeed.emotion}" pattern created`,
+                  `🌱 Total new seeds: ${newSeedsGenerated}`,
+                  `🧠 Real-time adaptation: Learning from every interaction`,
+                  `📊 Risk-responsive: ${overallRisk.toFixed(1)}% severity`,
+                  `⚡ Instant application: Pattern learned and used immediately`
+                ]
+              };
+              
+              toast({
+                title: "🚀 FORCE LEARNING!",
+                description: `NIEUW: "${dominantEmotion}" direct geleerd en toegepast!`,
+              });
+            }
+          } catch (forceError) {
+            console.error('🔴 Force learning failed:', forceError);
+            // Fallback response
+            const label = overallRisk > 50 ? "Suggestie" : "Valideren";
+            aiResp = {
+              id: `ai-learning-fallback-${Date.now()}`,
+              from: "ai",
+              label: label,
+              accentColor: getLabelVisuals(label).accentColor,
+              content: `Ik hoor je en leer van elk gesprek. Zelfs als ik nog geen perfect patroon heb, werk ik eraan om je beter te begrijpen. *[Learning Mode: ${newSeedsGenerated} patronen toegevoegd tijdens dit gesprek]*`,
+              explainText: `Learning Fallback | Risk: ${overallRisk.toFixed(1)}% | New Seeds: ${newSeedsGenerated}`,
+              emotionSeed: null,
+              animate: true,
+              meta: `Learning Fallback: +${newSeedsGenerated} seeds`,
+              brilliant: false,
+              timestamp: new Date(),
+              replyTo: userMessage.id,
+              feedback: null,
+              symbolicInferences: [
+                ...rubricInsights,
+                `🌱 Seeds generated: ${newSeedsGenerated}`,
+                `🧠 Learning continues even in fallback mode`
+              ]
+            };
+          }
+        }
+      }
+
+      // 🔥 STEP 6: Enhanced Google Gemini integration
       if (hasGoogle && matchedResult && "confidence" in matchedResult) {
         console.log('🚀 Running Google Gemini enhancement...');
         try {
@@ -365,49 +322,39 @@ export function useAiResponse(
               ...geminiAnalysis.patterns,
               ...geminiAnalysis.insights
             ];
-            
-            // Enhanced response if Google suggests better approach
-            if (geminiAnalysis.seedSuggestion && geminiAnalysis.confidence > 0.8) {
-              const enhancedSeed = await generateSeed(
-                geminiAnalysis.seedSuggestion,
-                userMessage.content,
-                googleApiKey!
-              );
-              
-              if (enhancedSeed) {
-                aiResp.content = enhancedSeed;
-                aiResp.meta = `OpenAI + Google + Rubrics – Multi-AI Enhanced`;
-                console.log('✅ Response enhanced by Google Gemini + Rubrics');
-              }
-            }
           }
         } catch (geminiError) {
           console.error('🔴 Google Gemini enhancement failed:', geminiError);
         }
       }
 
-      // 🔥 STEP 9: Local symbolic rules evaluation
-      const extendedMessages = [...messages, aiResp];
-      const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
-      if (aiSymbolic.length) {
-        aiResp.symbolicInferences = [...(aiResp.symbolicInferences || []), ...aiSymbolic];
+      // 🔥 STEP 7: Symbolic rules evaluation with safety check
+      try {
+        const extendedMessages = [...messages, aiResp];
+        const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
+        if (aiSymbolic.length) {
+          aiResp.symbolicInferences = [...(aiResp.symbolicInferences || []), ...aiSymbolic];
+        }
+      } catch (symbolicError) {
+        console.error('🔴 Symbolic evaluation failed:', symbolicError);
       }
 
-      // 🔥 STEP 10: Enhanced success notification
+      // 🔥 FINAL SUCCESS NOTIFICATION
       const finalSeedCount = loadAdvancedSeeds().length;
-      if (hasOpenAI && rubricsAssessments.length > 0) {
-        console.log(`✅ CoT Self-learning cycle complete: ${finalSeedCount} total seeds | New: ${newSeedGenerated}`);
+      console.log(`✅ ULTRA LEARNING COMPLETE: Generated ${newSeedsGenerated} new seeds | Total: ${finalSeedCount}`);
+      
+      if (hasOpenAI && newSeedsGenerated > 0) {
         toast({
-          title: "🧠 CoT Zelf-lerend Systeem",
-          description: `AI + Rubrics + CoT Learning | Seeds: ${finalSeedCount}`,
+          title: "🔥 ULTRA LEARNING MODE",
+          description: `${newSeedsGenerated} nieuwe patronen geleerd! Totaal: ${finalSeedCount}`,
         });
       }
 
       setMessages((prev) => [...prev, aiResp]);
       
     } catch (err) {
-      console.error("Error in CoT self-learning AI:", err);
-      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de CoT AI analyse.";
+      console.error("Error in ultra learning AI:", err);
+      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de ultra learning AI.";
       const errorResponse: Message = {
         id: `ai-error-${Date.now()}`,
         from: "ai",
@@ -423,7 +370,7 @@ export function useAiResponse(
       };
       setMessages((prev) => [...prev, errorResponse]);
       toast({
-        title: "Fout bij CoT systeem",
+        title: "Fout bij ultra learning",
         description: errorMessage,
         variant: "destructive",
       });
@@ -432,37 +379,54 @@ export function useAiResponse(
     }
   };
 
-  // Enhanced helper function to detect emotion from rubrics assessment
-  const detectEmotionFromRubrics = (assessments: any[], content: string): string => {
-    if (assessments.length === 0) {
-      // Fallback to content analysis
-      const lowerContent = content.toLowerCase();
-      if (lowerContent.includes('bang') || lowerContent.includes('angst')) return 'angst';
-      if (lowerContent.includes('verdriet') || lowerContent.includes('huil')) return 'verdriet';
-      if (lowerContent.includes('boos') || lowerContent.includes('woede')) return 'woede';
-      if (lowerContent.includes('stress') || lowerContent.includes('druk')) return 'stress';
-      if (lowerContent.includes('eenzaam')) return 'eenzaamheid';
-      if (lowerContent.includes('onzeker')) return 'onzekerheid';
-      return 'onzekerheid';
+  // Enhanced emotion detection function
+  const detectAllEmotions = (content: string, assessments: any[]): string[] => {
+    const emotions: string[] = [];
+    const lowerContent = content.toLowerCase();
+    
+    // Base emotion detection
+    if (lowerContent.includes('bang') || lowerContent.includes('angst') || lowerContent.includes('angstig')) emotions.push('angst');
+    if (lowerContent.includes('verdriet') || lowerContent.includes('huil') || lowerContent.includes('triest')) emotions.push('verdriet');
+    if (lowerContent.includes('boos') || lowerContent.includes('woede') || lowerContent.includes('kwaad')) emotions.push('woede');
+    if (lowerContent.includes('stress') || lowerContent.includes('druk') || lowerContent.includes('gespannen')) emotions.push('stress');
+    if (lowerContent.includes('eenzaam') || lowerContent.includes('alleen')) emotions.push('eenzaamheid');
+    if (lowerContent.includes('onzeker') || lowerContent.includes('twijfel')) emotions.push('onzekerheid');
+    if (lowerContent.includes('schuld') || lowerContent.includes('spijt')) emotions.push('schuld');
+    if (lowerContent.includes('schaam') || lowerContent.includes('beschaamd')) emotions.push('schaamte');
+    if (lowerContent.includes('teleur') || lowerContent.includes('ontgoochel')) emotions.push('teleurstelling');
+    if (lowerContent.includes('overweldig') || lowerContent.includes('teveel')) emotions.push('overweldiging');
+    if (lowerContent.includes('moe') || lowerContent.includes('uitgeput')) emotions.push('uitputting');
+    if (lowerContent.includes('hopeloos') || lowerContent.includes('geen hoop')) emotions.push('hopeloosheid');
+    
+    // Rubrics-based emotion mapping
+    if (assessments.length > 0) {
+      const emotionMap: Record<string, string> = {
+        'emotional-regulation': 'emotionele disregulatie',
+        'self-awareness': 'zelfbeeld problemen', 
+        'coping-strategies': 'coping problemen',
+        'social-connection': 'sociale isolatie',
+        'meaning-purpose': 'zingevingsproblemen'
+      };
+      
+      assessments.forEach(assessment => {
+        if (assessment.riskScore > 1) {
+          const mappedEmotion = emotionMap[assessment.rubricId];
+          if (mappedEmotion) emotions.push(mappedEmotion);
+        }
+      });
     }
-
-    const emotionMap: Record<string, string> = {
-      'emotional-regulation': 'overweldiging',
-      'self-awareness': 'onzekerheid', 
-      'coping-strategies': 'onmacht',
-      'social-connection': 'eenzaamheid',
-      'meaning-purpose': 'zinloosheid'
-    };
-
-    // Find highest risk assessment
-    const highestRisk = assessments.reduce((max, assessment) => 
-      assessment.riskScore > max.riskScore ? assessment : max, assessments[0]);
-
-    return emotionMap[highestRisk.rubricId] || 'onzekerheid';
+    
+    // Always return at least one emotion
+    if (emotions.length === 0) {
+      emotions.push('onzekerheid');
+    }
+    
+    // Remove duplicates and return up to 3 emotions per message
+    return [...new Set(emotions)].slice(0, 3);
   };
 
   return { 
     generateAiResponse, 
-    isGenerating: isProcessing || isSeedEngineLoading || isAnalyzing || isOpenAIGenerating 
+    isGenerating: isProcessing || isSeedEngineLoading || isAnalyzing || isOpenAIGenerating || isCoTAnalyzing
   };
 }
