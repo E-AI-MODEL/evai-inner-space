@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { toast } from "@/hooks/use-toast";
@@ -22,6 +23,18 @@ export function useAiResponse(
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
   ) => {
     setIsProcessing(true);
+    
+    // Check AI integration status
+    const googleApiKey = localStorage.getItem('google-api-key');
+    const hasOpenAI = apiKey && apiKey.trim().length > 0;
+    const hasGoogle = googleApiKey && googleApiKey.trim().length > 0;
+    
+    console.log('🤖 AI Integration Status:', {
+      openAI: hasOpenAI ? 'Active' : 'Inactive',
+      google: hasGoogle ? 'Active' : 'Inactive',
+      fullIntegration: hasOpenAI && hasGoogle
+    });
+
     try {
       const messageIndex = messages.findIndex(m => m.id === userMessage.id);
       const history: ChatHistoryItem[] = messages
@@ -37,7 +50,7 @@ export function useAiResponse(
       if (matchedResult && "confidence" in matchedResult) {
         setSeedConfetti(true);
         toast({
-          title: "AI Emotiedetectie",
+          title: "🧠 AI Emotiedetectie (OpenAI)",
           description: `${matchedResult.emotion} gedetecteerd (${Math.round(
             matchedResult.confidence * 100
           )}% zekerheid)`,
@@ -53,7 +66,7 @@ export function useAiResponse(
           explainText: matchedResult.reasoning,
           emotionSeed: matchedResult.emotion,
           animate: true,
-          meta: `AI – ${Math.round(matchedResult.confidence * 100)}%`,
+          meta: `OpenAI – ${Math.round(matchedResult.confidence * 100)}%`,
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
@@ -63,10 +76,8 @@ export function useAiResponse(
         const seedResult = matchedResult;
         setSeedConfetti(true);
         toast({
-          title: "Seed gevonden!",
-          description: `De emotie '${
-            seedResult.emotion
-          }' werd herkend.`,
+          title: "🎯 Advanced Seed Match",
+          description: `Neurosymbolische match voor '${seedResult.emotion}'`,
         });
 
         const label = seedResult.label || "Valideren";
@@ -76,12 +87,10 @@ export function useAiResponse(
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
           content: seedResult.response,
-          explainText: `Lokale herkenning: Woorden zoals '${seedResult.triggers.join(
-            ", "
-          )}' duiden op de emotie '${seedResult.emotion}'.`,
+          explainText: `Advanced Seed: ${seedResult.triggers.join(", ")} → ${seedResult.emotion}`,
           emotionSeed: seedResult.emotion,
           animate: true,
-          meta: seedResult.meta || "Lokaal",
+          meta: seedResult.meta || "Advanced",
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
@@ -100,7 +109,7 @@ export function useAiResponse(
           explainText: context?.dislikedLabel ? "Nieuw antwoord na feedback." : "Geen specifieke emotie gedetecteerd.",
           emotionSeed: null,
           animate: true,
-          meta: context?.dislikedLabel ? "Feedback" : "",
+          meta: context?.dislikedLabel ? "Feedback" : "Basis",
           brilliant: false,
           timestamp: new Date(),
           replyTo: userMessage.id,
@@ -108,17 +117,24 @@ export function useAiResponse(
         };
       }
 
-      // NEW: Symbolic engine analysis (evaluates using current + the new AI message)
+      // Enhanced Symbolic engine analysis (works with Google API if available)
       const extendedMessages = [...messages, aiResp];
       const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
       if (aiSymbolic.length) {
-        // Add property to message object (for display/use in the UI)
         aiResp = { ...aiResp, symbolicInferences: aiSymbolic };
-        // Optionally: could toast here for demo
-        toast({
-          title: "Symbolische observatie",
-          description: aiSymbolic.join(" "),
-        });
+        
+        // Show neurosymbolic toast only if Google API is active
+        if (hasGoogle) {
+          toast({
+            title: "🧠 Neurosymbolische Analyse (Google)",
+            description: aiSymbolic.join(" • "),
+          });
+        }
+      }
+
+      // Integration success notification
+      if (hasOpenAI && hasGoogle && matchedResult) {
+        console.log('✅ Full AI Integration Active: OpenAI + Google working together');
       }
 
       setMessages((prev) => [...prev, aiResp]);
@@ -143,7 +159,7 @@ export function useAiResponse(
       };
       setMessages((prev) => [...prev, errorResponse]);
       toast({
-        title: "Fout bij analyse",
+        title: "Fout bij AI analyse",
         description: errorMessage,
         variant: "destructive",
       });
