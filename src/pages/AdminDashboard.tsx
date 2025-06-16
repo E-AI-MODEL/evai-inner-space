@@ -7,8 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
 import AdminAnalytics from '../components/admin/AdminAnalytics';
 import AdminSystemMonitor from '../components/admin/AdminSystemMonitor';
+import { useChatHistory } from '../hooks/useChatHistory';
 
 const AdminDashboard = () => {
+  const { messages } = useChatHistory();
+
   return (
     <div className="min-h-screen bg-gray-50 font-inter">
       <div className="border-b bg-white">
@@ -55,11 +58,11 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <AdminAnalytics />
+            <AdminAnalytics messages={messages} />
           </TabsContent>
 
           <TabsContent value="system">
-            <AdminSystemMonitor />
+            <AdminSystemMonitor messages={messages} />
           </TabsContent>
         </Tabs>
       </div>
