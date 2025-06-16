@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Database, BarChart, Settings, Monitor } from 'lucide-react';
+import { ArrowLeft, Database, BarChart, Settings, Monitor, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
 import AdminAnalytics from '../components/admin/AdminAnalytics';
 import AdminSystemMonitor from '../components/admin/AdminSystemMonitor';
+import AdminRubricsOverview from '../components/admin/AdminRubricsOverview';
 import { useChatHistory } from '../hooks/useChatHistory';
 
 const AdminDashboard = () => {
@@ -29,7 +30,7 @@ const AdminDashboard = () => {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Neurosymbolische AI Beheer</p>
+                <p className="text-sm text-gray-600">Neurosymbolische AI Beheer & EvAI 5.6 Rubrics</p>
               </div>
             </div>
           </div>
@@ -37,8 +38,12 @@ const AdminDashboard = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="seeds" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+        <Tabs defaultValue="rubrics" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsTrigger value="rubrics" className="flex items-center gap-2">
+              <Brain size={16} />
+              EvAI Rubrics
+            </TabsTrigger>
             <TabsTrigger value="seeds" className="flex items-center gap-2">
               <Database size={16} />
               Advanced Seeds
@@ -52,6 +57,10 @@ const AdminDashboard = () => {
               Systeem
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="rubrics">
+            <AdminRubricsOverview messages={messages} />
+          </TabsContent>
 
           <TabsContent value="seeds">
             <AdvancedSeedManager />

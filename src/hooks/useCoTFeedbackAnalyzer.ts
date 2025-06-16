@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { Message } from '../types';
+import { useEvAI56Rubrics } from './useEvAI56Rubrics';
 
 export interface CoTFeedbackPattern {
   emotion: string;
@@ -8,10 +9,16 @@ export interface CoTFeedbackPattern {
   successRate: number;
   commonFailures: string[];
   improvements: string[];
+  rubricMapping: {
+    rubricId: string;
+    riskScore: number;
+    protectiveScore: number;
+  }[];
 }
 
 export function useCoTFeedbackAnalyzer() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { assessMessage, evai56Rubrics, getRubricById } = useEvAI56Rubrics();
 
   const analyzeCoTFeedback = async (
     messages: Message[],
@@ -20,51 +27,78 @@ export function useCoTFeedbackAnalyzer() {
     if (!apiKey || !apiKey.trim()) return [];
 
     setIsAnalyzing(true);
-    console.log('🧠 CoT Feedback Analysis: Starting...');
+    console.log('🧠 EvAI-Enhanced CoT Feedback Analysis: Starting...');
 
     try {
-      // Extract messages with feedback
+      // Extract messages with feedback and analyze with EvAI rubrics
       const feedbackData = messages
         .filter(m => m.feedback && m.from === 'ai')
-        .map(m => ({
-          content: m.content,
-          label: m.label,
-          emotion: m.emotionSeed,
-          feedback: m.feedback, // This is now just a string: "like" | "dislike"
-          reasoning: m.explainText || ''
-        }));
+        .map(m => {
+          const rubricAssessments = assessMessage(m.content);
+          return {
+            content: m.content,
+            label: m.label,
+            emotion: m.emotionSeed,
+            feedback: m.feedback,
+            reasoning: m.explainText || '',
+            rubricAnalysis: rubricAssessments.map(assessment => ({
+              rubricId: assessment.rubricId,
+              rubricName: getRubricById(assessment.rubricId)?.name || assessment.rubricId,
+              riskScore: assessment.riskScore,
+              protectiveScore: assessment.protectiveScore,
+              triggers: assessment.triggers
+            }))
+          };
+        });
 
       if (feedbackData.length === 0) {
-        console.log('📊 No feedback data available for CoT analysis');
+        console.log('📊 No feedback data available for EvAI CoT analysis');
         return [];
       }
 
-      const prompt = `Analyseer deze AI conversatie feedback voor Chain of Thought (CoT) learning:
+      const prompt = `Analyseer deze AI conversatie feedback met EvAI 5.6 rubrics integratie voor enhanced Chain of Thought (CoT) learning:
 
-Feedback Data:
+EvAI 5.6 Rubrics Context:
+${evai56Rubrics.map(r => `
+- ${r.id}: ${r.name} (${r.category})
+  Risk factors: ${r.riskFactors.join(', ')}
+  Protective factors: ${r.protectiveFactors.join(', ')}
+  Interventions: ${r.interventions.join(', ')}
+`).join('\n')}
+
+Enhanced Feedback Data met Rubrics:
 ${feedbackData.map(f => `
 - Label: ${f.label}
 - Emotie: ${f.emotion}
 - Feedback: ${f.feedback}
 - Redenering: ${f.reasoning}
+- EvAI Rubrics: ${f.rubricAnalysis.map(r => `${r.rubricName}: Risk ${r.riskScore}, Protective ${r.protectiveScore}`).join('; ')}
 - Content snippet: ${f.content.substring(0, 100)}...
 `).join('\n')}
 
-Geef een JSON array terug met CoT leerpatronen:
+Geef een JSON array terug met EvAI-enhanced CoT leerpatronen:
 [
   {
     "emotion": "emotie naam",
     "label": "label type", 
     "successRate": 0.85,
     "commonFailures": ["reden1", "reden2"],
-    "improvements": ["verbetering1", "verbetering2"]
+    "improvements": ["verbetering1", "verbetering2"],
+    "rubricMapping": [
+      {
+        "rubricId": "emotional-regulation",
+        "riskScore": 2.3,
+        "protectiveScore": 1.1
+      }
+    ]
   }
 ]
 
 Focus op:
-- Wat werkt wel/niet per emotie en label
-- Patronen in negatieve feedback
-- Concrete verbeteringen voor toekomstige responses`;
+- Hoe rubrics correleren met succes/faal patronen
+- Welke interventies het beste werken per rubric
+- Concrete verbeteringen gebaseerd op rubric scores
+- Patronen tussen emoties en rubric categorieën`;
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -77,7 +111,7 @@ Focus op:
           messages: [
             {
               role: 'system',
-              content: 'Je bent een expert in Chain of Thought (CoT) analyse voor therapeutische AI feedback. Geef alleen JSON arrays terug.'
+              content: 'Je bent een expert in EvAI 5.6 rubrics-enhanced Chain of Thought (CoT) analyse voor therapeutische AI feedback. Geef alleen JSON arrays terug.'
             },
             {
               role: 'user',
@@ -85,7 +119,7 @@ Focus op:
             }
           ],
           temperature: 0.3,
-          max_tokens: 400,
+          max_tokens: 600,
         }),
       });
 
@@ -98,15 +132,15 @@ Focus op:
       
       try {
         const patterns = JSON.parse(content);
-        console.log('✅ CoT Feedback patterns analyzed:', patterns);
+        console.log('✅ EvAI-Enhanced CoT Feedback patterns analyzed:', patterns);
         return Array.isArray(patterns) ? patterns : [];
       } catch (parseError) {
-        console.error('Failed to parse CoT feedback analysis:', parseError);
+        console.error('Failed to parse EvAI CoT feedback analysis:', parseError);
         return [];
       }
 
     } catch (error) {
-      console.error('🔴 CoT Feedback analysis error:', error);
+      console.error('🔴 EvAI CoT Feedback analysis error:', error);
       return [];
     } finally {
       setIsAnalyzing(false);
@@ -121,18 +155,22 @@ Focus op:
     if (!apiKey || patterns.length === 0) return [];
 
     try {
-      const prompt = `Gebaseerd op deze CoT feedback patronen, genereer concrete verbeteringen voor de huidige context:
+      const prompt = `Gebaseerd op deze EvAI-enhanced CoT feedback patronen, genereer rubrics-gevalideerde verbeteringen voor de huidige context:
 
-CoT Patronen:
+EvAI CoT Patronen:
 ${patterns.map(p => `
 - ${p.emotion} (${p.label}): ${(p.successRate * 100).toFixed(1)}% success
 - Failures: ${p.commonFailures.join(', ')}
 - Improvements: ${p.improvements.join(', ')}
+- Rubric mapping: ${p.rubricMapping.map(r => `${r.rubricId}: Risk ${r.riskScore}, Protective ${r.protectiveScore}`).join('; ')}
 `).join('\n')}
 
 Huidige Context: "${currentContext}"
 
-Geef een JSON array terug met specifieke verbeteringen:
+EvAI Rubrics Context voor validatie:
+${evai56Rubrics.map(r => `${r.id}: ${r.interventions.join(', ')}`).join('\n')}
+
+Geef een JSON array terug met specifieke, rubrics-gevalideerde verbeteringen:
 ["verbetering1", "verbetering2", "verbetering3"]`;
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -146,7 +184,7 @@ Geef een JSON array terug met specifieke verbeteringen:
           messages: [
             {
               role: 'system',
-              content: 'Je bent een CoT verbetering specialist. Geef alleen JSON arrays terug.'
+              content: 'Je bent een EvAI rubrics-gevalideerde CoT verbetering specialist. Geef alleen JSON arrays terug met evidence-based interventies.'
             },
             {
               role: 'user',
@@ -154,7 +192,7 @@ Geef een JSON array terug met specifieke verbeteringen:
             }
           ],
           temperature: 0.4,
-          max_tokens: 200,
+          max_tokens: 250,
         }),
       });
 
@@ -171,7 +209,7 @@ Geef een JSON array terug met specifieke verbeteringen:
       }
 
     } catch (error) {
-      console.error('🔴 CoT improvements generation failed:', error);
+      console.error('🔴 EvAI CoT improvements generation failed:', error);
       return [];
     }
   };
