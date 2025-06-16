@@ -17,8 +17,9 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-inter">
-      <div className="border-b bg-white">
-        <div className="container mx-auto px-4 py-4">
+      {/* Hero header */}
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-purple-200 shadow-sm">
+        <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -32,8 +33,8 @@ const AdminDashboard = () => {
                 Terug
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Neurosymbolische AI Beheer & EvAI 5.6 Rubrics</p>
+                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="text-sm text-gray-700">Neurosymbolische AI Beheer & EvAI 5.6 Rubrics</p>
               </div>
             </div>
           </div>
@@ -42,7 +43,7 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="rubrics" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8 bg-white rounded-lg shadow p-1">
             <TabsTrigger value="rubrics" className="flex items-center gap-2">
               <Brain size={16} />
               EvAI Rubrics
