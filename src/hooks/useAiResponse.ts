@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { useGoogleGemini } from "./useGoogleGemini";
@@ -208,11 +209,15 @@ export function useAiResponse(
               // Inject the new seed
               await injectSeedToDatabase(generatedSeed);
               
+              // Map "Interventie" to "Suggestie" for Message interface compatibility
+              const mappedLabel: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" = 
+                generatedSeed.label === "Interventie" ? "Suggestie" : generatedSeed.label as "Valideren" | "Reflectievraag" | "Suggestie";
+              
               aiResp = {
                 id: `ai-generated-${Date.now()}`,
                 from: "ai",
-                label: generatedSeed.label,
-                accentColor: getLabelVisuals(generatedSeed.label).accentColor,
+                label: mappedLabel,
+                accentColor: getLabelVisuals(mappedLabel).accentColor,
                 content: generatedSeed.response.nl,
                 explainText: `Nieuwe seed gegenereerd en toegevoegd voor: ${generatedSeed.emotion}`,
                 emotionSeed: generatedSeed.emotion,

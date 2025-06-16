@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { AdvancedSeed } from '../types/seed';
 import { v4 as uuidv4 } from 'uuid';
@@ -123,7 +122,7 @@ Focus op:
             tags: [...(seedData.tags || []), 'openai-generated'],
             createdAt: new Date(),
             updatedAt: new Date(),
-            createdBy: 'openai',
+            createdBy: 'ai',
             isActive: true,
             version: '1.0.0'
           };
@@ -156,7 +155,7 @@ Focus op:
           tags: ['openai-generated', 'fallback'],
           createdAt: new Date(),
           updatedAt: new Date(),
-          createdBy: 'openai',
+          createdBy: 'ai',
           isActive: true,
           version: '1.0.0'
         };
