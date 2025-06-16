@@ -3,6 +3,7 @@ import React, { forwardRef, useState } from "react";
 import { Gem, Info, CornerDownRight, ThumbsUp, ThumbsDown } from "lucide-react";
 
 interface ChatBubbleProps {
+  id: string;
   from: "user" | "ai";
   label: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" | null;
   accentColor?: string;
@@ -25,7 +26,8 @@ const LABEL_CLASSES = {
   Fout: "bg-red-100 text-red-900",
 };
 
-const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
+const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({ 
+  id,
   from,
   label,
   accentColor,
@@ -41,6 +43,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
   onFeedback,
 }, ref) => {
   const [isExplainVisible, setIsExplainVisible] = useState(false);
+  const explainId = `explain-${id}`;
 
   const bubbleStyles =
     from === "user"
@@ -107,10 +110,12 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
           {from === 'ai' && (explainText || onFeedback) && (
             <div className="absolute -bottom-3 -right-2 flex items-center gap-2">
               {explainText && (
-                <button 
-                  onClick={() => setIsExplainVisible(v => !v)} 
+                <button
+                  onClick={() => setIsExplainVisible(v => !v)}
                   className="bg-white border border-zinc-200 rounded-full p-1.5 shadow-sm hover:bg-zinc-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
                   aria-label={isExplainVisible ? "Verberg redenatie" : "Toon redenatie"}
+                  aria-expanded={isExplainVisible}
+                  aria-controls={explainId}
                 >
                   <Info size={14} className="text-zinc-500" />
                 </button>
@@ -139,7 +144,11 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
         </div>
         {/* Uitleg-tekst */}
         {isExplainVisible && explainText && (
-          <div className="mt-2 text-xs italic opacity-80 transition-all max-w-[70vw] p-3 bg-zinc-50 border rounded-lg ml-2" style={{ fontFamily: "Inter, sans-serif" }}>
+          <div
+            id={explainId}
+            className="mt-2 text-xs italic opacity-80 transition-all max-w-[70vw] p-3 bg-zinc-50 border rounded-lg ml-2"
+            style={{ fontFamily: "Inter, sans-serif" }}
+          >
             {explainText}
           </div>
         )}

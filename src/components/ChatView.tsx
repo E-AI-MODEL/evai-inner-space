@@ -1,6 +1,7 @@
 
 import React from 'react';
 import ChatBubble from "./ChatBubble";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Message } from '../types';
 
 interface ChatViewProps {
@@ -12,12 +13,14 @@ interface ChatViewProps {
 }
 
 const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs, focusedMessageId, onFeedback }) => {
-    const messagesById = React.useMemo(() => 
+    const messagesById = React.useMemo(() =>
         messages.reduce((acc, msg) => {
             acc[msg.id] = msg;
             return acc;
-        }, {} as Record<string, Message>), 
+        }, {} as Record<string, Message>),
     [messages]);
+
+    const [openInferences, setOpenInferences] = React.useState<Record<string, boolean>>({});
     
     return (
         <div className="mb-2">
@@ -27,6 +30,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
                 return (
                     <div key={msg.id} className="mb-2">
                         <ChatBubble
+                            id={msg.id}
                             ref={(el) => {
                                 if (el) {
                                     messageRefs.current.set(msg.id, el);
@@ -53,22 +57,29 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
                         {/* Enhanced symbolic inferences display */}
                         {msg.symbolicInferences && msg.symbolicInferences.length > 0 && (
                             <div className="ml-8 mt-2 mb-4">
-                                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-400 rounded-r-lg shadow-sm">
-                                    <div className="px-4 py-3">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-lg">🧠</span>
-                                            <span className="text-sm font-semibold text-indigo-800">Neurosymbolische Observatie</span>
+                                <Collapsible
+                                    open={!!openInferences[msg.id]}
+                                    onOpenChange={(open) =>
+                                        setOpenInferences((prev) => ({ ...prev, [msg.id]: open }))
+                                    }
+                                >
+                                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-indigo-800 hover:underline">
+                                        <span className="text-lg">🧠</span>
+                                        <span>Neurosymbolische Observatie</span>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-400 rounded-r-lg shadow-sm mt-2">
+                                            <div className="px-4 py-3 space-y-1">
+                                                {msg.symbolicInferences.map((inf) => (
+                                                    <div key={inf} className="text-sm text-indigo-700 flex items-start gap-2">
+                                                        <span className="text-indigo-400 mt-0.5">•</span>
+                                                        <span className="flex-1">{inf}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            {msg.symbolicInferences.map((inf, idx) => (
-                                                <div key={idx} className="text-sm text-indigo-700 flex items-start gap-2">
-                                                    <span className="text-indigo-400 mt-0.5">•</span>
-                                                    <span className="flex-1">{inf}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
+                                    </CollapsibleContent>
+                                </Collapsible>
                             </div>
                         )}
                     </div>

@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { ArrowLeft, Database, BarChart, Settings, Monitor, Brain } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, Database, BarChart, Monitor, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,9 +9,11 @@ import AdminAnalytics from '../components/admin/AdminAnalytics';
 import AdminSystemMonitor from '../components/admin/AdminSystemMonitor';
 import AdminRubricsOverview from '../components/admin/AdminRubricsOverview';
 import { useChatHistory } from '../hooks/useChatHistory';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { messages } = useChatHistory();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50 font-inter">
@@ -19,10 +21,11 @@ const AdminDashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => window.history.back()}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(-1)}
+                aria-label="Ga terug"
                 className="flex items-center gap-2"
               >
                 <ArrowLeft size={16} />
@@ -39,7 +42,7 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="rubrics" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-8">
             <TabsTrigger value="rubrics" className="flex items-center gap-2">
               <Brain size={16} />
               EvAI Rubrics
