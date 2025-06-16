@@ -1,132 +1,127 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import TopBar from "../components/TopBar";
-import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
+import ChatView from "../components/ChatView";
 import InputBar from "../components/InputBar";
-import { toast } from "@/hooks/use-toast";
+import SettingsSheet from "../components/SettingsSheet";
 import SeedConfetti from "../components/SeedConfetti";
 import IntroAnimation from "../components/IntroAnimation";
-import { getEmotionVisuals } from "../lib/emotion-visuals";
-import SettingsSheet from "../components/SettingsSheet";
+import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import { useChat } from "../hooks/useChat";
-import ChatView from "../components/ChatView";
-import RubricsAnalyticsDashboard from "../components/RubricsAnalyticsDashboard";
+import { useAiResponse } from "../hooks/useAiResponse";
+import { useSystemBootstrap } from "../hooks/useSystemBootstrap";
+import { Badge } from "@/components/ui/badge";
+import { Activity, CheckCircle, Loader2 } from "lucide-react";
 
 const Index = () => {
-  const [showIntro, setShowIntro] = useState(true);
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("openai-api-key") || "");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
-  const [showAnalytics, setShowAnalytics] = useState(false);
-
-  const messageRefs = useRef(new Map<string, HTMLDivElement | null>());
+  const [showSeedConfetti, setShowSeedConfetti] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  
+  const { 
+    isBootstrapping, 
+    bootstrapStatus, 
+    isSystemReady,
+    runFullBootstrap 
+  } = useSystemBootstrap();
+  
+  const { messages, addMessage, clearHistory, getEmotionHistory } = useChat(apiKey);
+  const { generateAiResponse, isGenerating } = useAiResponse(
+    messages,
+    addMessage,
+    apiKey,
+    setShowSeedConfetti
+  );
 
   useEffect(() => {
-    const savedApiKey = localStorage.getItem("openai-api-key");
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
+    if (showSeedConfetti) {
+      const timer = setTimeout(() => setShowSeedConfetti(false), 3000);
+      return () => clearTimeout(timer);
     }
-  }, []);
-  
-  const { messages, input, setInput, isProcessing, onSend, seedConfetti, setFeedback, clearHistory } =
-    useChat(apiKey);
+  }, [showSeedConfetti]);
 
-  if (showIntro) {
-    return <IntroAnimation onFinished={() => setShowIntro(false)} />;
-  }
-
-  const saveApiKey = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem("openai-api-key", apiKey.trim());
-      toast({
-        title: "API Key opgeslagen",
-        description: "Je OpenAI API key is lokaal opgeslagen.",
-      });
-      setIsSettingsOpen(false);
-    }
+  const handleSettingsSubmit = (newApiKey: string) => {
+    setApiKey(newApiKey);
+    localStorage.setItem("openai-api-key", newApiKey);
+    setIsSettingsOpen(false);
   };
 
-  const handleFocusMessage = (id: string) => {
-    const node = messageRefs.current.get(id);
-    if (node) {
-      node.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-      setFocusedMessageId(id);
-      setTimeout(() => setFocusedMessageId(null), 2500);
-    }
-  };
-
-  const emotionHistory = messages
-    .filter((msg) => msg.from === "ai" && msg.emotionSeed)
-    .map((msg) => {
-      const visual = getEmotionVisuals(msg.emotionSeed);
-      const messageTimestamp = msg.timestamp || new Date();
-      const emotionLabel = msg.emotionSeed!;
-      return {
-        id: msg.id,
-        icon: visual.icon,
-        label: emotionLabel.charAt(0).toUpperCase() + emotionLabel.slice(1),
-        colorClass: visual.colorClass,
-        time: messageTimestamp.toLocaleTimeString("nl-NL", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-    })
-    .reverse();
+  const emotionHistory = getEmotionHistory();
 
   return (
-    <div className="w-full min-h-screen bg-background font-inter">
-      <SeedConfetti show={seedConfetti} />
-      <TopBar 
-        onSettingsClick={() => setIsSettingsOpen(true)}
-        onRubricsToggle={() => setShowAnalytics(!showAnalytics)}
-        showRubrics={showAnalytics}
-        showRubricsButton={messages.length > 0}
-      />
-      <SettingsSheet
-        isOpen={isSettingsOpen}
-        onOpenChange={setIsSettingsOpen}
-        apiKey={apiKey}
-        onApiKeyChange={setApiKey}
-        onApiKeySave={saveApiKey}
-      />
-      <div className="flex">
-        <SidebarEmotionHistory
-          history={emotionHistory}
-          onFocus={handleFocusMessage}
-          onClear={clearHistory}
-        />
-        <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
-          <div className="flex-1 flex flex-col justify-end max-w-4xl mx-auto w-full">
-            {/* Analytics Dashboard */}
-            {showAnalytics && (
-              <div className="mb-6">
-                <RubricsAnalyticsDashboard messages={messages} />
-              </div>
-            )}
-
-            <div className="max-w-2xl mx-auto w-full">
-              <ChatView
-                messages={messages}
-                isProcessing={isProcessing}
-                messageRefs={messageRefs}
-                focusedMessageId={focusedMessageId}
-                onFeedback={setFeedback}
-              />
-
-              <InputBar
-                value={input}
-                onChange={setInput}
-                onSend={onSend}
-                disabled={isProcessing}
-              />
+    <div className="flex flex-col h-screen bg-gray-50">
+      <TopBar onSettingsClick={() => setIsSettingsOpen(true)} />
+      
+      {/* System Status Bar */}
+      {(isBootstrapping || !isSystemReady) && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+          <div className="flex items-center justify-between max-w-4xl mx-auto">
+            <div className="flex items-center gap-2">
+              {isBootstrapping ? (
+                <>
+                  <Loader2 size={16} className="animate-spin text-blue-600" />
+                  <span className="text-sm text-blue-800">Initializing advanced features...</span>
+                </>
+              ) : (
+                <>
+                  <Activity size={16} className="text-blue-600" />
+                  <span className="text-sm text-blue-800">EvAI Advanced System</span>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={bootstrapStatus.advancedSeeds ? "default" : "secondary"} className="text-xs">
+                {bootstrapStatus.advancedSeeds ? <CheckCircle size={12} className="mr-1" /> : <Loader2 size={12} className="animate-spin mr-1" />}
+                Seeds
+              </Badge>
+              <Badge variant={bootstrapStatus.liveMonitoring ? "default" : "secondary"} className="text-xs">
+                {bootstrapStatus.liveMonitoring ? <CheckCircle size={12} className="mr-1" /> : <Loader2 size={12} className="animate-spin mr-1" />}
+                Monitor
+              </Badge>
+              <Badge variant={bootstrapStatus.learningEngine ? "default" : "secondary"} className="text-xs">
+                {bootstrapStatus.learningEngine ? <CheckCircle size={12} className="mr-1" /> : <Loader2 size={12} className="animate-spin mr-1" />}
+                Learning
+              </Badge>
             </div>
           </div>
-        </main>
+        </div>
+      )}
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col">
+          {messages.length === 0 ? (
+            <IntroAnimation />
+          ) : (
+            <ChatView messages={messages} />
+          )}
+          
+          <InputBar
+            onSendMessage={generateAiResponse}
+            isGenerating={isGenerating}
+            apiKey={apiKey}
+            isSystemReady={isSystemReady}
+          />
+        </div>
+
+        {/* Sidebar */}
+        <SidebarEmotionHistory
+          emotionHistory={emotionHistory}
+          isOpen={showHistory}
+          onToggle={() => setShowHistory(!showHistory)}
+          onClearHistory={clearHistory}
+        />
       </div>
+
+      <SettingsSheet
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onSubmit={handleSettingsSubmit}
+        currentApiKey={apiKey}
+      />
+
+      {showSeedConfetti && <SeedConfetti />}
     </div>
   );
 };

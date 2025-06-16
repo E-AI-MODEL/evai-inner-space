@@ -9,6 +9,7 @@ import { useLiveMonitoring } from "./useLiveMonitoring";
 import { useLearningEngine } from "./useLearningEngine";
 import { useSeedInjection } from "./useSeedInjection";
 import { useEvAI56Rubrics } from "./useEvAI56Rubrics";
+import { useSystemBootstrap } from "./useSystemBootstrap";
 
 export function useAiResponse(
   messages: Message[],
@@ -18,10 +19,11 @@ export function useAiResponse(
 ) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { checkInput, isLoading: isSeedEngineLoading } = useSeedEngine();
-  const { recordInteraction, startMonitoring } = useLiveMonitoring();
+  const { recordInteraction, isMonitoring, startMonitoring } = useLiveMonitoring();
   const { learnFromConversation } = useLearningEngine();
   const { analyzeForInjectionNeeds } = useSeedInjection();
   const { assessMessage } = useEvAI56Rubrics();
+  const { isSystemReady } = useSystemBootstrap();
 
   // Symbolic neurosymbolic features engine
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
@@ -33,8 +35,10 @@ export function useAiResponse(
     const startTime = Date.now();
     setIsProcessing(true);
     
-    // Start live monitoring if not already active
-    startMonitoring();
+    // Ensure monitoring is active if system is ready
+    if (isSystemReady && !isMonitoring) {
+      startMonitoring();
+    }
     
     try {
       const messageIndex = messages.findIndex(m => m.id === userMessage.id);
@@ -45,12 +49,27 @@ export function useAiResponse(
           content: msg.content
         }));
 
-      // Analyze for seed injection needs
-      analyzeForInjectionNeeds([...messages, userMessage]);
+      // Only run advanced features if system is ready
+      if (isSystemReady) {
+        // Analyze for seed injection needs
+        analyzeForInjectionNeeds([...messages, userMessage]);
 
-      // Assess message with rubrics
-      const rubricAssessments = assessMessage(userMessage.content);
-      console.log('Rubric assessments:', rubricAssessments);
+        // Assess message with rubrics
+        const rubricAssessments = assessMessage(userMessage.content);
+        console.log('Rubric assessments:', rubricAssessments);
+        
+        // Add rubric insights if any high-risk factors detected
+        if (rubricAssessments.length > 0) {
+          const highRiskAssessments = rubricAssessments.filter(a => a.overallScore > 1.5);
+          if (highRiskAssessments.length > 0) {
+            toast({
+              title: "Rubric Alert",
+              description: `${highRiskAssessments.length} risicofactor(en) gedetecteerd`,
+              variant: "destructive"
+            });
+          }
+        }
+      }
 
       const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
       let aiResp: Message;
@@ -84,10 +103,8 @@ export function useAiResponse(
         const seedResult = matchedResult;
         setSeedConfetti(true);
         toast({
-          title: "Seed gevonden!",
-          description: `De emotie '${
-            seedResult.emotion
-          }' werd herkend.`,
+          title: "Advanced Seed Match!",
+          description: `Emotie '${seedResult.emotion}' herkend via advanced matching`,
         });
 
         const label = seedResult.label || "Valideren";
@@ -97,12 +114,10 @@ export function useAiResponse(
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
           content: seedResult.response,
-          explainText: `Lokale herkenning: Woorden zoals '${seedResult.triggers.join(
-            ", "
-          )}' duiden op de emotie '${seedResult.emotion}'.`,
+          explainText: `Advanced seed match: '${seedResult.triggers.join(", ")}'`,
           emotionSeed: seedResult.emotion,
           animate: true,
-          meta: seedResult.meta || "Lokaal",
+          meta: seedResult.meta || "Advanced",
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
@@ -131,27 +146,19 @@ export function useAiResponse(
 
       // Record interaction metrics
       const responseTime = Date.now() - startTime;
-      recordInteraction(aiResp, responseTime);
-
-      // Symbolic engine analysis (evaluates using current + the new AI message)
-      const extendedMessages = [...messages, aiResp];
-      const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
-      if (aiSymbolic.length) {
-        aiResp = { ...aiResp, symbolicInferences: aiSymbolic };
-        toast({
-          title: "Symbolische observatie",
-          description: aiSymbolic.join(" "),
-        });
+      if (isSystemReady) {
+        recordInteraction(aiResp, responseTime);
       }
 
-      // Add rubric insights if any high-risk factors detected
-      if (rubricAssessments.length > 0) {
-        const highRiskAssessments = rubricAssessments.filter(a => a.overallScore > 1.5);
-        if (highRiskAssessments.length > 0) {
+      // Symbolic engine analysis (only if system ready)
+      if (isSystemReady) {
+        const extendedMessages = [...messages, aiResp];
+        const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
+        if (aiSymbolic.length) {
+          aiResp = { ...aiResp, symbolicInferences: aiSymbolic };
           toast({
-            title: "Rubric Alert",
-            description: `${highRiskAssessments.length} risicofactor(en) gedetecteerd`,
-            variant: "destructive"
+            title: "Symbolische observatie",
+            description: aiSymbolic.join(" "),
           });
         }
       }
@@ -159,10 +166,12 @@ export function useAiResponse(
       setMessages((prev) => {
         const updatedMessages = [...prev, aiResp];
         
-        // Trigger learning from the updated conversation
-        setTimeout(() => {
-          learnFromConversation(updatedMessages);
-        }, 1000);
+        // Trigger learning from the updated conversation (only if system ready)
+        if (isSystemReady) {
+          setTimeout(() => {
+            learnFromConversation(updatedMessages);
+          }, 1000);
+        }
         
         return updatedMessages;
       });
@@ -189,7 +198,9 @@ export function useAiResponse(
       
       // Record error metrics
       const responseTime = Date.now() - startTime;
-      recordInteraction(errorResponse, responseTime);
+      if (isSystemReady) {
+        recordInteraction(errorResponse, responseTime);
+      }
       
       setMessages((prev) => [...prev, errorResponse]);
       toast({

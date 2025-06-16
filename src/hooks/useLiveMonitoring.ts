@@ -105,13 +105,17 @@ export function useLiveMonitoring() {
     setActiveAlerts(triggeredAlerts);
   };
 
-  const startMonitoring = () => {
-    setIsMonitoring(true);
-  };
+  const startMonitoring = useCallback(() => {
+    if (!isMonitoring) {
+      setIsMonitoring(true);
+      console.log('Live monitoring started');
+    }
+  }, [isMonitoring]);
 
-  const stopMonitoring = () => {
+  const stopMonitoring = useCallback(() => {
     setIsMonitoring(false);
-  };
+    console.log('Live monitoring stopped');
+  }, []);
 
   useEffect(() => {
     if (!isMonitoring) return;
@@ -119,6 +123,16 @@ export function useLiveMonitoring() {
     const interval = setInterval(collectRealMetrics, 5000);
     return () => clearInterval(interval);
   }, [isMonitoring, collectRealMetrics]);
+
+  // Auto-start monitoring in admin dashboard
+  useEffect(() => {
+    const isAdminRoute = window.location.pathname.includes('/admin');
+    if (isAdminRoute && !isMonitoring) {
+      setTimeout(() => {
+        startMonitoring();
+      }, 1000);
+    }
+  }, [startMonitoring, isMonitoring]);
 
   const getRealtimeStats = () => {
     if (metrics.length === 0) return null;

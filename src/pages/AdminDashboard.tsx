@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useChat } from '../hooks/useChat';
 import { useNavigate } from 'react-router-dom';
+import { useSystemBootstrap } from '../hooks/useSystemBootstrap';
 import TopBar from '../components/TopBar';
 import AdminSeedManager from '../components/admin/AdminSeedManager';
 import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
@@ -13,12 +14,21 @@ import LiveMonitoringDashboard from '../components/admin/LiveMonitoringDashboard
 import SelfLearningControls from '../components/admin/SelfLearningControls';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Settings, Database, BarChart, Cpu, Zap, Brain, MessageSquare, Target, Activity, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Settings, Database, BarChart, Cpu, Zap, Brain, MessageSquare, Target, Activity, Sparkles, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 const AdminDashboard = () => {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("openai-api-key") || "");
   const { messages, clearHistory } = useChat(apiKey);
   const navigate = useNavigate();
+  
+  const { 
+    isBootstrapping, 
+    bootstrapStatus, 
+    isSystemReady,
+    runFullBootstrap 
+  } = useSystemBootstrap();
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -29,14 +39,111 @@ const AdminDashboard = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">EvAI Admin Dashboard</h1>
             <p className="text-sm sm:text-base text-gray-600">Beheer seeds, monitor prestaties en analyseer rubrieken met AI-powered learning</p>
           </div>
-          <Button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 w-full sm:w-auto"
-            variant="outline"
-          >
-            <MessageSquare size={16} />
-            Terug naar Chat
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2"
+              variant="outline"
+            >
+              <MessageSquare size={16} />
+              Terug naar Chat
+            </Button>
+          </div>
+        </div>
+
+        {/* System Status Alert */}
+        {!isSystemReady && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <div>
+                {isBootstrapping ? "System is bootstrapping advanced features..." : "Some advanced features may not be fully active."}
+              </div>
+              <Button 
+                onClick={runFullBootstrap} 
+                disabled={isBootstrapping}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {isBootstrapping ? <RefreshCw size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                {isBootstrapping ? "Bootstrapping..." : "Reinitialize"}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* System Status Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Advanced Seeds</p>
+                <div className="flex items-center gap-1 mt-1">
+                  {bootstrapStatus.advancedSeeds ? <CheckCircle size={16} className="text-green-600" /> : <AlertCircle size={16} className="text-orange-500" />}
+                  <Badge variant={bootstrapStatus.advancedSeeds ? "default" : "secondary"} className="text-xs">
+                    {bootstrapStatus.advancedSeeds ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Live Monitoring</p>
+                <div className="flex items-center gap-1 mt-1">
+                  {bootstrapStatus.liveMonitoring ? <CheckCircle size={16} className="text-green-600" /> : <AlertCircle size={16} className="text-orange-500" />}
+                  <Badge variant={bootstrapStatus.liveMonitoring ? "default" : "secondary"} className="text-xs">
+                    {bootstrapStatus.liveMonitoring ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Learning Engine</p>
+                <div className="flex items-center gap-1 mt-1">
+                  {bootstrapStatus.learningEngine ? <CheckCircle size={16} className="text-green-600" /> : <AlertCircle size={16} className="text-orange-500" />}
+                  <Badge variant={bootstrapStatus.learningEngine ? "default" : "secondary"} className="text-xs">
+                    {bootstrapStatus.learningEngine ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Rubrics System</p>
+                <div className="flex items-center gap-1 mt-1">
+                  {bootstrapStatus.rubrics ? <CheckCircle size={16} className="text-green-600" /> : <AlertCircle size={16} className="text-orange-500" />}
+                  <Badge variant={bootstrapStatus.rubrics ? "default" : "secondary"} className="text-xs">
+                    {bootstrapStatus.rubrics ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-600">Seed Injection</p>
+                <div className="flex items-center gap-1 mt-1">
+                  {bootstrapStatus.seedInjection ? <CheckCircle size={16} className="text-green-600" /> : <AlertCircle size={16} className="text-orange-500" />}
+                  <Badge variant={bootstrapStatus.seedInjection ? "default" : "secondary"} className="text-xs">
+                    {bootstrapStatus.seedInjection ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <Tabs defaultValue="live-monitoring" className="w-full">
@@ -153,6 +260,16 @@ const AdminDashboard = () => {
                     className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto"
                   >
                     Wis Alle Chat Geschiedenis
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('evai-bootstrapped');
+                      window.location.reload();
+                    }}
+                    className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors w-full sm:w-auto ml-2"
+                  >
+                    Reset System Bootstrap
                   </button>
                 </div>
               </div>
