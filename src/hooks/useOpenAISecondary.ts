@@ -45,11 +45,11 @@ Geef het resultaat als JSON met:
 
 Focus op Nederlandse therapeutische context.`;
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('/api/openai-secondary', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'X-API-Key': apiKey
         },
         body: JSON.stringify({
           model: 'gpt-4.1-2025-04-14',
@@ -61,11 +61,13 @@ Focus op Nederlandse therapeutische context.`;
         })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+        const proxyError = data?.error?.message || `${response.status} ${response.statusText}`;
+        throw new Error(`OpenAI proxy fout: ${proxyError}`);
       }
 
-      const data = await response.json();
       const content = data.choices[0]?.message?.content;
 
       if (!content) {
@@ -123,11 +125,11 @@ Maak een empathische Nederlandse response van 50-80 woorden die:
 
 Geef alleen de response tekst terug, geen JSON.`;
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('/api/openai-secondary', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'X-API-Key': apiKey
         },
         body: JSON.stringify({
           model: 'gpt-4.1-2025-04-14',
@@ -137,11 +139,13 @@ Geef alleen de response tekst terug, geen JSON.`;
         })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        const proxyError = data?.error?.message || `${response.status}`;
+        throw new Error(`OpenAI proxy fout: ${proxyError}`);
       }
 
-      const data = await response.json();
       const seedResponse = data.choices[0]?.message?.content?.trim();
 
       console.log('✅ OpenAI secondary seed generated:', seedResponse?.substring(0, 50) + '...');
