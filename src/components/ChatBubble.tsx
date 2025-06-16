@@ -2,9 +2,8 @@
 import React, { forwardRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { ThumbsUp, ThumbsDown, AlertCircle, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Icon from "./Icon";
 
 interface ChatBubbleProps {
   children: React.ReactNode;
@@ -53,6 +52,17 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
     }
   };
 
+  const getEmotionIcon = (emotion?: string | null) => {
+    switch (emotion) {
+      case "error":
+        return <AlertCircle size={16} />;
+      case "warning":
+        return <AlertCircle size={16} />;
+      default:
+        return <Heart size={16} />;
+    }
+  };
+
   return (
     <div ref={ref} className={cn("flex", alignment, isFocused && "ring-2 ring-blue-300 rounded-lg p-1")}>
       <div className={cn("max-w-[80%] rounded-lg px-4 py-3", bgColor, animate && "animate-fadeIn")}>
@@ -68,7 +78,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
               {label}
             </Badge>
             {brilliant && <span className="text-lg">✨</span>}
-            {emotionSeed && <Icon name={emotionSeed} size={16} />}
+            {emotionSeed && getEmotionIcon(emotionSeed)}
             {meta && <span className="text-xs opacity-70">{meta}</span>}
           </div>
         )}
