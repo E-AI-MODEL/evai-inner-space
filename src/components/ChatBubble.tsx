@@ -1,146 +1,104 @@
 
-import React, { forwardRef, useState } from "react";
-import { Gem, Info, CornerDownRight, ThumbsUp, ThumbsDown } from "lucide-react";
+import React, { forwardRef } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import Icon from "./Icon";
 
 interface ChatBubbleProps {
-  from: "user" | "ai";
-  label: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" | null;
-  accentColor?: string;
   children: React.ReactNode;
-  meta?: React.ReactNode;
-  explainText?: string;
-  emotionSeed?: string;
+  from: "user" | "ai";
+  label?: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" | "Configuratie" | "OpenAI" | null;
+  accentColor?: string;
+  meta?: string;
+  emotionSeed?: string | null;
   animate?: boolean;
+  explainText?: string;
   brilliant?: boolean;
-  isFocused?: boolean;
   repliedToContent?: string;
   feedback?: "like" | "dislike" | null;
   onFeedback?: (feedback: "like" | "dislike") => void;
+  isFocused?: boolean;
 }
 
-const LABEL_CLASSES = {
-  Valideren: "bg-blue-100 text-blue-900",
-  Reflectievraag: "bg-green-100 text-green-900",
-  Suggestie: "bg-purple-100 text-purple-800",
-  Fout: "bg-red-100 text-red-900",
-};
-
 const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
+  children,
   from,
   label,
   accentColor,
-  children,
   meta,
-  explainText,
   emotionSeed,
-  animate,
-  brilliant,
-  isFocused,
+  animate = false,
+  explainText,
+  brilliant = false,
   repliedToContent,
   feedback,
   onFeedback,
+  isFocused = false,
 }, ref) => {
-  const [isExplainVisible, setIsExplainVisible] = useState(false);
+  const isUser = from === "user";
+  const bgColor = isUser ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900";
+  const alignment = isUser ? "justify-end" : "justify-start";
 
-  const bubbleStyles =
-    from === "user"
-      ? "bg-white text-zinc-800 border border-zinc-200"
-      : accentColor
-      ? ""
-      : "bg-zinc-100 text-zinc-800";
+  const getLabelColor = (labelType?: string | null) => {
+    switch (labelType) {
+      case "Valideren": return "bg-green-100 text-green-800";
+      case "Reflectievraag": return "bg-blue-100 text-blue-800";
+      case "Suggestie": return "bg-purple-100 text-purple-800";
+      case "Fout": return "bg-red-100 text-red-800";
+      case "Configuratie": return "bg-yellow-100 text-yellow-800";
+      case "OpenAI": return "bg-indigo-100 text-indigo-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
-    <div
-      ref={ref}
-      className={`flex flex-col items-start gap-1 mb-4 ${from === "user" ? "items-end" : "items-start"} ${
-        animate ? "animate-fade-in" : ""
-      }`}
-      data-seed={emotionSeed}
-    >
-      {from === "ai" && label && (
-        <span
-          className={`mb-0.5 ml-2 px-2 py-0.5 rounded-full text-xs font-medium tracking-wide opacity-80 ${LABEL_CLASSES[label] ?? "bg-zinc-100 text-zinc-600"}`}
-        >
-          {label}
-        </span>
-      )}
-      <div className={`relative w-fit max-w-[70vw]`}>
-        {/* Brilliant/diamond sparkle */}
-        {brilliant && (
-          <span className="absolute -left-6 -top-2 z-10 animate-fade-in pointer-events-none">
-            <Gem size={22} className="text-blue-400 drop-shadow-brilliant" />
-          </span>
-        )}
-        
-        {/* Quoted reply */}
-        {from === 'ai' && repliedToContent && (
-          <div className="flex items-center gap-2 text-xs italic opacity-70 text-zinc-600 mb-1.5 ml-2">
-            <CornerDownRight size={14} className="flex-shrink-0" />
-            <p className="truncate">
-              {repliedToContent}
-            </p>
+    <div ref={ref} className={cn("flex", alignment, isFocused && "ring-2 ring-blue-300 rounded-lg p-1")}>
+      <div className={cn("max-w-[80%] rounded-lg px-4 py-3", bgColor, animate && "animate-fadeIn")}>
+        {repliedToContent && (
+          <div className="text-xs opacity-70 mb-2 p-2 bg-black/10 rounded border-l-2 border-white/30">
+            {repliedToContent.length > 50 ? `${repliedToContent.substring(0, 50)}...` : repliedToContent}
           </div>
         )}
-
-        <div
-          className={`px-4 py-3 rounded-xl font-inter shadow-card relative text-base leading-snug transition-all duration-300
-            ${from === "ai"
-              ? accentColor
-                ? ""
-                : "bg-zinc-100"
-              : "bg-white"
-            }
-            ${bubbleStyles}
-            ${brilliant ? "ring-2 ring-blue-200 ring-offset-2 shadow-lg" : ""}
-            ${isFocused ? "ring-2 ring-yellow-400 ring-offset-2" : ""}
-            ${from === "ai" && animate ? "animate-pulse-accent" : ""}
-          `}
-          style={
-            accentColor && from === "ai"
-              ? { backgroundColor: accentColor, color: "#222" }
-              : undefined
-          }
-          data-ttl={meta}
-        >
-          {children}
-          
-          {/* Uitleg & Feedback Toggles */}
-          {from === 'ai' && (explainText || onFeedback) && (
-            <div className="absolute -bottom-3 -right-2 flex items-center gap-2">
-              {explainText && (
-                <button 
-                  onClick={() => setIsExplainVisible(v => !v)} 
-                  className="bg-white border border-zinc-200 rounded-full p-1.5 shadow-sm hover:bg-zinc-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  aria-label={isExplainVisible ? "Verberg redenatie" : "Toon redenatie"}
-                >
-                  <Info size={14} className="text-zinc-500" />
-                </button>
-              )}
-              {onFeedback && (
-                <div className="flex items-center bg-white border border-zinc-200 rounded-full shadow-sm p-0.5">
-                  <button
-                    onClick={() => onFeedback('like')}
-                    className={`p-1 rounded-full transition-colors ${feedback === 'like' ? 'bg-green-100 text-green-600' : 'text-zinc-500 hover:bg-green-50'}`}
-                    aria-label="Antwoord is nuttig"
-                  >
-                    <ThumbsUp size={14} />
-                  </button>
-                  <div className="w-px h-4 bg-zinc-200 mx-0.5" />
-                  <button
-                    onClick={() => onFeedback('dislike')}
-                    className={`p-1 rounded-full transition-colors ${feedback === 'dislike' ? 'bg-red-100 text-red-600' : 'text-zinc-500 hover:bg-red-50'}`}
-                    aria-label="Antwoord is niet nuttig"
-                  >
-                    <ThumbsDown size={14} />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        {/* Uitleg-tekst */}
-        {isExplainVisible && explainText && (
-          <div className="mt-2 text-xs italic opacity-80 transition-all max-w-[70vw] p-3 bg-zinc-50 border rounded-lg ml-2" style={{ fontFamily: "Inter, sans-serif" }}>
+        
+        {label && (
+          <div className="flex items-center gap-2 mb-2">
+            <Badge className={cn("text-xs", getLabelColor(label))}>
+              {label}
+            </Badge>
+            {brilliant && <span className="text-lg">✨</span>}
+            {emotionSeed && <Icon name={emotionSeed} size={16} />}
+            {meta && <span className="text-xs opacity-70">{meta}</span>}
+          </div>
+        )}
+        
+        <div className="whitespace-pre-wrap">{children}</div>
+        
+        {explainText && (
+          <div className="text-xs opacity-70 mt-2 italic">
             {explainText}
+          </div>
+        )}
+        
+        {!isUser && onFeedback && (
+          <div className="flex gap-1 mt-2">
+            <Button
+              size="sm"
+              variant={feedback === "like" ? "default" : "ghost"}
+              onClick={() => onFeedback("like")}
+              className="h-6 px-2"
+            >
+              <ThumbsUp size={12} />
+            </Button>
+            <Button
+              size="sm"
+              variant={feedback === "dislike" ? "default" : "ghost"}
+              onClick={() => onFeedback("dislike")}
+              className="h-6 px-2"
+            >
+              <ThumbsDown size={12} />
+            </Button>
           </div>
         )}
       </div>
