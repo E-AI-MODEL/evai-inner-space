@@ -36,6 +36,13 @@ npm i
 npm run dev
 ```
 
+Create a `.env` file based on `.env.example` and provide your Supabase credentials:
+
+```
+VITE_SUPABASE_URL=<your-supabase-url>
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
+```
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

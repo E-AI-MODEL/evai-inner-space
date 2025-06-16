@@ -9,12 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Edit, Trash, Plus, Database, Upload, Download, BarChart, Settings, Key } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AdvancedSeed } from '../../types/seed';
-import { 
-  loadAdvancedSeeds, 
-  saveAdvancedSeeds, 
-  addAdvancedSeed, 
-  updateAdvancedSeed, 
-  deleteAdvancedSeed 
+import {
+  loadAdvancedSeeds,
+  addAdvancedSeed,
+  updateAdvancedSeed,
+  deleteAdvancedSeed
 } from '../../lib/advancedSeedStorage';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -32,8 +31,8 @@ const AdvancedSeedManager = () => {
     loadOpenAiKey2();
   }, []);
 
-  const loadSeedsData = () => {
-    const advanced = loadAdvancedSeeds();
+  const loadSeedsData = async () => {
+    const advanced = await loadAdvancedSeeds();
     setSeedsData(advanced);
   };
 
@@ -111,7 +110,7 @@ const AdvancedSeedManager = () => {
         version: '1.0.0'
       };
 
-      addAdvancedSeed(newSeed);
+      await addAdvancedSeed(newSeed);
       loadSeedsData();
       toast({
         title: "AI Seed gegenereerd",
@@ -137,12 +136,12 @@ const AdvancedSeedManager = () => {
     return matchesSearch && matchesType && matchesSeverity;
   });
 
-  const handleSaveSeed = (seed: AdvancedSeed) => {
+  const handleSaveSeed = async (seed: AdvancedSeed) => {
     if (editingSeed) {
-      updateAdvancedSeed(seed);
+      await updateAdvancedSeed(seed);
       toast({ title: "Seed bijgewerkt", description: "De advanced seed is succesvol bijgewerkt." });
     } else {
-      addAdvancedSeed(seed);
+      await addAdvancedSeed(seed);
       toast({ title: "Seed toegevoegd", description: "De nieuwe advanced seed is toegevoegd." });
     }
     setEditingSeed(null);
@@ -150,8 +149,8 @@ const AdvancedSeedManager = () => {
     loadSeedsData();
   };
 
-  const handleDeleteSeed = (seed: AdvancedSeed) => {
-    deleteAdvancedSeed(seed.id);
+  const handleDeleteSeed = async (seed: AdvancedSeed) => {
+    await deleteAdvancedSeed(seed.id);
     toast({ title: "Seed verwijderd", description: "De advanced seed is verwijderd." });
     loadSeedsData();
   };
@@ -334,6 +333,7 @@ const AdvancedSeedManager = () => {
                       <TableHead>Severity</TableHead>
                       <TableHead>Triggers</TableHead>
                       <TableHead>Weight</TableHead>
+                      <TableHead>TTL</TableHead>
                       <TableHead>Gebruik</TableHead>
                       <TableHead>Tags</TableHead>
                       <TableHead>Status</TableHead>
@@ -369,6 +369,7 @@ const AdvancedSeedManager = () => {
                           </div>
                         </TableCell>
                         <TableCell>{seed.meta.weight.toFixed(1)}</TableCell>
+                        <TableCell>{seed.meta.ttl ?? '-'}</TableCell>
                         <TableCell>{seed.meta.usageCount}</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">

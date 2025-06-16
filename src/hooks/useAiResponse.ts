@@ -31,6 +31,39 @@ export function useAiResponse(
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
   const { analyzeCoTFeedback, generateCoTImprovements, isAnalyzing: isCoTAnalyzing } = useCoTFeedbackAnalyzer();
 
+  const runSecondaryAnalysis = async (history: Message[], key: string) => {
+    if (!key || !key.trim()) return;
+    try {
+      const contextString = history.map(h => `${h.from}: ${h.content}`).join('\n');
+      const analysis = await analyzeNeurosymbolic(
+        history[history.length - 1].content,
+        contextString,
+        key
+      );
+      if (analysis?.seedSuggestion) {
+        const secondarySeed: AdvancedSeed = {
+          id: uuidv4(),
+          emotion: analysis.seedSuggestion,
+          type: 'validation',
+          label: 'Valideren',
+          triggers: [analysis.seedSuggestion],
+          response: { nl: analysis.insights.join(' ') },
+          context: { severity: 'medium', situation: 'therapy' },
+          meta: { priority: 1, weight: 1.0, confidence: analysis.confidence || 0.7, usageCount: 0 },
+          tags: ['secondary-analysis'],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          createdBy: 'ai',
+          isActive: true,
+          version: '1.0.0'
+        };
+        await injectSeedToDatabase(secondarySeed);
+      }
+    } catch (err) {
+      console.error('Secondary analysis failed', err);
+    }
+  };
+
   const generateAiResponse = async (
     userMessage: Message,
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
@@ -105,7 +138,7 @@ export function useAiResponse(
 
       // 🔥 STEP 3: AGGRESSIVE RUBRICS-GUIDED SEED ANALYSIS & GENERATION
       let newSeedsGenerated = 0;
-      const currentSeeds = loadAdvancedSeeds();
+      const currentSeeds = await loadAdvancedSeeds();
       
       if (hasOpenAI) {
         console.log('🌱 EXTREME AGGRESSIVE MODE: EvAI-Guided emotion analysis...');
@@ -423,7 +456,7 @@ export function useAiResponse(
       }
 
       // 🔥 FINAL EvAI SUCCESS NOTIFICATION
-      const finalSeedCount = loadAdvancedSeeds().length;
+      const finalSeedCount = (await loadAdvancedSeeds()).length;
       console.log(`✅ EvAI ULTRA LEARNING COMPLETE: Generated ${newSeedsGenerated} new rubrics-validated seeds | Total: ${finalSeedCount}`);
       
       if (hasOpenAI && newSeedsGenerated > 0) {
@@ -434,6 +467,9 @@ export function useAiResponse(
       }
 
       setMessages((prev) => [...prev, aiResp]);
+      if (hasOpenAi2) {
+        await runSecondaryAnalysis([...messages, aiResp], openAiKey2!);
+      }
       
     } catch (err) {
       console.error("Error in EvAI ultra learning AI:", err);

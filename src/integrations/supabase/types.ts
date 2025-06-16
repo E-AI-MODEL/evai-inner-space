@@ -9,7 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      emotion_seeds: {
+        Row: {
+          id: string;
+          emotion: string;
+          label: string | null;
+          response: Json | null;
+          meta: Json | null;
+          created_at: string | null;
+          updated_at: string | null;
+          active: boolean | null;
+          expires_at: string | null;
+          weight: number | null;
+        };
+        Insert: {
+          id?: string;
+          emotion?: string;
+          label?: string | null;
+          response?: Json | null;
+          meta?: Json | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          active?: boolean | null;
+          expires_at?: string | null;
+          weight?: number | null;
+        };
+        Update: {
+          id?: string;
+          emotion?: string;
+          label?: string | null;
+          response?: Json | null;
+          meta?: Json | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          active?: boolean | null;
+          expires_at?: string | null;
+          weight?: number | null;
+        };
+      }
     }
     Views: {
       [_ in never]: never

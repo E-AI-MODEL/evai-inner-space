@@ -3,11 +3,12 @@ import { useOpenAI, EmotionDetection } from './useOpenAI';
 import { useAdvancedSeedMatcher } from './useAdvancedSeedMatcher';
 import { AdvancedSeed } from '../types/seed';
 import { ChatHistoryItem } from '../types';
-import { loadAdvancedSeeds } from '../lib/advancedSeedStorage';
+import { useSeeds } from './useSeeds';
 
 export function useAdvancedSeedEngine() {
   const { detectEmotion, isLoading } = useOpenAI();
   const { findBestMatch, isMatching } = useAdvancedSeedMatcher();
+  const { data: seeds } = useSeeds();
 
   const checkInput = async (
     input: string, 
@@ -21,10 +22,7 @@ export function useAdvancedSeedEngine() {
       return aiResult;
     }
     
-    // Check for advanced seeds
-    const advancedSeeds = loadAdvancedSeeds();
-    
-    // If no advanced seeds exist, return null (no legacy fallback)
+    const advancedSeeds = seeds || [];
     if (advancedSeeds.length === 0) {
       return null;
     }
@@ -47,7 +45,7 @@ export function useAdvancedSeedEngine() {
       userAge: 'adult' as const // Default, could be enhanced with user profiling
     };
     
-    return findBestMatch(input, matchingContext);
+    return findBestMatch(input, advancedSeeds, matchingContext);
   };
 
   return { 
