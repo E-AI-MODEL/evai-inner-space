@@ -12,6 +12,8 @@ import { CheckCircle, AlertCircle, Zap } from 'lucide-react';
 import ApiKeyInput from './ApiKeyInput';
 import OpenAIApiKey2Input from './OpenAIApiKey2Input';
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+
 interface SettingsSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
@@ -89,6 +91,20 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
                   )}
                   <Badge variant={openAi2Active ? "default" : "secondary"}>
                     {openAi2Active ? "Actief" : "Inactief"}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">Supabase Verbinding</span>
+                <div className="flex items-center gap-2">
+                  {supabaseUrl ? (
+                    <CheckCircle size={16} className="text-green-600" />
+                  ) : (
+                    <AlertCircle size={16} className="text-orange-500" />
+                  )}
+                  <Badge variant={supabaseUrl ? "default" : "secondary"}>
+                    {supabaseUrl ? "Actief" : "Inactief"}
                   </Badge>
                 </div>
               </div>
