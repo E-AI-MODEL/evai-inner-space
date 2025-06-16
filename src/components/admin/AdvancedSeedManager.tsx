@@ -25,11 +25,11 @@ const AdvancedSeedManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
-  const [googleApiKey, setGoogleApiKey] = useState('');
+  const [openAiKey2, setOpenAiKey2] = useState('');
 
   useEffect(() => {
     loadSeedsData();
-    loadGoogleApiKey();
+    loadOpenAiKey2();
   }, []);
 
   const loadSeedsData = () => {
@@ -37,52 +37,54 @@ const AdvancedSeedManager = () => {
     setSeedsData(advanced);
   };
 
-  const loadGoogleApiKey = () => {
-    const savedKey = localStorage.getItem('google-api-key');
+  const loadOpenAiKey2 = () => {
+    const savedKey = localStorage.getItem('openai-api-key-2');
     if (savedKey) {
-      setGoogleApiKey(savedKey);
+      setOpenAiKey2(savedKey);
     }
   };
 
-  const saveGoogleApiKey = () => {
-    if (googleApiKey.trim()) {
-      localStorage.setItem('google-api-key', googleApiKey.trim());
+  const saveOpenAiKey2 = () => {
+    if (openAiKey2.trim()) {
+      localStorage.setItem('openai-api-key-2', openAiKey2.trim());
       toast({
-        title: "Google API Key opgeslagen",
-        description: "Je Google API key is lokaal opgeslagen voor neurosymbolische features.",
+        title: "OpenAI Key 2 opgeslagen",
+        description: "Deze key wordt gebruikt voor extra AI-functionaliteit.",
       });
     }
   };
 
   const generateSeedWithAI = async (emotion: string, triggers: string[]) => {
-    if (!googleApiKey.trim()) {
+    if (!openAiKey2.trim()) {
       toast({
-        title: "Geen Google API Key",
-        description: "Voeg eerst een Google API key toe voor AI-gegenereerde seeds.",
+        title: "Geen tweede OpenAI key",
+        description: "Voeg eerst de tweede OpenAI key toe voor AI-gegenereerde seeds.",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + googleApiKey, {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openAiKey2}`,
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Genereer een therapeutische response voor de emotie "${emotion}" met triggers: ${triggers.join(', ')}. Geef alleen de Nederlandse response text terug, maximaal 100 woorden, empathisch en ondersteunend.`
-            }]
-          }]
+          model: 'gpt-4.1-2025-04-14',
+          messages: [
+            { role: 'user', content: `Genereer een therapeutische response voor de emotie "${emotion}" met triggers: ${triggers.join(', ')}. Geef alleen de Nederlandse response text terug, maximaal 100 woorden, empathisch en ondersteunend.` }
+          ],
+          temperature: 0.7,
+          max_tokens: 200
         })
       });
 
-      if (!response.ok) throw new Error('Google API fout');
-      
+      if (!response.ok) throw new Error('OpenAI API fout');
+
       const data = await response.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Ik begrijp hoe je je voelt.';
+      const generatedText = data.choices[0]?.message?.content?.trim() || 'Ik begrijp hoe je je voelt.';
       
       const newSeed: AdvancedSeed = {
         id: uuidv4(),
@@ -118,7 +120,7 @@ const AdvancedSeedManager = () => {
     } catch (error) {
       toast({
         title: "AI Generatie gefaald",
-        description: "Kon geen seed genereren met Google AI.",
+        description: "Kon geen seed genereren met OpenAI.",
         variant: "destructive"
       });
     }
@@ -167,10 +169,10 @@ const AdvancedSeedManager = () => {
   };
 
   const analyzeConversationPattern = async () => {
-    if (!googleApiKey.trim()) {
+    if (!openAiKey2.trim()) {
       toast({
-        title: "Geen Google API Key",
-        description: "Google API key vereist voor conversatie analyse.",
+        title: "Geen tweede OpenAI key",
+        description: "Deze functie vereist de tweede OpenAI key.",
         variant: "destructive"
       });
       return;
@@ -189,22 +191,26 @@ const AdvancedSeedManager = () => {
         Geef 3 concrete aanbevelingen voor nieuwe seeds die ontbreken, gebaseerd op deze patronen.
       `;
 
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + googleApiKey, {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openAiKey2}`,
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: analysisPrompt }]
-          }]
+          model: 'gpt-4.1-2025-04-14',
+          messages: [
+            { role: 'user', content: analysisPrompt }
+          ],
+          temperature: 0.6,
+          max_tokens: 300
         })
       });
 
-      if (!response.ok) throw new Error('Google API fout');
-      
+      if (!response.ok) throw new Error('OpenAI API fout');
+
       const data = await response.json();
-      const recommendations = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Geen aanbevelingen beschikbaar.';
+      const recommendations = data.choices[0]?.message?.content?.trim() || 'Geen aanbevelingen beschikbaar.';
       
       toast({
         title: "Patroon Analyse Voltooid",
@@ -418,7 +424,7 @@ const AdvancedSeedManager = () => {
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <h4 className="font-medium mb-2">AI Seed Generatie</h4>
                   <p className="text-sm text-gray-600 mb-4">
-                    Laat Google AI nieuwe therapeutische seeds genereren
+                    Laat OpenAI (key 2) nieuwe therapeutische seeds genereren
                   </p>
                   <div className="flex gap-2">
                     <Input placeholder="Emotie (bijv. angst)" className="flex-1" id="new-emotion" />
@@ -489,25 +495,25 @@ const AdvancedSeedManager = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key size={20} />
-                Google API Configuratie
+                OpenAI Key 2 Configuratie
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="p-4 bg-yellow-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Google Gemini API Key</h4>
+                  <h4 className="font-medium mb-2">Tweede OpenAI API Key</h4>
                   <p className="text-sm text-gray-600 mb-4">
-                    Vereist voor neurosymbolische AI features zoals seed generatie en patroon analyse.
+                    Vereist voor extra AI-functies zoals seed generatie en patroon analyse.
                   </p>
                   <div className="flex gap-2">
                     <Input
                       type="password"
-                      value={googleApiKey}
-                      onChange={(e) => setGoogleApiKey(e.target.value)}
-                      placeholder="AIza..."
+                      value={openAiKey2}
+                      onChange={(e) => setOpenAiKey2(e.target.value)}
+                      placeholder="sk-..."
                       className="flex-1"
                     />
-                    <Button onClick={saveGoogleApiKey}>
+                    <Button onClick={saveOpenAiKey2}>
                       Opslaan
                     </Button>
                   </div>

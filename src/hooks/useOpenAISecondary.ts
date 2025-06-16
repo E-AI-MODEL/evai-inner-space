@@ -1,28 +1,27 @@
-
 import { useState } from 'react';
 
-export interface GeminiAnalysis {
+export interface SecondaryAnalysis {
   patterns: string[];
   insights: string[];
   seedSuggestion?: string;
   confidence: number;
 }
 
-export function useGoogleGemini() {
+export function useOpenAISecondary() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const analyzeNeurosymbolic = async (
     userInput: string,
     context: string,
     apiKey: string
-  ): Promise<GeminiAnalysis | null> => {
+  ): Promise<SecondaryAnalysis | null> => {
     if (!apiKey || !apiKey.trim()) {
-      console.log('🔴 Google API key not available');
+      console.log('🔴 OpenAI key 2 not available');
       return null;
     }
 
     setIsAnalyzing(true);
-    console.log('🧠 Starting Google Gemini neurosymbolic analysis...');
+    console.log('🧠 Starting OpenAI secondary neurosymbolic analysis...');
 
     try {
       const prompt = `Analyseer dit therapeutische gesprek neurosymbolisch:
@@ -39,56 +38,49 @@ Voer een neurosymbolische analyse uit die focust op:
 Geef het resultaat als JSON met:
 {
   "patterns": ["patroon1", "patroon2"],
-  "insights": ["inzicht1", "inzicht2"], 
+  "insights": ["inzicht1", "inzicht2"],
   "seedSuggestion": "emotie-seed-suggestie",
   "confidence": 0.85
 }
 
 Focus op Nederlandse therapeutische context.`;
 
-      const response = await fetch('/api/google-gemini', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 500,
-          }
-        }),
+          model: 'gpt-4.1-2025-04-14',
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
+        })
       });
 
       if (!response.ok) {
-        throw new Error(`Google API error: ${response.status} ${response.statusText}`);
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
+      const content = data.choices[0]?.message?.content;
+
       if (!content) {
-        throw new Error('No content received from Google API');
+        throw new Error('No content received from OpenAI API');
       }
 
-      console.log('🟢 Google Gemini raw response:', content);
+      console.log('🟢 OpenAI secondary raw response:', content);
 
-      // Parse JSON response
       try {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const analysis = JSON.parse(jsonMatch[0]);
-          console.log('✅ Google Gemini analysis successful:', analysis);
+          console.log('✅ OpenAI secondary analysis successful:', analysis);
           return analysis;
         } else {
-          // Fallback parsing
           return {
             patterns: ['Complexe emotionele structuur gedetecteerd'],
             insights: [content.substring(0, 100) + '...'],
@@ -99,14 +91,13 @@ Focus op Nederlandse therapeutische context.`;
         console.error('JSON parse error, using fallback:', parseError);
         return {
           patterns: ['Neurosymbolische analyse uitgevoerd'],
-          insights: ['Google Gemini detecteerde complexe patronen'],
+          insights: ['OpenAI detecteerde complexe patronen'],
           confidence: 0.70
         };
       }
-
     } catch (error) {
-      console.error('🔴 Google Gemini API error:', error);
-      throw new Error(`Google Gemini fout: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
+      console.error('🔴 OpenAI secondary API error:', error);
+      throw new Error(`OpenAI fout: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -120,7 +111,7 @@ Focus op Nederlandse therapeutische context.`;
     if (!apiKey || !apiKey.trim()) return null;
 
     setIsAnalyzing(true);
-    console.log('🌱 Google Gemini seed generation...');
+    console.log('🌱 OpenAI secondary seed generation...');
 
     try {
       const prompt = `Genereer een therapeutische seed voor emotie "${emotion}" in context "${context}".
@@ -132,37 +123,32 @@ Maak een empathische Nederlandse response van 50-80 woorden die:
 
 Geef alleen de response tekst terug, geen JSON.`;
 
-      const response = await fetch('/api/google-gemini', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 200,
-          }
-        }),
+          model: 'gpt-4.1-2025-04-14',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.8,
+          max_tokens: 200
+        })
       });
 
       if (!response.ok) {
-        throw new Error(`Google API error: ${response.status}`);
+        throw new Error(`OpenAI API error: ${response.status}`);
       }
 
       const data = await response.json();
-      const seedResponse = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-      
-      console.log('✅ Google Gemini seed generated:', seedResponse?.substring(0, 50) + '...');
+      const seedResponse = data.choices[0]?.message?.content?.trim();
+
+      console.log('✅ OpenAI secondary seed generated:', seedResponse?.substring(0, 50) + '...');
       return seedResponse || null;
 
     } catch (error) {
-      console.error('🔴 Google seed generation error:', error);
+      console.error('🔴 OpenAI seed generation error:', error);
       return null;
     } finally {
       setIsAnalyzing(false);
