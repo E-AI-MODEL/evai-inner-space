@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import ChatView from "../components/ChatView";
 import InputBar from "../components/InputBar";
@@ -18,6 +18,9 @@ const Index = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showSeedConfetti, setShowSeedConfetti] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  
+  // Create proper messageRefs ref object
+  const messageRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   
   const { 
     isBootstrapping, 
@@ -41,9 +44,12 @@ const Index = () => {
     }
   }, [showSeedConfetti]);
 
-  const handleSettingsSubmit = (newApiKey: string) => {
+  const handleApiKeyChange = (newApiKey: string) => {
     setApiKey(newApiKey);
-    localStorage.setItem("openai-api-key", newApiKey);
+  };
+
+  const handleApiKeySave = () => {
+    localStorage.setItem("openai-api-key", apiKey);
     setIsSettingsOpen(false);
   };
 
@@ -97,7 +103,7 @@ const Index = () => {
             <ChatView 
               messages={messages} 
               isProcessing={isGenerating}
-              messageRefs={{}}
+              messageRefs={messageRefs}
               focusedMessageId={null}
             />
           )}
@@ -121,8 +127,9 @@ const Index = () => {
       <SettingsSheet
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
-        onSubmit={handleSettingsSubmit}
-        currentApiKey={apiKey}
+        apiKey={apiKey}
+        onApiKeyChange={handleApiKeyChange}
+        onApiKeySave={handleApiKeySave}
       />
 
       <SeedConfetti show={showSeedConfetti} />
