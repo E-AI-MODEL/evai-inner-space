@@ -117,7 +117,9 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
             EvAI 5.6 Rubrics Overzicht
           </CardTitle>
           <CardDescription>
-            Geen rubrics data beschikbaar. Start gesprekken om uitgebreide analyses te krijgen.
+            Geen rubriekdata beschikbaar. Gebruik rubriek-specifieke termen
+            (bijv. "emotionele regulatie" of "copingstrategieën") om de analyses te activeren.
+            Zie de factoren in <code>src/hooks/useEvAI56Rubrics.ts</code>.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -289,7 +291,9 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
                 <Card className="bg-white">
                   <CardContent className="pt-6">
                     <div className="text-center text-gray-500">
-                      Nog geen effectiviteitsdata beschikbaar. Meer gebruikersfeedback nodig.
+                      Nog geen effectiviteitsdata beschikbaar. Stimuleer gebruik
+                      van rubriek-specifieke termen voor betere metingen. Zie
+                      <code>src/hooks/useEvAI56Rubrics.ts</code>.
                     </div>
                   </CardContent>
                 </Card>
@@ -332,7 +336,9 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
                 <Card className="bg-white">
                   <CardContent className="pt-6">
                     <div className="text-center text-gray-500">
-                      Onvoldoende data voor timeline analyse. Meer gesprekken nodig.
+                      Onvoldoende data voor timeline analyse. Gebruik meer
+                      rubriek-specifieke termen zodat gebeurtenissen herkend
+                      worden. Zie <code>src/hooks/useEvAI56Rubrics.ts</code>.
                     </div>
                   </CardContent>
                 </Card>
