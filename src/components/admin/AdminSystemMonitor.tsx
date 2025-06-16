@@ -135,8 +135,8 @@ const AdminSystemMonitor: React.FC<AdminSystemMonitorProps> = ({ messages }) => 
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {performanceMetrics.map((metric, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-4">
+            {performanceMetrics.map((metric) => (
+              <div key={metric.name} className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-600">{metric.name}</span>
                   <Zap size={16} className="text-gray-400" />
@@ -240,7 +240,7 @@ const AdminSystemMonitor: React.FC<AdminSystemMonitorProps> = ({ messages }) => 
           <CardContent>
             <div className="space-y-3">
               {errors.slice(-5).map((error, index) => (
-                <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div key={error.timestamp.getTime()} className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-medium text-red-800">Error #{errors.length - index}</p>
