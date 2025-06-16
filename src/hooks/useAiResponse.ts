@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { useGoogleGemini } from "./useGoogleGemini";
 import { useOpenAISeedGenerator } from "./useOpenAISeedGenerator";
-import { useEvAI56Rubrics } from "./useEvAI56Rubrics";
+import { useEvAI56Rubrics, RubricAssessment } from "./useEvAI56Rubrics";
 import { useCoTFeedbackAnalyzer } from "./useCoTFeedbackAnalyzer";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
@@ -56,11 +56,10 @@ export function useAiResponse(
       const overallRisk = calculateOverallRisk(rubricsAssessments);
       
       let rubricInsights: string[] = [];
-      let cotRubricGuidance: string[] = [];
+      const cotRubricGuidance: string[] = [];
       
       if (rubricsAssessments.length > 0) {
         rubricInsights = rubricsAssessments.map(assessment => {
-          const rubric = assessMessage(userMessage.content).find(a => a.rubricId === assessment.rubricId);
           const rubricData = evai56Rubrics.find(r => r.id === assessment.rubricId);
           
           // Generate CoT guidance based on rubric
@@ -413,7 +412,7 @@ export function useAiResponse(
   };
 
   // Enhanced emotion detection function with EvAI rubrics integration
-  const detectAllEmotions = (content: string, assessments: any[]): string[] => {
+  const detectAllEmotions = (content: string, assessments: RubricAssessment[]): string[] => {
     const emotions: string[] = [];
     const lowerContent = content.toLowerCase();
     
