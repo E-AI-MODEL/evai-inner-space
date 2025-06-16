@@ -1,7 +1,7 @@
-
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { useGoogleGemini } from "./useGoogleGemini";
+import { useOpenAISeedGenerator } from "./useOpenAISeedGenerator";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message, ChatHistoryItem } from "../types";
@@ -16,6 +16,12 @@ export function useAiResponse(
   const [isProcessing, setIsProcessing] = useState(false);
   const { checkInput, isLoading: isSeedEngineLoading } = useSeedEngine();
   const { analyzeNeurosymbolic, generateSeed, isAnalyzing } = useGoogleGemini();
+  const { 
+    generateSeed: generateOpenAISeed, 
+    analyzeConversationForSeeds, 
+    injectSeedToDatabase,
+    isGenerating: isOpenAIGenerating 
+  } = useOpenAISeedGenerator();
 
   // Symbolic neurosymbolic features engine
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
@@ -122,6 +128,46 @@ export function useAiResponse(
           }
         }
 
+        // ✨ NEW: Intelligent Seed Generation & Injection
+        if (hasOpenAI && messages.length > 3) {
+          console.log('🎯 Starting intelligent seed generation...');
+          try {
+            // Analyze conversation for missing emotions
+            const missingEmotions = await analyzeConversationForSeeds(messages, apiKey);
+            
+            if (missingEmotions.length > 0) {
+              console.log('🔍 Found missing emotions for seed generation:', missingEmotions);
+              
+              // Generate seed for the most relevant missing emotion
+              const priorityEmotion = missingEmotions[0];
+              const generatedSeed = await generateOpenAISeed({
+                emotion: priorityEmotion,
+                context: userMessage.content,
+                conversationHistory: history.slice(-3).map(h => h.content),
+                severity: 'medium'
+              }, apiKey);
+
+              if (generatedSeed) {
+                const injected = await injectSeedToDatabase(generatedSeed);
+                if (injected) {
+                  aiResp.symbolicInferences = [
+                    ...(aiResp.symbolicInferences || []),
+                    `🌱 Nieuwe seed gegenereerd voor '${priorityEmotion}'`,
+                    `🎯 Seed database uitgebreid met ${missingEmotions.length} ontbrekende emoties`
+                  ];
+                  
+                  toast({
+                    title: "🌱 Automatische Seed Generatie",
+                    description: `Nieuwe seed voor '${priorityEmotion}' toegevoegd aan database`,
+                  });
+                }
+              }
+            }
+          } catch (seedError) {
+            console.error('🔴 Intelligent seed generation failed:', seedError);
+          }
+        }
+
       } else if (matchedResult) {
         const seedResult = matchedResult;
         setSeedConfetti(true);
@@ -147,27 +193,31 @@ export function useAiResponse(
           feedback: null,
         };
       } else {
-        // ✨ NEW: Fallback to Google-only if OpenAI not available
-        if (hasGoogle && !hasOpenAI) {
-          console.log('🟡 OpenAI not available, trying Google-only response...');
+        if (hasOpenAI) {
+          console.log('🟡 No existing seed found, generating new one...');
           try {
-            const generatedResponse = await generateSeed(
-              'onzekerheid', // Default emotion for unknown inputs
-              userMessage.content,
-              googleApiKey!
-            );
+            // Generate a new seed for unknown emotion
+            const generatedSeed = await generateOpenAISeed({
+              emotion: 'onzekerheid', // Default emotion
+              context: userMessage.content,
+              conversationHistory: history.slice(-2).map(h => h.content),
+              severity: 'medium'
+            }, apiKey);
             
-            if (generatedResponse) {
+            if (generatedSeed) {
+              // Inject the new seed
+              await injectSeedToDatabase(generatedSeed);
+              
               aiResp = {
-                id: `ai-google-${Date.now()}`,
+                id: `ai-generated-${Date.now()}`,
                 from: "ai",
-                label: "Valideren",
-                accentColor: getLabelVisuals("Valideren").accentColor,
-                content: generatedResponse,
-                explainText: "Google Gemini therapeutische response",
-                emotionSeed: 'onzekerheid',
+                label: generatedSeed.label,
+                accentColor: getLabelVisuals(generatedSeed.label).accentColor,
+                content: generatedSeed.response.nl,
+                explainText: `Nieuwe seed gegenereerd en toegevoegd voor: ${generatedSeed.emotion}`,
+                emotionSeed: generatedSeed.emotion,
                 animate: true,
-                meta: "Google Only",
+                meta: "OpenAI Generated & Injected",
                 brilliant: true,
                 timestamp: new Date(),
                 replyTo: userMessage.id,
@@ -175,14 +225,14 @@ export function useAiResponse(
               };
               
               toast({
-                title: "🤖 Google AI Response",
-                description: "Therapeutische response gegenereerd door Google Gemini",
+                title: "🚀 Automatische Seed Generatie",
+                description: `Nieuwe seed voor '${generatedSeed.emotion}' gegenereerd en toegevoegd`,
               });
             } else {
-              throw new Error('No response from Google');
+              throw new Error('No seed generated');
             }
-          } catch (googleError) {
-            console.error('🔴 Google-only response failed:', googleError);
+          } catch (generationError) {
+            console.error('🔴 Automatic seed generation failed:', generationError);
             // Final fallback
             const label = "Valideren";
             aiResp = {
@@ -190,8 +240,8 @@ export function useAiResponse(
               from: "ai",
               label: label,
               accentColor: getLabelVisuals(label).accentColor,
-              content: "Het spijt me, beide AI systemen zijn momenteel niet beschikbaar. Probeer later opnieuw.",
-              explainText: "Geen AI beschikbaar",
+              content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+              explainText: "Automatische seed generatie gefaald, fallback response",
               emotionSeed: null,
               animate: true,
               meta: "Fallback",
@@ -235,7 +285,7 @@ export function useAiResponse(
         console.log('✅ Full AI Integration Active: OpenAI + Google working together');
         toast({
           title: "🚀 Volledige AI Integratie",
-          description: "OpenAI en Google werken samen voor optimale analyse",
+          description: "OpenAI en Google werken samen voor optimale analyse + automatische seed generatie",
         });
       }
 
@@ -270,5 +320,8 @@ export function useAiResponse(
     }
   };
 
-  return { generateAiResponse, isGenerating: isProcessing || isSeedEngineLoading || isAnalyzing };
+  return { 
+    generateAiResponse, 
+    isGenerating: isProcessing || isSeedEngineLoading || isAnalyzing || isOpenAIGenerating 
+  };
 }
