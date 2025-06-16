@@ -10,7 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Zap } from 'lucide-react';
 import ApiKeyInput from './ApiKeyInput';
-import GoogleApiKeyInput from './GoogleApiKeyInput';
+import OpenAIApiKey2Input from './OpenAIApiKey2Input';
 
 interface SettingsSheetProps {
   isOpen: boolean;
@@ -27,24 +27,24 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
   onApiKeyChange,
   onApiKeySave,
 }) => {
-  const [googleApiKey, setGoogleApiKey] = useState('');
+  const [openAiKey2, setOpenAiKey2] = useState('');
 
   useEffect(() => {
-    const savedGoogleKey = localStorage.getItem('google-api-key');
-    if (savedGoogleKey) {
-      setGoogleApiKey(savedGoogleKey);
+    const savedKey = localStorage.getItem('openai-api-key-2');
+    if (savedKey) {
+      setOpenAiKey2(savedKey);
     }
   }, []);
 
-  const handleGoogleApiKeySave = () => {
-    if (googleApiKey.trim()) {
-      localStorage.setItem('google-api-key', googleApiKey.trim());
+  const handleOpenAiKey2Save = () => {
+    if (openAiKey2.trim()) {
+      localStorage.setItem('openai-api-key-2', openAiKey2.trim());
     }
   };
 
   const openAiActive = apiKey && apiKey.trim().length > 0;
-  const googleActive = googleApiKey && googleApiKey.trim().length > 0;
-  const bothActive = openAiActive && googleActive;
+  const openAi2Active = openAiKey2 && openAiKey2.trim().length > 0;
+  const bothActive = openAiActive && openAi2Active;
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -80,15 +80,15 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Google Neurosymbolisch</span>
+                <span className="text-sm text-gray-700">OpenAI Analyse (Key 2)</span>
                 <div className="flex items-center gap-2">
-                  {googleActive ? (
+                  {openAi2Active ? (
                     <CheckCircle size={16} className="text-green-600" />
                   ) : (
                     <AlertCircle size={16} className="text-orange-500" />
                   )}
-                  <Badge variant={googleActive ? "default" : "secondary"}>
-                    {googleActive ? "Actief" : "Inactief"}
+                  <Badge variant={openAi2Active ? "default" : "secondary"}>
+                    {openAi2Active ? "Actief" : "Inactief"}
                   </Badge>
                 </div>
               </div>
@@ -122,10 +122,10 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
               onChange={onApiKeyChange}
               onSave={onApiKeySave}
             />
-            <GoogleApiKeyInput
-              value={googleApiKey}
-              onChange={setGoogleApiKey}
-              onSave={handleGoogleApiKeySave}
+            <OpenAIApiKey2Input
+              value={openAiKey2}
+              onChange={setOpenAiKey2}
+              onSave={handleOpenAiKey2Save}
             />
           </div>
         </div>

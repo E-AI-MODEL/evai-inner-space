@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
-import { useGoogleGemini } from "./useGoogleGemini";
+import { useOpenAISecondary } from "./useOpenAISecondary";
 import { useOpenAISeedGenerator } from "./useOpenAISeedGenerator";
 import { useEvAI56Rubrics, RubricAssessment } from "./useEvAI56Rubrics";
 import { useCoTFeedbackAnalyzer } from "./useCoTFeedbackAnalyzer";
@@ -18,7 +18,7 @@ export function useAiResponse(
 ) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { checkInput, isLoading: isSeedEngineLoading } = useSeedEngine();
-  const { analyzeNeurosymbolic, generateSeed, isAnalyzing } = useGoogleGemini();
+  const { analyzeNeurosymbolic, generateSeed, isAnalyzing } = useOpenAISecondary();
   const { 
     generateSeed: generateOpenAISeed, 
     analyzeConversationForSeeds, 
@@ -35,9 +35,9 @@ export function useAiResponse(
   ) => {
     setIsProcessing(true);
     
-    const googleApiKey = localStorage.getItem('google-api-key');
+    const openAiKey2 = localStorage.getItem('openai-api-key-2');
     const hasOpenAI = apiKey && apiKey.trim().length > 0;
-    const hasGoogle = googleApiKey && googleApiKey.trim().length > 0;
+    const hasOpenAi2 = openAiKey2 && openAiKey2.trim().length > 0;
     
     console.log('🔥 ULTRA AGGRESSIVE EvAI-ENHANCED LEARNING MODE ACTIVATED 🔥');
 
@@ -335,17 +335,17 @@ export function useAiResponse(
         }
       }
 
-      // 🔥 STEP 6: Enhanced Google Gemini integration with EvAI context
-      if (hasGoogle && matchedResult && "confidence" in matchedResult) {
-        console.log('🚀 Running Google Gemini enhancement with EvAI context...');
+      // 🔥 STEP 6: Enhanced OpenAI secondary integration with EvAI context
+      if (hasOpenAi2 && matchedResult && "confidence" in matchedResult) {
+        console.log('🚀 Running OpenAI secondary enhancement with EvAI context...');
         try {
           const contextString = history.map(h => `${h.role}: ${h.content}`).join('\n');
           const evaiContext = cotRubricGuidance.length > 0 ? ` | EvAI Guidance: ${cotRubricGuidance.join('; ')}` : '';
-          
+
           const geminiAnalysis = await analyzeNeurosymbolic(
-            userMessage.content + evaiContext, 
-            contextString, 
-            googleApiKey!
+            userMessage.content + evaiContext,
+            contextString,
+            openAiKey2!
           );
           
           if (geminiAnalysis) {
@@ -356,7 +356,7 @@ export function useAiResponse(
             ];
           }
         } catch (geminiError) {
-          console.error('🔴 Google Gemini enhancement failed:', geminiError);
+          console.error('🔴 OpenAI secondary enhancement failed:', geminiError);
         }
       }
 
