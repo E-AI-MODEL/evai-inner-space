@@ -73,7 +73,12 @@ const RubricsAnalyticsDashboard: React.FC<RubricsAnalyticsDashboardProps> = ({ m
           <Brain className="text-blue-600" size={24} />
           <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Rubrieken Analyse</h3>
         </div>
-        <p className="text-blue-700 text-sm">Nog geen rubrieken data beschikbaar. Start een gesprek om inzichten te krijgen.</p>
+        <p className="text-blue-700 text-sm">
+          Nog geen rubriekdata beschikbaar. Gebruik rubriek-specifieke termen
+          (bijv. "emotionele regulatie" of "copingstrategieën") om de analyse te
+          activeren. Zie de factoren in
+          <code>src/hooks/useEvAI56Rubrics.ts</code>.
+        </p>
       </div>
     );
   }
