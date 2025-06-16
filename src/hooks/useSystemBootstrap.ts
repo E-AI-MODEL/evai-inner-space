@@ -31,20 +31,25 @@ export function useSystemBootstrap() {
 
   const bootstrapAdvancedSeeds = async () => {
     try {
-      const existingSeeds = loadAdvancedSeeds();
+      console.log('Bootstrap: Starting advanced seeds bootstrap');
+      let existingSeeds = loadAdvancedSeeds();
+      console.log('Bootstrap: Existing seeds count:', existingSeeds.length);
       
       if (existingSeeds.length === 0) {
-        // Migrate legacy seeds
+        console.log('Bootstrap: No existing seeds, migrating legacy seeds');
         const legacySeeds = seeds as LegacySeed[];
         const migratedSeeds = migrateLegacySeeds(legacySeeds);
         saveAdvancedSeeds(migratedSeeds);
+        existingSeeds = migratedSeeds;
         
+        console.log('Bootstrap: Migrated seeds:', migratedSeeds.length);
         toast({
           title: "Advanced Seeds Bootstrapped",
           description: `${migratedSeeds.length} seeds migrated and activated`
         });
       }
       
+      console.log('Bootstrap: Advanced seeds ready, count:', existingSeeds.length);
       setBootstrapStatus(prev => ({ ...prev, advancedSeeds: true }));
       return true;
     } catch (error) {
@@ -55,15 +60,9 @@ export function useSystemBootstrap() {
 
   const bootstrapLiveMonitoring = async () => {
     try {
-      // Auto-start monitoring
+      console.log('Bootstrap: Starting live monitoring');
       startMonitoring();
       setBootstrapStatus(prev => ({ ...prev, liveMonitoring: true }));
-      
-      toast({
-        title: "Live Monitoring Started",
-        description: "Real-time system monitoring is now active"
-      });
-      
       return true;
     } catch (error) {
       console.error('Live monitoring bootstrap failed:', error);
@@ -73,10 +72,9 @@ export function useSystemBootstrap() {
 
   const bootstrapLearningEngine = async () => {
     try {
-      // Load existing learning data
+      console.log('Bootstrap: Starting learning engine');
       loadLearningData();
       setBootstrapStatus(prev => ({ ...prev, learningEngine: true }));
-      
       return true;
     } catch (error) {
       console.error('Learning engine bootstrap failed:', error);
@@ -86,7 +84,6 @@ export function useSystemBootstrap() {
 
   const bootstrapRubrics = async () => {
     try {
-      // Rubrics are stateless, just mark as ready
       setBootstrapStatus(prev => ({ ...prev, rubrics: true }));
       return true;
     } catch (error) {
@@ -97,7 +94,6 @@ export function useSystemBootstrap() {
 
   const bootstrapSeedInjection = async () => {
     try {
-      // Seed injection is ready when advanced seeds are ready
       setBootstrapStatus(prev => ({ ...prev, seedInjection: true }));
       return true;
     } catch (error) {
@@ -110,7 +106,7 @@ export function useSystemBootstrap() {
     setIsBootstrapping(true);
     
     try {
-      console.log('Starting system bootstrap...');
+      console.log('Bootstrap: Starting full system bootstrap...');
       
       // Bootstrap in correct order
       await bootstrapAdvancedSeeds();
@@ -119,12 +115,7 @@ export function useSystemBootstrap() {
       await bootstrapSeedInjection();
       await bootstrapLiveMonitoring();
       
-      console.log('System bootstrap completed successfully');
-      
-      toast({
-        title: "EvAI System Ready",
-        description: "All advanced features have been activated"
-      });
+      console.log('Bootstrap: System bootstrap completed successfully');
       
     } catch (error) {
       console.error('Bootstrap failed:', error);
@@ -140,21 +131,28 @@ export function useSystemBootstrap() {
 
   // Auto-bootstrap on mount
   useEffect(() => {
+    console.log('Bootstrap: useEffect triggered');
     const hasBootstrapped = localStorage.getItem('evai-bootstrapped');
+    
     if (!hasBootstrapped) {
+      console.log('Bootstrap: First time bootstrap');
       runFullBootstrap().then(() => {
         localStorage.setItem('evai-bootstrapped', 'true');
+        console.log('Bootstrap: Bootstrap completed and marked');
       });
     } else {
+      console.log('Bootstrap: Quick bootstrap (already done before)');
       // Quick bootstrap for existing systems
-      setBootstrapStatus({
-        advancedSeeds: true,
-        liveMonitoring: true,
-        learningEngine: true,
-        rubrics: true,
-        seedInjection: true
+      bootstrapAdvancedSeeds().then(() => {
+        setBootstrapStatus({
+          advancedSeeds: true,
+          liveMonitoring: true,
+          learningEngine: true,
+          rubrics: true,
+          seedInjection: true
+        });
+        startMonitoring();
       });
-      startMonitoring();
     }
   }, []);
 

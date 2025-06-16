@@ -1,30 +1,15 @@
 
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import { useAdvancedSeedEngine } from './useAdvancedSeedEngine';
-import seeds from "../seeds.json";
 import { ChatHistoryItem } from '../types';
 import { loadAdvancedSeeds } from '../lib/advancedSeedStorage';
 
-// Keep the original Seed interface for backward compatibility
 export interface Seed {
   emotion: string;
   triggers: string[];
   response: string;
   meta?: string;
   label?: "Valideren" | "Reflectievraag" | "Suggestie";
-}
-
-// Fallback function for legacy seed matching
-function matchSeed(input: string, seeds: Seed[]): Seed | null {
-  const lowered = input.toLowerCase();
-  for (const seed of seeds) {
-    for (const trigger of seed.triggers) {
-      if (lowered.includes(trigger.toLowerCase())) {
-        return seed;
-      }
-    }
-  }
-  return null;
 }
 
 export function useSeedEngine() {
@@ -37,20 +22,21 @@ export function useSeedEngine() {
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
     history?: ChatHistoryItem[]
   ): Promise<EmotionDetection | Seed | null> => {
-    // Check if we have advanced seeds available
+    console.log('SeedEngine: checkInput called with:', { input, hasApiKey: !!apiKey, context });
+    
+    // Always try advanced seeds first
     const advancedSeeds = loadAdvancedSeeds();
+    console.log('SeedEngine: Advanced seeds loaded:', advancedSeeds.length);
     
     if (advancedSeeds.length > 0) {
-      // Use advanced seed engine
+      console.log('SeedEngine: Using advanced seed engine');
       const result = await checkAdvancedInput(input, apiKey, context, history);
       
-      // Convert AdvancedSeed to Seed interface for backward compatibility
       if (result && 'id' in result && !('confidence' in result)) {
-        // Map the advanced label to legacy label, excluding "Interventie" 
+        console.log('SeedEngine: Advanced seed matched:', result);
         let legacyLabel: "Valideren" | "Reflectievraag" | "Suggestie" = "Valideren";
         if (result.label === "Reflectievraag") legacyLabel = "Reflectievraag";
         else if (result.label === "Suggestie") legacyLabel = "Suggestie";
-        // "Interventie" will default to "Valideren" for backward compatibility
         
         return {
           emotion: result.emotion,
@@ -61,20 +47,19 @@ export function useSeedEngine() {
         };
       }
       
+      console.log('SeedEngine: Returning result from advanced engine:', result);
       return result as EmotionDetection | null;
     }
     
-    // Fallback to original logic
+    // Only use OpenAI if advanced seeds are not available AND API key exists
     if (apiKey && apiKey.trim()) {
+      console.log('SeedEngine: Using OpenAI fallback');
       const aiResult = await detectEmotion(input, apiKey, context, history);
       return aiResult;
     }
     
-    if (context?.dislikedLabel) {
-      return null;
-    }
-    
-    return matchSeed(input, seeds as Seed[]);
+    console.log('SeedEngine: No seeds or API key available');
+    return null;
   };
 
   return { 

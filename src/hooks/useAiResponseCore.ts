@@ -18,76 +18,91 @@ export function useAiResponseCore(
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
     history: any[] = []
   ): Promise<Message> => {
-    const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
+    console.log('AiResponseCore: generateAiMessage called');
+    console.log('User message:', userMessage.content);
+    console.log('Context:', context);
+    console.log('History length:', history.length);
+    console.log('API key available:', !!apiKey);
     
-    if (matchedResult && "confidence" in matchedResult) {
-      setSeedConfetti(true);
-      toast({
-        title: "AI Emotiedetectie",
-        description: `${matchedResult.emotion} gedetecteerd (${Math.round(
-          matchedResult.confidence * 100
-        )}% zekerheid)`,
-      });
+    try {
+      const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
+      console.log('AiResponseCore: checkInput result:', matchedResult);
+      
+      if (matchedResult && "confidence" in matchedResult) {
+        console.log('AiResponseCore: OpenAI result detected');
+        setSeedConfetti(true);
+        toast({
+          title: "AI Emotiedetectie",
+          description: `${matchedResult.emotion} gedetecteerd (${Math.round(
+            matchedResult.confidence * 100
+          )}% zekerheid)`,
+        });
 
-      const label = matchedResult.label || "Valideren";
-      return {
-        id: `ai-openai-${Date.now()}`,
-        from: "ai",
-        label: label,
-        accentColor: getLabelVisuals(label).accentColor,
-        content: matchedResult.response,
-        explainText: matchedResult.reasoning,
-        emotionSeed: matchedResult.emotion,
-        animate: true,
-        meta: `AI – ${Math.round(matchedResult.confidence * 100)}%`,
-        brilliant: true,
-        timestamp: new Date(),
-        replyTo: userMessage.id,
-        feedback: null,
-      };
-    } else if (matchedResult) {
-      const seedResult = matchedResult;
-      setSeedConfetti(true);
-      toast({
-        title: "Advanced Seed Match!",
-        description: `Emotie '${seedResult.emotion}' herkend via advanced matching`,
-      });
+        const label = matchedResult.label || "Valideren";
+        return {
+          id: `ai-openai-${Date.now()}`,
+          from: "ai",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
+          content: matchedResult.response,
+          explainText: matchedResult.reasoning,
+          emotionSeed: matchedResult.emotion,
+          animate: true,
+          meta: `AI – ${Math.round(matchedResult.confidence * 100)}%`,
+          brilliant: true,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+        };
+      } else if (matchedResult && typeof matchedResult === 'object') {
+        console.log('AiResponseCore: Seed result detected');
+        const seedResult = matchedResult;
+        setSeedConfetti(true);
+        toast({
+          title: "Seed Match!",
+          description: `Emotie '${seedResult.emotion}' herkend`,
+        });
 
-      const label = seedResult.label || "Valideren";
-      return {
-        id: `ai-seed-${Date.now()}`,
-        from: "ai",
-        label: label,
-        accentColor: getLabelVisuals(label).accentColor,
-        content: seedResult.response,
-        explainText: `Advanced seed match: '${seedResult.triggers.join(", ")}'`,
-        emotionSeed: seedResult.emotion,
-        animate: true,
-        meta: seedResult.meta || "Advanced",
-        brilliant: true,
-        timestamp: new Date(),
-        replyTo: userMessage.id,
-        feedback: null,
-      };
-    } else {
-      const label = "Valideren";
-      return {
-        id: context?.dislikedLabel ? `ai-feedback-${Date.now()}`: `ai-new-${Date.now()}`,
-        from: "ai",
-        label: label,
-        accentColor: getLabelVisuals(label).accentColor,
-        content: context?.dislikedLabel 
-          ? "Het spijt me dat mijn vorige antwoord niet hielp. Ik zal proberen hier rekening mee te houden." 
-          : "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
-        explainText: context?.dislikedLabel ? "Nieuw antwoord na feedback." : "Geen specifieke emotie gedetecteerd.",
-        emotionSeed: null,
-        animate: true,
-        meta: context?.dislikedLabel ? "Feedback" : "",
-        brilliant: false,
-        timestamp: new Date(),
-        replyTo: userMessage.id,
-        feedback: null,
-      };
+        const label = seedResult.label || "Valideren";
+        return {
+          id: `ai-seed-${Date.now()}`,
+          from: "ai",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
+          content: seedResult.response,
+          explainText: `Seed match: '${seedResult.triggers?.join?.(", ") || "unknown"}'`,
+          emotionSeed: seedResult.emotion,
+          animate: true,
+          meta: seedResult.meta || "Seed",
+          brilliant: true,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+        };
+      } else {
+        console.log('AiResponseCore: No match found, creating default response');
+        const label = "Valideren";
+        return {
+          id: context?.dislikedLabel ? `ai-feedback-${Date.now()}`: `ai-new-${Date.now()}`,
+          from: "ai",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
+          content: context?.dislikedLabel 
+            ? "Het spijt me dat mijn vorige antwoord niet hielp. Ik zal proberen hier rekening mee te houden." 
+            : "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+          explainText: context?.dislikedLabel ? "Nieuw antwoord na feedback." : "Geen specifieke emotie gedetecteerd.",
+          emotionSeed: null,
+          animate: true,
+          meta: context?.dislikedLabel ? "Feedback" : "Default",
+          brilliant: false,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+        };
+      }
+    } catch (error) {
+      console.error('AiResponseCore: Error in generateAiMessage:', error);
+      throw error;
     }
   };
 

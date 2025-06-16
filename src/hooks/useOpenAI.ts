@@ -26,13 +26,13 @@ export function useOpenAI() {
     }
 
     setIsLoading(true);
+    console.log('OpenAI: Starting emotion detection for:', message);
 
     const userMessageContent = context?.dislikedLabel
       ? `The user's original message is: "${message}". My previous response had the label '${context.dislikedLabel}', which the user disliked. Please generate a new, alternative response. Your new response MUST have a different label than '${context.dislikedLabel}'.`
       : message;
 
     try {
-      // Create proper headers
       const headers = new Headers();
       headers.append('Authorization', `Bearer ${apiKey}`);
       headers.append('Content-Type', 'application/json');
@@ -78,13 +78,13 @@ Focus op wat de gebruiker werkelijk nodig heeft, niet alleen op emotionele aspec
         }
       ];
 
-      console.log('Making OpenAI API call with proper headers...');
+      console.log('OpenAI: Making API call...');
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: 'gpt-4o',
           messages: apiMessages,
           temperature: 0.4,
           max_tokens: 300,
@@ -100,6 +100,7 @@ Focus op wat de gebruiker werkelijk nodig heeft, niet alleen op emotionele aspec
         } else if (response.status === 429) {
           errorMessage = 'API rate limit of quotum overschreden. Wacht even of controleer je OpenAI account.';
         }
+        console.error('OpenAI API error:', errorMessage);
         throw new Error(errorMessage);
       }
 

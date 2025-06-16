@@ -19,10 +19,17 @@ export function useAdvancedSeedMatcher() {
     context?: MatchingContext
   ): AdvancedSeed | null => {
     setIsMatching(true);
+    console.log('AdvancedSeedMatcher: Finding match for:', input);
+    console.log('AdvancedSeedMatcher: Context:', context);
     
     try {
       const seeds = loadAdvancedSeeds().filter(seed => seed.isActive);
-      if (seeds.length === 0) return null;
+      console.log('AdvancedSeedMatcher: Active seeds loaded:', seeds.length);
+      
+      if (seeds.length === 0) {
+        console.log('AdvancedSeedMatcher: No active seeds available');
+        return null;
+      }
 
       const inputLower = input.toLowerCase();
       const candidates: Array<{ seed: AdvancedSeed; score: number }> = [];
@@ -36,6 +43,8 @@ export function useAdvancedSeedMatcher() {
         );
         
         if (triggerMatches.length === 0) continue;
+        
+        console.log('AdvancedSeedMatcher: Seed matched triggers:', seed.emotion, triggerMatches);
         
         // Base score from trigger matches
         score = triggerMatches.length * 10;
@@ -77,10 +86,16 @@ export function useAdvancedSeedMatcher() {
           score *= Math.max(0.3, 1 - (seed.meta.usageCount * 0.1));
         }
         
+        console.log('AdvancedSeedMatcher: Seed score:', seed.emotion, score);
         candidates.push({ seed, score });
       }
       
-      if (candidates.length === 0) return null;
+      console.log('AdvancedSeedMatcher: Total candidates:', candidates.length);
+      
+      if (candidates.length === 0) {
+        console.log('AdvancedSeedMatcher: No candidates found');
+        return null;
+      }
       
       // Sort by score and apply some randomness for variety
       candidates.sort((a, b) => b.score - a.score);
@@ -93,6 +108,7 @@ export function useAdvancedSeedMatcher() {
       for (const candidate of topCandidates) {
         random -= candidate.score;
         if (random <= 0) {
+          console.log('AdvancedSeedMatcher: Selected seed:', candidate.seed.emotion);
           incrementSeedUsage(candidate.seed.id);
           return candidate.seed;
         }
@@ -100,9 +116,13 @@ export function useAdvancedSeedMatcher() {
       
       // Fallback to highest scored
       const selected = candidates[0].seed;
+      console.log('AdvancedSeedMatcher: Fallback selected:', selected.emotion);
       incrementSeedUsage(selected.id);
       return selected;
       
+    } catch (error) {
+      console.error('AdvancedSeedMatcher: Error during matching:', error);
+      return null;
     } finally {
       setIsMatching(false);
     }

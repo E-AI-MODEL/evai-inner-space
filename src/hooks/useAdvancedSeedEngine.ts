@@ -1,11 +1,9 @@
 
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import { useAdvancedSeedMatcher } from './useAdvancedSeedMatcher';
-import { AdvancedSeed, LegacySeed } from '../types/seed';
+import { AdvancedSeed } from '../types/seed';
 import { ChatHistoryItem } from '../types';
 import { loadAdvancedSeeds } from '../lib/advancedSeedStorage';
-import { migrateLegacySeeds } from '../utils/seedMigration';
-import seeds from "../seeds.json";
 
 export function useAdvancedSeedEngine() {
   const { detectEmotion, isLoading } = useOpenAI();
@@ -16,36 +14,34 @@ export function useAdvancedSeedEngine() {
     apiKey?: string,
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
     history?: ChatHistoryItem[]
-  ): Promise<EmotionDetection | AdvancedSeed | LegacySeed | null> => {
+  ): Promise<EmotionDetection | AdvancedSeed | null> => {
+    console.log('AdvancedSeedEngine: checkInput called');
+    
     // Try OpenAI first if API key is available
     if (apiKey && apiKey.trim()) {
-      const aiResult = await detectEmotion(input, apiKey, context, history);
-      return aiResult;
+      console.log('AdvancedSeedEngine: Trying OpenAI first');
+      try {
+        const aiResult = await detectEmotion(input, apiKey, context, history);
+        console.log('AdvancedSeedEngine: OpenAI result:', aiResult);
+        return aiResult;
+      } catch (error) {
+        console.log('AdvancedSeedEngine: OpenAI failed, falling back to seeds:', error);
+      }
     }
     
     // Check for advanced seeds
-    let advancedSeeds = loadAdvancedSeeds();
+    const advancedSeeds = loadAdvancedSeeds();
+    console.log('AdvancedSeedEngine: Advanced seeds available:', advancedSeeds.length);
     
-    // If no advanced seeds exist, migrate legacy seeds
     if (advancedSeeds.length === 0) {
-      const legacySeeds = seeds as LegacySeed[];
-      if (legacySeeds.length > 0) {
-        // For first run, return legacy seed matching
-        const lowered = input.toLowerCase();
-        for (const seed of legacySeeds) {
-          for (const trigger of seed.triggers) {
-            if (lowered.includes(trigger.toLowerCase())) {
-              return seed;
-            }
-          }
-        }
-      }
+      console.log('AdvancedSeedEngine: No advanced seeds available');
       return null;
     }
     
-    // Use advanced matching
+    // Skip feedback handling for now - advanced engine doesn't implement it yet
     if (context?.dislikedLabel) {
-      return null; // Advanced engine can handle feedback in future versions
+      console.log('AdvancedSeedEngine: Skipping due to disliked label');
+      return null;
     }
     
     // Determine context from input and time
@@ -58,10 +54,14 @@ export function useAdvancedSeedEngine() {
     const matchingContext = {
       timeOfDay,
       situation: 'therapy' as const,
-      userAge: 'adult' as const // Default, could be enhanced with user profiling
+      userAge: 'adult' as const
     };
     
-    return findBestMatch(input, matchingContext);
+    console.log('AdvancedSeedEngine: Using matching context:', matchingContext);
+    const result = findBestMatch(input, matchingContext);
+    console.log('AdvancedSeedEngine: Match result:', result);
+    
+    return result;
   };
 
   return { 
