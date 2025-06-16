@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useChatCore } from "../hooks/useChatCore";
 import { useAiResponseSimple } from "../hooks/useAiResponseSimple";
+import { useFeedbackHandler } from "../hooks/useFeedbackHandler";
 import ChatViewSimple from "../components/ChatViewSimple";
 import InputBarSimple from "../components/InputBarSimple";
 import TopBarSimple from "../components/TopBarSimple";
@@ -11,7 +12,7 @@ import { Toaster } from "@/components/ui/toaster";
 const Index = () => {
   console.log('Index: Rendering');
   
-  const { messages, addMessage, clearHistory } = useChatCore();
+  const { messages, addMessage, clearHistory, setMessages } = useChatCore();
   
   const [apiKey, setApiKey] = useState(() => {
     try {
@@ -25,6 +26,7 @@ const Index = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const { generateResponse, isGenerating } = useAiResponseSimple(addMessage, apiKey);
+  const { setFeedback } = useFeedbackHandler(messages, setMessages, generateResponse);
   
   console.log('Index: Current messages count:', messages.length);
 
@@ -49,6 +51,7 @@ const Index = () => {
         <ChatViewSimple 
           messages={messages} 
           isProcessing={isGenerating}
+          onFeedback={setFeedback}
         />
         <InputBarSimple
           onSendMessage={generateResponse}

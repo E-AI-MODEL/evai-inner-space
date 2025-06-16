@@ -76,6 +76,7 @@ export function useChatCore() {
 
   return {
     messages,
+    setMessages,
     addMessage,
     clearHistory
   };

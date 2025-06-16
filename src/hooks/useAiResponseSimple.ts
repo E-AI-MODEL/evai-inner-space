@@ -9,14 +9,20 @@ export function useAiResponseSimple(
 ) {
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateResponse = useCallback(async (userMessage: Message) => {
+  const generateResponse = useCallback(async (
+    userMessage: Message, 
+    context?: { dislikedLabel: "Valideren" | "Reflectievraag" | "Suggestie" | "Configuratie" | "OpenAI" }
+  ) => {
     console.log('AiResponseSimple: Generating response for:', userMessage.content);
     console.log('AiResponseSimple: API key available:', !!apiKey);
+    console.log('AiResponseSimple: Context:', context);
     
     setIsGenerating(true);
 
-    // Add user message immediately
-    addMessage(userMessage);
+    // Add user message immediately if it's not a feedback regeneration
+    if (!context?.dislikedLabel) {
+      addMessage(userMessage);
+    }
 
     // Check API key first
     if (!apiKey || !apiKey.trim()) {
@@ -49,6 +55,10 @@ export function useAiResponseSimple(
       // Test API connection with a simple call
       console.log('AiResponseSimple: Testing API connection...');
       
+      const systemPrompt = context?.dislikedLabel 
+        ? `Je bent EvAI. De gebruiker was niet tevreden met mijn vorige antwoord dat gelabeld was als '${context.dislikedLabel}'. Geef een alternatief antwoord met een ander label dan '${context.dislikedLabel}'. Reageer empathisch en behulpzaam in het Nederlands.`
+        : 'Je bent EvAI, een empathische AI-assistent. Reageer kort en behulpzaam in het Nederlands.';
+      
       const testResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -60,7 +70,7 @@ export function useAiResponseSimple(
           messages: [
             {
               role: 'system',
-              content: 'Reageer kort en empathisch in het Nederlands.'
+              content: systemPrompt
             },
             {
               role: 'user',
@@ -91,15 +101,18 @@ export function useAiResponseSimple(
       
       console.log('AiResponseSimple: API response received:', aiContent);
 
+      const label = context?.dislikedLabel ? "Suggestie" : "OpenAI";
       const aiResponse: Message = {
         id: `ai-openai-${Date.now()}`,
         from: "ai",
-        label: "OpenAI",
+        label: label,
         content: aiContent,
-        explainText: "Response van OpenAI GPT-4.1",
+        explainText: context?.dislikedLabel 
+          ? `Alternatief antwoord na feedback op '${context.dislikedLabel}'`
+          : "Response van OpenAI GPT-4.1",
         emotionSeed: null,
         animate: true,
-        meta: "OpenAI",
+        meta: context?.dislikedLabel ? "Feedback" : "OpenAI",
         brilliant: true,
         timestamp: new Date(),
         replyTo: userMessage.id,
@@ -110,7 +123,9 @@ export function useAiResponseSimple(
       
       toast({
         title: "Response ontvangen",
-        description: "OpenAI heeft succesvol gereageerd.",
+        description: context?.dislikedLabel 
+          ? "Alternatief antwoord gegenereerd"
+          : "OpenAI heeft succesvol gereageerd.",
       });
 
     } catch (error) {
