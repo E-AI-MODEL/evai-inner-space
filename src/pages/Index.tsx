@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import ChatView from "../components/ChatView";
@@ -10,6 +9,7 @@ import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import { useChat } from "../hooks/useChat";
 import { useAiResponse } from "../hooks/useAiResponse";
 import { useSystemBootstrap } from "../hooks/useSystemBootstrap";
+import { useFeedbackHandlerNew } from "../hooks/useFeedbackHandlerNew";
 import { Badge } from "@/components/ui/badge";
 import { Activity, CheckCircle, Loader2 } from "lucide-react";
 
@@ -36,6 +36,8 @@ const Index = () => {
     apiKey,
     setShowSeedConfetti
   );
+
+  const { feedbacks, handleFeedback } = useFeedbackHandlerNew();
 
   useEffect(() => {
     if (showSeedConfetti) {
@@ -67,12 +69,12 @@ const Index = () => {
               {isBootstrapping ? (
                 <>
                   <Loader2 size={16} className="animate-spin text-blue-600" />
-                  <span className="text-sm text-blue-800">Initializing advanced features...</span>
+                  <span className="text-sm text-blue-800">Initializing neuro-symbolic features...</span>
                 </>
               ) : (
                 <>
                   <Activity size={16} className="text-blue-600" />
-                  <span className="text-sm text-blue-800">EvAI Advanced System</span>
+                  <span className="text-sm text-blue-800">EvAI Neuro-Symbolic System</span>
                 </>
               )}
             </div>
@@ -105,6 +107,7 @@ const Index = () => {
               isProcessing={isGenerating}
               messageRefs={messageRefs}
               focusedMessageId={null}
+              onFeedback={handleFeedback}
             />
           )}
           

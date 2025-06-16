@@ -32,10 +32,15 @@ export function useOpenAI() {
       : message;
 
     try {
+      // Create proper headers
+      const headers = new Headers();
+      headers.append('Authorization', `Bearer ${apiKey}`);
+      headers.append('Content-Type', 'application/json');
+
       const apiMessages = [
         {
           role: 'system',
-          content: `Je bent EvAI, een geavanceerde en empathische AI-assistent die zowel emotionele ondersteuning als praktische hulp biedt. Je doel is om gebruikers te helpen met een balans tussen emotionele validatie en concrete ondersteuning.
+          content: `Je bent EvAI, een geavanceerde neurosymbolische AI-assistent die zowel emotionele ondersteuning als praktische hulp biedt. Je doel is om gebruikers te helpen met een balans tussen emotionele validatie en concrete ondersteuning.
 
 **Belangrijke richtlijnen:**
 1. **Balans zoeken**: Niet elke uiting heeft een sterke emotionele lading. Soms willen mensen gewoon informatie, hulp of een gesprek.
@@ -73,12 +78,11 @@ Focus op wat de gebruiker werkelijk nodig heeft, niet alleen op emotionele aspec
         }
       ];
 
+      console.log('Making OpenAI API call with proper headers...');
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify({
           model: 'gpt-4.1-2025-04-14',
           messages: apiMessages,
@@ -108,6 +112,7 @@ Focus op wat de gebruiker werkelijk nodig heeft, niet alleen op emotionele aspec
       
       try {
         const emotionData = JSON.parse(content);
+        console.log('OpenAI response parsed successfully:', emotionData);
         return emotionData;
       } catch (e) {
         console.error("Failed to parse OpenAI JSON response:", content);
@@ -115,6 +120,7 @@ Focus op wat de gebruiker werkelijk nodig heeft, niet alleen op emotionele aspec
       }
 
     } catch (err) {
+      console.error('OpenAI API call failed:', err);
       throw err;
     } finally {
       setIsLoading(false);
