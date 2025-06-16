@@ -47,6 +47,70 @@ export type Database = {
           weight?: number | null;
         };
       }
+      ,
+      seed_feedback: {
+        Row: {
+          id: string;
+          seed_id: string | null;
+          rating: string | null;
+          notes: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          seed_id?: string | null;
+          rating?: string | null;
+          notes?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          seed_id?: string | null;
+          rating?: string | null;
+          notes?: string | null;
+          created_at?: string | null;
+        };
+      },
+      seed_rubrics: {
+        Row: {
+          id: string;
+          seed_id: string | null;
+          rubric: string | null;
+          score: number | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          seed_id?: string | null;
+          rubric?: string | null;
+          score?: number | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          seed_id?: string | null;
+          rubric?: string | null;
+          score?: number | null;
+          created_at?: string | null;
+        };
+      },
+      rubrics: {
+        Row: {
+          id: string;
+          code: string | null;
+          rubric_json: Json | null;
+        };
+        Insert: {
+          id?: string;
+          code?: string | null;
+          rubric_json?: Json | null;
+        };
+        Update: {
+          id?: string;
+          code?: string | null;
+          rubric_json?: Json | null;
+        };
+      }
     }
     Views: {
       [_ in never]: never

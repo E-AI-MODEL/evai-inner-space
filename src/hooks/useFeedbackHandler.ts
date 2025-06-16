@@ -1,6 +1,7 @@
 
 import { Message } from '../types';
 import { loadFeedback, saveFeedback } from '../lib/feedbackStorage';
+import { saveSeedFeedback } from '../api/saveSeedFeedback';
 
 type GenerateAiResponseFn = (
     userMessage: Message,
@@ -41,7 +42,14 @@ export function useFeedbackHandler(
         return msg;
       })
     );
-    
+
+    if (newFeedback && dislikedMessage?.emotionSeed) {
+      saveSeedFeedback(
+        dislikedMessage.emotionSeed,
+        newFeedback === 'like' ? 'up' : 'down'
+      );
+    }
+
     if (newFeedback === 'dislike' && dislikedMessage) {
       handleDislike(dislikedMessage);
     }
