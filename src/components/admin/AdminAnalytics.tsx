@@ -60,6 +60,28 @@ const AdminAnalytics: React.FC<AdminAnalyticsProps> = ({ messages }) => {
     messages: 1
   }));
 
+  // Symbolic inferences statistics
+  const symbolicStats = messages.reduce(
+    (acc, msg) => {
+      if (msg.symbolicInferences && msg.symbolicInferences.length) {
+        acc.messageCount++;
+        acc.total += msg.symbolicInferences.length;
+        msg.symbolicInferences.forEach(inf => {
+          acc.inferences[inf] = (acc.inferences[inf] || 0) + 1;
+          if (/openai|neurosymbol/i.test(inf)) {
+            acc.secondary++;
+          }
+        });
+      }
+      return acc;
+    },
+    { messageCount: 0, total: 0, secondary: 0, inferences: {} as Record<string, number> }
+  );
+
+  const topInferences = Object.entries(symbolicStats.inferences)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
   const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
 
   const chartConfig = {
@@ -209,6 +231,31 @@ const AdminAnalytics: React.FC<AdminAnalyticsProps> = ({ messages }) => {
               {Object.keys(feedbackStats).length === 0 && (
                 <p className="text-gray-500 text-center">Nog geen feedback ontvangen</p>
               )}
+            </div>
+          </CardContent>
+        </Card>
+        {/* Symbolic Inferences Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Symbolic Inferences</CardTitle>
+            <CardDescription>Analyse van opgeslagen observaties</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 text-sm">
+              <p>
+                {symbolicStats.messageCount} berichten bevatten{' '}
+                {symbolicStats.total} symbolische observaties.
+              </p>
+              <p>
+                {symbolicStats.secondary} afkomstig van de tweede API.
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                {topInferences.map(([inf, count]) => (
+                  <li key={inf}>
+                    {inf} ({count}x)
+                  </li>
+                ))}
+              </ul>
             </div>
           </CardContent>
         </Card>

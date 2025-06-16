@@ -4,7 +4,7 @@ import { Message } from '../../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, CheckCircle, Clock, Zap, Server, Activity } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Zap, Server, Activity, Brain } from 'lucide-react';
 
 interface AdminSystemMonitorProps {
   messages: Message[];
@@ -32,6 +32,28 @@ const AdminSystemMonitor: React.FC<AdminSystemMonitorProps> = ({ messages }) => 
     { name: 'Avg Confidence', value: `${(successfulDetections.reduce((acc, msg) => acc + (msg.meta?.includes('%') ? parseInt(msg.meta.split('%')[0].split('–')[1]?.trim() || '0') : 80), 0) / Math.max(successfulDetections.length, 1)).toFixed(0)}%`, trend: 'stable', color: 'text-purple-600' },
     { name: 'Cache Hits', value: recentMessages.filter(m => m.meta?.includes('Lokaal')).length, trend: 'up', color: 'text-orange-600' }
   ];
+
+  // Symbolic inferences stats
+  const symbolicStats = messages.reduce(
+    (acc, msg) => {
+      if (msg.symbolicInferences && msg.symbolicInferences.length) {
+        acc.messageCount++;
+        acc.total += msg.symbolicInferences.length;
+        msg.symbolicInferences.forEach(inf => {
+          acc.inferences[inf] = (acc.inferences[inf] || 0) + 1;
+          if (/openai|neurosymbol/i.test(inf)) {
+            acc.secondary++;
+          }
+        });
+      }
+      return acc;
+    },
+    { messageCount: 0, total: 0, secondary: 0, inferences: {} as Record<string, number> }
+  );
+
+  const topInferences = Object.entries(symbolicStats.inferences)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
 
   // Recent activities
   const recentActivities = messages.slice(-10).reverse().map(msg => ({
@@ -124,6 +146,32 @@ const AdminSystemMonitor: React.FC<AdminSystemMonitorProps> = ({ messages }) => 
                 </div>
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Symbolic Inferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Brain size={20} />
+            Symbolic Inferences
+          </CardTitle>
+          <CardDescription>Samenvatting van gedetecteerde patronen</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm">
+            <p>
+              {symbolicStats.messageCount} berichten bevatten {symbolicStats.total} observaties.
+            </p>
+            <p>{symbolicStats.secondary} afkomstig van de tweede API.</p>
+            <ul className="list-disc pl-5 space-y-1">
+              {topInferences.map(([inf, count]) => (
+                <li key={inf}>
+                  {inf} ({count}x)
+                </li>
+              ))}
+            </ul>
           </div>
         </CardContent>
       </Card>
