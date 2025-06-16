@@ -46,7 +46,10 @@ const Index = () => {
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <ChatViewSimple messages={messages} />
+        <ChatViewSimple 
+          messages={messages} 
+          isProcessing={isGenerating}
+        />
         <InputBarSimple
           onSendMessage={generateResponse}
           isGenerating={isGenerating}

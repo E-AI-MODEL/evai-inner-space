@@ -1,7 +1,8 @@
+
 export interface Message {
   id: string;
   from: "user" | "ai";
-  label: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" | null;
+  label: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" | "Configuratie" | "OpenAI" | null;
   content: string;
   emotionSeed: string | null;
   animate: boolean;
