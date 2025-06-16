@@ -36,26 +36,33 @@ export function useAiResponse(
     userMessage: Message,
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
   ) => {
+    console.log('useAiResponse: generateAiResponse called', { userMessage, context });
     const startTime = Date.now();
     setIsProcessing(true);
     
     // Add user message first
+    console.log('useAiResponse: Adding user message');
     addMessage(userMessage);
     
     // Ensure monitoring is active if system is ready
     if (isSystemReady && !isMonitoring) {
+      console.log('useAiResponse: Starting monitoring');
       startMonitoring();
     }
     
     try {
       const history = prepareHistory(messages, userMessage);
+      console.log('useAiResponse: Prepared history, length:', history.length);
 
       // Only run advanced features if system is ready
       if (isSystemReady) {
+        console.log('useAiResponse: Processing advanced features');
         processAdvancedFeatures(messages, userMessage, isSystemReady);
       }
 
+      console.log('useAiResponse: Generating AI message');
       let aiResp = await generateAiMessage(userMessage, context, history);
+      console.log('useAiResponse: AI response generated', aiResp);
 
       // Record interaction metrics
       const responseTime = Date.now() - startTime;
@@ -64,13 +71,16 @@ export function useAiResponse(
       // Symbolic engine analysis (only if system ready)
       aiResp = processSymbolicInferences(messages, aiResp, isSystemReady);
 
+      console.log('useAiResponse: Adding AI response');
       addMessage(aiResp);
       
       // Trigger learning from the updated conversation (only if system ready)
-      triggerLearning(messages, userMessage, aiResp, isSystemReady);
+      if (isSystemReady) {
+        triggerLearning(messages, userMessage, aiResp, isSystemReady);
+      }
       
     } catch (err) {
-      console.error("Error processing message:", err);
+      console.error("useAiResponse: Error processing message:", err);
       const errorMessage =
         err instanceof Error
           ? err.message
@@ -89,6 +99,7 @@ export function useAiResponse(
         variant: "destructive",
       });
     } finally {
+      console.log('useAiResponse: Processing complete');
       setIsProcessing(false);
     }
   };

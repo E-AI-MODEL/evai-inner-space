@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import ChatView from "../components/ChatView";
@@ -30,6 +31,8 @@ const Index = () => {
   } = useSystemBootstrap();
   
   const { messages, addMessage, clearHistory, getEmotionHistory } = useChat(apiKey);
+  console.log('Index: Current messages count:', messages.length);
+  
   const { generateAiResponse, isGenerating } = useAiResponse(
     messages,
     addMessage,
@@ -47,10 +50,12 @@ const Index = () => {
   }, [showSeedConfetti]);
 
   const handleApiKeyChange = (newApiKey: string) => {
+    console.log('Index: API key changed');
     setApiKey(newApiKey);
   };
 
   const handleApiKeySave = () => {
+    console.log('Index: Saving API key');
     localStorage.setItem("openai-api-key", apiKey);
     setIsSettingsOpen(false);
   };

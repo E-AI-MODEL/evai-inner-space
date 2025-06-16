@@ -1,9 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { Message } from "../types";
 import { loadChatHistory, saveChatHistory } from "../lib/chatHistoryStorage";
 import { loadFeedback } from "../lib/feedbackStorage";
-import { getLabelVisuals } from "../lib/emotion-visuals";
 
 const initialMessages: Message[] = [
   {
@@ -57,11 +55,21 @@ export function useChatHistory() {
   const [messages, setMessages] = useState<Message[]>(getInitialMessages);
 
   useEffect(() => {
+    console.log('useChatHistory: Saving messages to localStorage', messages.length);
     saveChatHistory(messages);
   }, [messages]);
   
   const clearHistory = () => {
-    setMessages(getDefaultMessages());
+    console.log('useChatHistory: Clearing history - resetting to default messages');
+    const defaultMessages = getDefaultMessages();
+    setMessages(defaultMessages);
+    // Also clear from localStorage
+    try {
+      localStorage.removeItem('evai-chat-history');
+      console.log('useChatHistory: Cleared localStorage');
+    } catch (error) {
+      console.error('useChatHistory: Failed to clear localStorage:', error);
+    }
   };
   
   return { messages, setMessages, clearHistory };

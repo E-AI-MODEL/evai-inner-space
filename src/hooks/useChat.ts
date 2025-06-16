@@ -8,6 +8,7 @@ export function useChat(apiKey: string) {
   const { messages, setMessages, clearHistory: clearChatHistory } = useChatHistory();
 
   const addMessage = (message: Message) => {
+    console.log('useChat: Adding message', message);
     setMessages((prev) => [...prev, message]);
   };
 
@@ -28,6 +29,7 @@ export function useChat(apiKey: string) {
   };
 
   const clearHistory = () => {
+    console.log('useChat: Clearing history');
     clearChatHistory();
     toast({
       title: "Geschiedenis gewist",

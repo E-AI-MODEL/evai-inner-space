@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Send, Loader2, Zap, AlertCircle } from "lucide-react";
 import { Message } from "../types";
@@ -22,17 +23,15 @@ const InputBar: React.FC<InputBarProps> = ({ onSendMessage, isGenerating, apiKey
   }, [input]);
 
   const handleSubmit = () => {
-    if (!input.trim() || isGenerating) return;
-
-    if (!apiKey.trim()) {
-      toast({
-        title: "API Key vereist",
-        description: "Voer een OpenAI API key in via de instellingen om de AI te gebruiken.",
-        variant: "destructive",
-      });
+    console.log('InputBar: handleSubmit called', { input: input.trim(), isGenerating });
+    
+    if (!input.trim() || isGenerating) {
+      console.log('InputBar: Submit blocked - empty input or generating');
       return;
     }
 
+    // Allow sending without API key - system will handle gracefully
+    console.log('InputBar: Creating user message');
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       from: "user",
@@ -44,6 +43,7 @@ const InputBar: React.FC<InputBarProps> = ({ onSendMessage, isGenerating, apiKey
       animate: false,
     };
 
+    console.log('InputBar: Sending message', userMessage);
     onSendMessage(userMessage);
     setInput("");
   };
@@ -72,7 +72,10 @@ const InputBar: React.FC<InputBarProps> = ({ onSendMessage, isGenerating, apiKey
             <textarea
               ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                console.log('InputBar: Text changed:', e.target.value);
+                setInput(e.target.value);
+              }}
               onKeyPress={handleKeyPress}
               placeholder={isSystemReady ? "Deel je gedachten of gevoelens..." : "Type your message (basic mode)..."}
               disabled={isGenerating}
