@@ -13,7 +13,7 @@ import { useSystemBootstrap } from "./useSystemBootstrap";
 
 export function useAiResponse(
   messages: Message[],
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+  addMessage: (message: Message) => void,
   apiKey: string,
   setSeedConfetti: (show: boolean) => void
 ) {
@@ -34,6 +34,9 @@ export function useAiResponse(
   ) => {
     const startTime = Date.now();
     setIsProcessing(true);
+    
+    // Add user message first
+    addMessage(userMessage);
     
     // Ensure monitoring is active if system is ready
     if (isSystemReady && !isMonitoring) {
@@ -163,18 +166,14 @@ export function useAiResponse(
         }
       }
 
-      setMessages((prev) => {
-        const updatedMessages = [...prev, aiResp];
-        
-        // Trigger learning from the updated conversation (only if system ready)
-        if (isSystemReady) {
-          setTimeout(() => {
-            learnFromConversation(updatedMessages);
-          }, 1000);
-        }
-        
-        return updatedMessages;
-      });
+      addMessage(aiResp);
+      
+      // Trigger learning from the updated conversation (only if system ready)
+      if (isSystemReady) {
+        setTimeout(() => {
+          learnFromConversation([...messages, userMessage, aiResp]);
+        }, 1000);
+      }
       
     } catch (err) {
       console.error("Error processing message:", err);
@@ -202,7 +201,7 @@ export function useAiResponse(
         recordInteraction(errorResponse, responseTime);
       }
       
-      setMessages((prev) => [...prev, errorResponse]);
+      addMessage(errorResponse);
       toast({
         title: "Fout bij analyse",
         description: errorMessage,

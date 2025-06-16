@@ -92,9 +92,14 @@ const Index = () => {
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col">
           {messages.length === 0 ? (
-            <IntroAnimation />
+            <IntroAnimation onFinished={() => {}} />
           ) : (
-            <ChatView messages={messages} />
+            <ChatView 
+              messages={messages} 
+              isProcessing={isGenerating}
+              messageRefs={{}}
+              focusedMessageId={null}
+            />
           )}
           
           <InputBar
@@ -107,21 +112,20 @@ const Index = () => {
 
         {/* Sidebar */}
         <SidebarEmotionHistory
-          emotionHistory={emotionHistory}
-          isOpen={showHistory}
-          onToggle={() => setShowHistory(!showHistory)}
-          onClearHistory={clearHistory}
+          history={emotionHistory}
+          onFocus={(id: string) => console.log('Focus on:', id)}
+          onClear={clearHistory}
         />
       </div>
 
       <SettingsSheet
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onOpenChange={setIsSettingsOpen}
         onSubmit={handleSettingsSubmit}
         currentApiKey={apiKey}
       />
 
-      {showSeedConfetti && <SeedConfetti />}
+      <SeedConfetti show={showSeedConfetti} />
     </div>
   );
 };

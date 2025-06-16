@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Send, Loader2, Zap, AlertCircle } from "lucide-react";
 import { Message } from "../types";
@@ -40,6 +39,9 @@ const InputBar: React.FC<InputBarProps> = ({ onSendMessage, isGenerating, apiKey
       content: input.trim(),
       timestamp: new Date(),
       feedback: null,
+      label: null,
+      emotionSeed: null,
+      animate: false,
     };
 
     onSendMessage(userMessage);
