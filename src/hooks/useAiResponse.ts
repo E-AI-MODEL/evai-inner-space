@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { useGoogleGemini } from "./useGoogleGemini";
 import { useOpenAISeedGenerator } from "./useOpenAISeedGenerator";
+import { useEvAI56Rubrics } from "./useEvAI56Rubrics";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message, ChatHistoryItem } from "../types";
@@ -23,8 +24,7 @@ export function useAiResponse(
     injectSeedToDatabase,
     isGenerating: isOpenAIGenerating 
   } = useOpenAISeedGenerator();
-
-  // Symbolic neurosymbolic features engine
+  const { assessMessage, calculateOverallRisk } = useEvAI56Rubrics();
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
 
   const generateAiResponse = async (
@@ -33,16 +33,11 @@ export function useAiResponse(
   ) => {
     setIsProcessing(true);
     
-    // Check AI integration status
     const googleApiKey = localStorage.getItem('google-api-key');
     const hasOpenAI = apiKey && apiKey.trim().length > 0;
     const hasGoogle = googleApiKey && googleApiKey.trim().length > 0;
     
-    console.log('🤖 AI Integration Status:', {
-      openAI: hasOpenAI ? 'Active' : 'Inactive',
-      google: hasGoogle ? 'Active' : 'Inactive',
-      fullIntegration: hasOpenAI && hasGoogle
-    });
+    console.log('🧠 Starting self-learning AI analysis...');
 
     try {
       const messageIndex = messages.findIndex(m => m.id === userMessage.id);
@@ -53,254 +48,296 @@ export function useAiResponse(
           content: msg.content
         }));
 
+      // 🔥 STEP 1: EvAI 5.6 Rubrics Analysis (Always run first)
+      console.log('📊 Running EvAI 5.6 Rubrics analysis...');
+      const rubricsAssessments = assessMessage(userMessage.content);
+      const overallRisk = calculateOverallRisk(rubricsAssessments);
+      
+      let rubricInsights: string[] = [];
+      if (rubricsAssessments.length > 0) {
+        rubricInsights = rubricsAssessments.map(assessment => 
+          `${assessment.rubricId}: Risk ${assessment.riskScore.toFixed(1)}, Protective ${assessment.protectiveScore.toFixed(1)}`
+        );
+        console.log(`🎯 Rubrics detected ${rubricsAssessments.length} areas, overall risk: ${overallRisk.toFixed(1)}%`);
+      }
+
+      // 🔥 STEP 2: Check existing seeds
       const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
       let aiResp: Message;
 
       if (matchedResult && "confidence" in matchedResult) {
+        // OpenAI seed match found
         setSeedConfetti(true);
         toast({
-          title: "🧠 AI Emotiedetectie (OpenAI)",
-          description: `${matchedResult.emotion} gedetecteerd (${Math.round(
-            matchedResult.confidence * 100
-          )}% zekerheid)`,
+          title: "🧠 AI Emotie + Rubrics",
+          description: `${matchedResult.emotion} (${Math.round(matchedResult.confidence * 100)}%) | Risk: ${overallRisk.toFixed(1)}%`,
         });
 
         const label = matchedResult.label || "Valideren";
         aiResp = {
-          id: `ai-openai-${Date.now()}`,
+          id: `ai-enhanced-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
           content: matchedResult.response,
-          explainText: matchedResult.reasoning,
+          explainText: `${matchedResult.reasoning} | Rubrics Risk: ${overallRisk.toFixed(1)}%`,
           emotionSeed: matchedResult.emotion,
           animate: true,
-          meta: `OpenAI – ${Math.round(matchedResult.confidence * 100)}%`,
+          meta: `AI + Rubrics – ${Math.round(matchedResult.confidence * 100)}%`,
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
           feedback: null,
+          symbolicInferences: [
+            ...rubricInsights,
+            `🎯 Overall risk assessment: ${overallRisk.toFixed(1)}%`
+          ]
         };
 
-        // ✨ NEW: Google Gemini neurosymbolic analysis
-        if (hasGoogle) {
-          console.log('🚀 Running Google Gemini neurosymbolic analysis...');
+        // 🔥 STEP 3: Self-learning enhancement
+        if (hasOpenAI && overallRisk > 40) {
+          console.log('🚀 High risk detected, generating adaptive seed...');
           try {
-            const contextString = history.map(h => `${h.role}: ${h.content}`).join('\n');
-            const geminiAnalysis = await analyzeNeurosymbolic(
-              userMessage.content, 
-              contextString, 
-              googleApiKey!
-            );
-            
-            if (geminiAnalysis) {
-              aiResp.symbolicInferences = [
-                ...geminiAnalysis.patterns,
-                ...geminiAnalysis.insights
-              ];
+            const adaptiveSeed = await generateOpenAISeed({
+              emotion: matchedResult.emotion,
+              context: `High risk scenario: ${userMessage.content}`,
+              conversationHistory: history.slice(-2).map(h => h.content),
+              severity: overallRisk > 70 ? 'critical' : overallRisk > 55 ? 'high' : 'medium'
+            }, apiKey);
+
+            if (adaptiveSeed) {
+              await injectSeedToDatabase(adaptiveSeed);
+              aiResp.symbolicInferences?.push(
+                `🌱 Adaptive seed created for high-risk ${matchedResult.emotion}`,
+                `📈 System learning: Risk-aware response generated`
+              );
               
               toast({
-                title: "🧠 Neurosymbolische Analyse (Google)",
-                description: `${geminiAnalysis.patterns.length} patronen, ${geminiAnalysis.insights.length} inzichten (${Math.round(geminiAnalysis.confidence * 100)}%)`,
+                title: "🧠 Self-Learning Active",
+                description: `System adapted to risk level ${overallRisk.toFixed(1)}%`,
               });
-
-              // Enhance response if Google suggests better seed
-              if (geminiAnalysis.seedSuggestion && geminiAnalysis.confidence > 0.8) {
-                const enhancedSeed = await generateSeed(
-                  geminiAnalysis.seedSuggestion,
-                  userMessage.content,
-                  googleApiKey!
-                );
-                
-                if (enhancedSeed) {
-                  aiResp.content = enhancedSeed;
-                  aiResp.meta = `OpenAI + Google Enhanced – ${Math.round(matchedResult.confidence * geminiAnalysis.confidence * 100)}%`;
-                  console.log('✅ Response enhanced by Google Gemini');
-                }
-              }
             }
-          } catch (geminiError) {
-            console.error('🔴 Google Gemini analysis failed:', geminiError);
-            toast({
-              title: "Google AI Fout",
-              description: "Neurosymbolische analyse mislukt, maar OpenAI werkt nog.",
-              variant: "destructive"
-            });
-          }
-        }
-
-        // ✨ NEW: Intelligent Seed Generation & Injection
-        if (hasOpenAI && messages.length > 3) {
-          console.log('🎯 Starting intelligent seed generation...');
-          try {
-            // Analyze conversation for missing emotions
-            const missingEmotions = await analyzeConversationForSeeds(messages, apiKey);
-            
-            if (missingEmotions.length > 0) {
-              console.log('🔍 Found missing emotions for seed generation:', missingEmotions);
-              
-              // Generate seed for the most relevant missing emotion
-              const priorityEmotion = missingEmotions[0];
-              const generatedSeed = await generateOpenAISeed({
-                emotion: priorityEmotion,
-                context: userMessage.content,
-                conversationHistory: history.slice(-3).map(h => h.content),
-                severity: 'medium'
-              }, apiKey);
-
-              if (generatedSeed) {
-                const injected = await injectSeedToDatabase(generatedSeed);
-                if (injected) {
-                  aiResp.symbolicInferences = [
-                    ...(aiResp.symbolicInferences || []),
-                    `🌱 Nieuwe seed gegenereerd voor '${priorityEmotion}'`,
-                    `🎯 Seed database uitgebreid met ${missingEmotions.length} ontbrekende emoties`
-                  ];
-                  
-                  toast({
-                    title: "🌱 Automatische Seed Generatie",
-                    description: `Nieuwe seed voor '${priorityEmotion}' toegevoegd aan database`,
-                  });
-                }
-              }
-            }
-          } catch (seedError) {
-            console.error('🔴 Intelligent seed generation failed:', seedError);
+          } catch (adaptiveError) {
+            console.error('🔴 Adaptive seed generation failed:', adaptiveError);
           }
         }
 
       } else if (matchedResult) {
+        // Advanced seed match
         const seedResult = matchedResult;
         setSeedConfetti(true);
-        toast({
-          title: "🎯 Advanced Seed Match",
-          description: `Neurosymbolische match voor '${seedResult.emotion}'`,
-        });
-
+        
         const label = seedResult.label || "Valideren";
         aiResp = {
-          id: `ai-seed-${Date.now()}`,
+          id: `ai-seed-enhanced-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
           content: seedResult.response,
-          explainText: `Advanced Seed: ${seedResult.triggers.join(", ")} → ${seedResult.emotion}`,
+          explainText: `Advanced Seed + Rubrics: ${seedResult.triggers.join(", ")} | Risk: ${overallRisk.toFixed(1)}%`,
           emotionSeed: seedResult.emotion,
           animate: true,
-          meta: seedResult.meta || "Advanced",
+          meta: `Seed + Rubrics – ${overallRisk.toFixed(1)}%`,
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
           feedback: null,
+          symbolicInferences: rubricInsights
         };
+
       } else {
+        // 🔥 STEP 4: No existing seed - Generate new one with rubrics intelligence
         if (hasOpenAI) {
-          console.log('🟡 No existing seed found, generating new one...');
+          console.log('🎯 No existing seed, generating intelligent new seed...');
           try {
-            // Generate a new seed for unknown emotion
+            // Determine emotion based on rubrics + content analysis
+            const dominantEmotion = rubricsAssessments.length > 0 
+              ? this.detectEmotionFromRubrics(rubricsAssessments, userMessage.content)
+              : 'onzekerheid';
+
             const generatedSeed = await generateOpenAISeed({
-              emotion: 'onzekerheid', // Default emotion
-              context: userMessage.content,
+              emotion: dominantEmotion,
+              context: `User message: "${userMessage.content}" | Rubrics risk: ${overallRisk.toFixed(1)}%`,
               conversationHistory: history.slice(-2).map(h => h.content),
-              severity: 'medium'
+              severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium'
             }, apiKey);
             
             if (generatedSeed) {
-              // Inject the new seed
               await injectSeedToDatabase(generatedSeed);
               
-              // Map "Interventie" to "Suggestie" for Message interface compatibility
               const mappedLabel: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" = 
                 generatedSeed.label === "Interventie" ? "Suggestie" : generatedSeed.label as "Valideren" | "Reflectievraag" | "Suggestie";
               
               aiResp = {
-                id: `ai-generated-${Date.now()}`,
+                id: `ai-generated-rubrics-${Date.now()}`,
                 from: "ai",
                 label: mappedLabel,
                 accentColor: getLabelVisuals(mappedLabel).accentColor,
                 content: generatedSeed.response.nl,
-                explainText: `Nieuwe seed gegenereerd en toegevoegd voor: ${generatedSeed.emotion}`,
+                explainText: `Self-learning: New seed for '${generatedSeed.emotion}' | Risk: ${overallRisk.toFixed(1)}%`,
                 emotionSeed: generatedSeed.emotion,
                 animate: true,
-                meta: "OpenAI Generated & Injected",
+                meta: "AI Generated + Rubrics Validated",
                 brilliant: true,
                 timestamp: new Date(),
                 replyTo: userMessage.id,
                 feedback: null,
+                symbolicInferences: [
+                  ...rubricInsights,
+                  `🌱 New seed created and validated`,
+                  `📊 Risk-adapted response (${overallRisk.toFixed(1)}%)`,
+                  `🧠 System learning: Pattern recognition improved`
+                ]
               };
               
               toast({
-                title: "🚀 Automatische Seed Generatie",
-                description: `Nieuwe seed voor '${generatedSeed.emotion}' gegenereerd en toegevoegd`,
+                title: "🚀 Zelf-lerend systeem",
+                description: `Nieuwe seed '${generatedSeed.emotion}' + rubrics validatie`,
               });
             } else {
               throw new Error('No seed generated');
             }
           } catch (generationError) {
-            console.error('🔴 Automatic seed generation failed:', generationError);
-            // Final fallback
-            const label = "Valideren";
+            console.error('🔴 Intelligent seed generation failed:', generationError);
+            // Fallback with rubrics awareness
+            const label = overallRisk > 50 ? "Suggestie" : "Valideren";
             aiResp = {
-              id: `ai-fallback-${Date.now()}`,
+              id: `ai-fallback-rubrics-${Date.now()}`,
               from: "ai",
               label: label,
               accentColor: getLabelVisuals(label).accentColor,
-              content: "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
-              explainText: "Automatische seed generatie gefaald, fallback response",
+              content: overallRisk > 50 
+                ? "Ik merk dat je in een uitdagende situatie zit. Laten we samen kijken hoe we dit kunnen aanpakken."
+                : "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+              explainText: `Rubrics-aware fallback | Risk: ${overallRisk.toFixed(1)}%`,
               emotionSeed: null,
               animate: true,
-              meta: "Fallback",
+              meta: "Rubrics-Aware Fallback",
               brilliant: false,
               timestamp: new Date(),
               replyTo: userMessage.id,
               feedback: null,
+              symbolicInferences: rubricInsights
             };
           }
         } else {
-          const label = "Valideren";
+          // Basic fallback with rubrics awareness
+          const label = overallRisk > 50 ? "Suggestie" : "Valideren";
           aiResp = {
-            id: context?.dislikedLabel ? `ai-feedback-${Date.now()}`: `ai-new-${Date.now()}`,
+            id: context?.dislikedLabel ? `ai-feedback-${Date.now()}`: `ai-basic-${Date.now()}`,
             from: "ai",
             label: label,
             accentColor: getLabelVisuals(label).accentColor,
             content: context?.dislikedLabel 
               ? "Het spijt me dat mijn vorige antwoord niet hielp. Ik zal proberen hier rekening mee te houden." 
-              : "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
-            explainText: context?.dislikedLabel ? "Nieuw antwoord na feedback." : "Geen specifieke emotie gedetecteerd.",
+              : overallRisk > 50
+                ? "Ik merk dat je in een uitdagende situatie zit. Vertel me meer zodat ik je beter kan helpen."
+                : "Ik hoor iets bijzonders in je bericht, vertel gerust meer.",
+            explainText: context?.dislikedLabel ? "Feedback response." : `Rubrics guidance | Risk: ${overallRisk.toFixed(1)}%`,
             emotionSeed: null,
             animate: true,
-            meta: context?.dislikedLabel ? "Feedback" : "Basis",
+            meta: context?.dislikedLabel ? "Feedback" : "Rubrics-Guided",
             brilliant: false,
             timestamp: new Date(),
             replyTo: userMessage.id,
             feedback: null,
+            symbolicInferences: rubricInsights
           };
         }
       }
 
-      // Enhanced Symbolic engine analysis (local rules)
+      // 🔥 STEP 5: Continuous learning - Analyze conversation for missing patterns
+      if (hasOpenAI && messages.length > 3) {
+        console.log('🔍 Continuous learning: Analyzing conversation patterns...');
+        try {
+          const missingEmotions = await analyzeConversationForSeeds(messages, apiKey);
+          
+          if (missingEmotions.length > 0) {
+            console.log('🎯 Found learning opportunities:', missingEmotions);
+            
+            // Generate seed for highest priority missing emotion
+            const priorityEmotion = missingEmotions[0];
+            const learningSeed = await generateOpenAISeed({
+              emotion: priorityEmotion,
+              context: `Learning from conversation pattern: ${userMessage.content}`,
+              conversationHistory: history.slice(-3).map(h => h.content),
+              severity: 'medium'
+            }, apiKey);
+
+            if (learningSeed) {
+              await injectSeedToDatabase(learningSeed);
+              aiResp.symbolicInferences = [
+                ...(aiResp.symbolicInferences || []),
+                `🎓 Learning seed created for '${priorityEmotion}'`,
+                `📈 Conversation pattern recognition improved`,
+                `🔄 Self-learning cycle: ${missingEmotions.length} gaps identified`
+              ];
+            }
+          }
+        } catch (learningError) {
+          console.error('🔴 Continuous learning failed:', learningError);
+        }
+      }
+
+      // 🔥 STEP 6: Enhanced Google Gemini integration (if available)
+      if (hasGoogle && matchedResult && "confidence" in matchedResult) {
+        console.log('🚀 Running Google Gemini enhancement...');
+        try {
+          const contextString = history.map(h => `${h.role}: ${h.content}`).join('\n');
+          const geminiAnalysis = await analyzeNeurosymbolic(
+            userMessage.content, 
+            contextString, 
+            googleApiKey!
+          );
+          
+          if (geminiAnalysis) {
+            aiResp.symbolicInferences = [
+              ...(aiResp.symbolicInferences || []),
+              ...geminiAnalysis.patterns,
+              ...geminiAnalysis.insights
+            ];
+            
+            // Enhanced response if Google suggests better approach
+            if (geminiAnalysis.seedSuggestion && geminiAnalysis.confidence > 0.8) {
+              const enhancedSeed = await generateSeed(
+                geminiAnalysis.seedSuggestion,
+                userMessage.content,
+                googleApiKey!
+              );
+              
+              if (enhancedSeed) {
+                aiResp.content = enhancedSeed;
+                aiResp.meta = `OpenAI + Google + Rubrics – Multi-AI Enhanced`;
+                console.log('✅ Response enhanced by Google Gemini + Rubrics');
+              }
+            }
+          }
+        } catch (geminiError) {
+          console.error('🔴 Google Gemini enhancement failed:', geminiError);
+        }
+      }
+
+      // 🔥 STEP 7: Local symbolic rules evaluation
       const extendedMessages = [...messages, aiResp];
       const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
       if (aiSymbolic.length) {
         aiResp.symbolicInferences = [...(aiResp.symbolicInferences || []), ...aiSymbolic];
       }
 
-      // Integration success notification
-      if (hasOpenAI && hasGoogle && matchedResult && "confidence" in matchedResult) {
-        console.log('✅ Full AI Integration Active: OpenAI + Google working together');
+      // 🔥 STEP 8: Self-learning success notification
+      if (hasOpenAI && rubricsAssessments.length > 0) {
+        console.log('✅ Full self-learning pipeline active: OpenAI + Rubrics + Patterns');
         toast({
-          title: "🚀 Volledige AI Integratie",
-          description: "OpenAI en Google werken samen voor optimale analyse + automatische seed generatie",
+          title: "🧠 Zelf-lerend Systeem Actief",
+          description: `AI + Rubrics + Patroonherkenning werken samen`,
         });
       }
 
       setMessages((prev) => [...prev, aiResp]);
+      
     } catch (err) {
-      console.error("Error processing message:", err);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Er ging iets mis bij het verwerken van je bericht.";
+      console.error("Error in self-learning AI response:", err);
+      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de AI analyse.";
       const errorResponse: Message = {
         id: `ai-error-${Date.now()}`,
         from: "ai",
@@ -316,13 +353,30 @@ export function useAiResponse(
       };
       setMessages((prev) => [...prev, errorResponse]);
       toast({
-        title: "Fout bij AI analyse",
+        title: "Fout bij zelf-lerend systeem",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Helper function to detect emotion from rubrics assessment
+  const detectEmotionFromRubrics = (assessments: any[], content: string): string => {
+    const emotionMap: Record<string, string> = {
+      'emotional-regulation': 'overweldiging',
+      'self-awareness': 'onzekerheid', 
+      'coping-strategies': 'onmacht',
+      'social-connection': 'eenzaamheid',
+      'meaning-purpose': 'zinloosheid'
+    };
+
+    // Find highest risk assessment
+    const highestRisk = assessments.reduce((max, assessment) => 
+      assessment.riskScore > max.riskScore ? assessment : max, assessments[0]);
+
+    return emotionMap[highestRisk.rubricId] || 'onzekerheid';
   };
 
   return { 

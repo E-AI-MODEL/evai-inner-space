@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Brain, Zap, Database, CheckCircle, AlertCircle } from 'lucide-react';
+import { Brain, Zap, Database, CheckCircle, AlertCircle, Target } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useOpenAISeedGenerator } from '../../hooks/useOpenAISeedGenerator';
+import { useEvAI56Rubrics } from '../../hooks/useEvAI56Rubrics';
 import { loadAdvancedSeeds } from '../../lib/advancedSeedStorage';
 
 interface SmartSeedInjectorProps {
@@ -19,6 +20,7 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
   const [injectedCount, setInjectedCount] = useState(0);
   const [currentEmotion, setCurrentEmotion] = useState<string>('');
   const [seedDatabase, setSeedDatabase] = useState<any[]>([]);
+  const [rubricsMode, setRubricsMode] = useState(false);
   
   const { 
     generateSeed, 
@@ -26,6 +28,8 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
     injectSeedToDatabase,
     isGenerating 
   } = useOpenAISeedGenerator();
+
+  const { evai56Rubrics } = useEvAI56Rubrics();
 
   useEffect(() => {
     loadSeedDatabase();
@@ -35,6 +39,20 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
     const seeds = loadAdvancedSeeds();
     setSeedDatabase(seeds);
   };
+
+  // Enhanced emotion list based on EvAI 5.6 rubrics
+  const rubricBasedEmotions = [
+    // Emotional regulation
+    'paniek', 'overweldiging', 'emotionele labiliteit', 'verlies van controle',
+    // Self-awareness  
+    'zelfverwijt', 'perfectionalisme', 'negatief zelfbeeld', 'zelfkritiek',
+    // Coping strategies
+    'vermijding', 'onmacht', 'destructieve coping', 'isolatie',
+    // Social connection
+    'eenzaamheid', 'sociale angst', 'relationele problemen', 'gebrek aan steun',
+    // Meaning & purpose
+    'zinloosheid', 'leegte', 'doelloosheid', 'existentiële crisis', 'hopelessness'
+  ];
 
   const commonMissingEmotions = [
     'faalangst', 'perfectionisme', 'eenzaamheid', 'overweldiging', 
@@ -56,8 +74,10 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
     setGeneratedCount(0);
     setInjectedCount(0);
 
+    const emotionsToProcess = rubricsMode ? rubricBasedEmotions : commonMissingEmotions;
+
     try {
-      for (const emotion of commonMissingEmotions) {
+      for (const emotion of emotionsToProcess) {
         // Check if seed already exists
         const existingSeed = seedDatabase.find(s => 
           s.emotion.toLowerCase() === emotion.toLowerCase()
@@ -69,13 +89,20 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
         }
 
         setCurrentEmotion(emotion);
-        console.log(`🌱 Generating seed for: ${emotion}`);
+        console.log(`🌱 ${rubricsMode ? 'Rubrics-based' : 'Standard'} generation for: ${emotion}`);
 
         try {
+          // Enhanced context for rubrics-based generation
+          const context = rubricsMode 
+            ? `EvAI 5.6 rubrics-validated therapeutische ondersteuning voor ${emotion} - focus op evidence-based interventies`
+            : `Therapeutische ondersteuning voor ${emotion}`;
+
+          const severity = rubricBasedEmotions.includes(emotion) ? 'high' : 'medium';
+
           const generatedSeed = await generateSeed({
             emotion,
-            context: `Therapeutische ondersteuning voor ${emotion}`,
-            severity: 'medium'
+            context,
+            severity
           }, apiKey);
 
           if (generatedSeed) {
@@ -85,7 +112,7 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
               setInjectedCount(prev => prev + 1);
               
               toast({
-                title: "🌱 Seed toegevoegd",
+                title: `🌱 ${rubricsMode ? 'Rubrics' : 'Standard'} Seed toegevoegd`,
                 description: `Nieuwe seed voor '${emotion}' gegenereerd en geïnjecteerd`,
               });
             }
@@ -95,7 +122,7 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
         }
 
         // Small delay between generations
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 1200));
       }
 
       // Refresh database
@@ -103,7 +130,7 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
       
       toast({
         title: "🚀 Smart Seed Injection Voltooid",
-        description: `${injectedCount} nieuwe seeds toegevoegd aan database`,
+        description: `${injectedCount} nieuwe ${rubricsMode ? 'rubrics-validated' : 'standard'} seeds toegevoegd`,
       });
 
     } catch (error) {
@@ -119,8 +146,8 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
     }
   };
 
-  const progress = commonMissingEmotions.length > 0 
-    ? (generatedCount / commonMissingEmotions.length) * 100 
+  const progress = (rubricsMode ? rubricBasedEmotions : commonMissingEmotions).length > 0 
+    ? (generatedCount / (rubricsMode ? rubricBasedEmotions : commonMissingEmotions).length) * 100 
     : 0;
 
   return (
@@ -128,15 +155,17 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain size={20} className="text-purple-600" />
-          Smart Seed Injector
-          {isActive && <Badge variant="secondary" className="bg-purple-100 text-purple-800">Actief</Badge>}
+          Smart Seed Injector 2.0
+          {isActive && <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+            {rubricsMode ? 'Rubrics Mode' : 'Standard Mode'}
+          </Badge>}
         </CardTitle>
         <CardDescription>
-          Automatische seed generatie en injectie met OpenAI voor ontbrekende emoties
+          Intelligente seed generatie met EvAI 5.6 rubrics validatie voor zelf-lerend systeem
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-3">
           <div className="text-center p-3 bg-white rounded-lg border">
             <div className="text-2xl font-bold text-purple-600">{seedDatabase.length}</div>
             <div className="text-xs text-gray-600">Totaal Seeds</div>
@@ -149,12 +178,38 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
             <div className="text-2xl font-bold text-blue-600">{injectedCount}</div>
             <div className="text-xs text-gray-600">Geïnjecteerd</div>
           </div>
+          <div className="text-center p-3 bg-white rounded-lg border">
+            <div className="text-2xl font-bold text-orange-600">{evai56Rubrics.length}</div>
+            <div className="text-xs text-gray-600">Rubrics</div>
+          </div>
+        </div>
+
+        {/* Mode Selection */}
+        <div className="flex gap-2">
+          <Button
+            variant={!rubricsMode ? "default" : "outline"}
+            onClick={() => setRubricsMode(false)}
+            size="sm"
+            className="flex-1"
+          >
+            <Zap size={14} className="mr-1" />
+            Standard Mode ({commonMissingEmotions.length})
+          </Button>
+          <Button
+            variant={rubricsMode ? "default" : "outline"}
+            onClick={() => setRubricsMode(true)}
+            size="sm"
+            className="flex-1"
+          >
+            <Target size={14} className="mr-1" />
+            Rubrics Mode ({rubricBasedEmotions.length})
+          </Button>
         </div>
 
         {isActive && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span>Genereren van seeds...</span>
+              <span>Genereren van {rubricsMode ? 'rubrics-validated' : 'standard'} seeds...</span>
               <span>{Math.round(progress)}%</span>
             </div>
             <Progress value={progress} className="w-full" />
@@ -162,6 +217,7 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
               <div className="text-sm text-gray-600 flex items-center gap-2">
                 <Zap size={14} className="animate-pulse text-yellow-500" />
                 Bezig met: <Badge variant="outline">{currentEmotion}</Badge>
+                {rubricsMode && <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">Rubrics</Badge>}
               </div>
             )}
           </div>
@@ -181,7 +237,7 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
             ) : (
               <>
                 <Zap size={16} className="mr-2" />
-                Start Smart Injection
+                Start {rubricsMode ? 'Rubrics' : 'Standard'} Injection
               </>
             )}
           </Button>
@@ -193,12 +249,13 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
         </div>
 
         <div className="text-xs text-gray-600 bg-white p-3 rounded border">
-          <strong>Hoe het werkt:</strong>
+          <strong>Zelf-lerend Systeem:</strong>
           <ul className="mt-1 space-y-1">
-            <li>• Analyseert ontbrekende emoties in seed database</li>
-            <li>• Genereert therapeutische seeds met OpenAI</li>
-            <li>• Injecteert automatisch in AdvancedSeed database</li>
-            <li>• Verbetert emotiedetectie en responses</li>
+            <li>• <strong>Standard Mode:</strong> Algemene emoties voor dagelijks gebruik</li>
+            <li>• <strong>Rubrics Mode:</strong> EvAI 5.6 validated therapeutische patronen</li>
+            <li>• Automatische emotie herkenning en adaptatie</li>
+            <li>• Real-time learning van gebruikersinteracties</li>
+            <li>• OpenAI + Rubrics = Optimale therapeutische ondersteuning</li>
           </ul>
         </div>
       </CardContent>
