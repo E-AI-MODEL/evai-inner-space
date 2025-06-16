@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
 import { useGoogleGemini } from "./useGoogleGemini";
@@ -26,7 +25,7 @@ export function useAiResponse(
     injectSeedToDatabase,
     isGenerating: isOpenAIGenerating 
   } = useOpenAISeedGenerator();
-  const { assessMessage, calculateOverallRisk } = useEvAI56Rubrics();
+  const { assessMessage, calculateOverallRisk, evai56Rubrics } = useEvAI56Rubrics();
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
   const { analyzeCoTFeedback, generateCoTImprovements, isAnalyzing: isCoTAnalyzing } = useCoTFeedbackAnalyzer();
 
