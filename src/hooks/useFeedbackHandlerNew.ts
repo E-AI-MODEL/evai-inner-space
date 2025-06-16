@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { Message } from '../types';
-import { saveFeedback } from '../lib/feedbackStorage';
 import { toast } from '@/hooks/use-toast';
 
 export function useFeedbackHandlerNew() {
@@ -12,9 +11,6 @@ export function useFeedbackHandlerNew() {
       ...prev,
       [messageId]: feedback
     }));
-
-    // Save to storage
-    saveFeedback(messageId, feedback);
 
     // Show feedback toast
     toast({
