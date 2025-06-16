@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSeedEngine, Seed } from "./useSeedEngine";
-import { useOpenAISecondary } from "./useOpenAISecondary";
+import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
 import { useOpenAISeedGenerator } from "./useOpenAISeedGenerator";
 import { useEvAI56Rubrics, RubricAssessment } from "./useEvAI56Rubrics";
 import { useCoTFeedbackAnalyzer } from "./useCoTFeedbackAnalyzer";
@@ -336,27 +336,33 @@ export function useAiResponse(
       }
 
       // 🔥 STEP 6: Enhanced OpenAI secondary integration with EvAI context
-      if (hasOpenAi2 && matchedResult && "confidence" in matchedResult) {
+      if (hasOpenAi2) {
         console.log('🚀 Running OpenAI secondary enhancement with EvAI context...');
+        let geminiAnalysis: SecondaryAnalysis | null = null;
         try {
           const contextString = history.map(h => `${h.role}: ${h.content}`).join('\n');
           const evaiContext = cotRubricGuidance.length > 0 ? ` | EvAI Guidance: ${cotRubricGuidance.join('; ')}` : '';
 
-          const geminiAnalysis = await analyzeNeurosymbolic(
+          geminiAnalysis = await analyzeNeurosymbolic(
             userMessage.content + evaiContext,
             contextString,
             openAiKey2!
           );
-          
-          if (geminiAnalysis) {
-            aiResp.symbolicInferences = [
-              ...(aiResp.symbolicInferences || []),
-              ...geminiAnalysis.patterns,
-              ...geminiAnalysis.insights
-            ];
-          }
         } catch (geminiError) {
           console.error('🔴 OpenAI secondary enhancement failed:', geminiError);
+        }
+
+        if (geminiAnalysis) {
+          aiResp.symbolicInferences = [
+            ...(aiResp.symbolicInferences || []),
+            ...geminiAnalysis.patterns,
+            ...geminiAnalysis.insights
+          ];
+        } else {
+          aiResp.symbolicInferences = [
+            ...(aiResp.symbolicInferences || []),
+            'Geen resultaten van secundaire analyse'
+          ];
         }
       }
 
