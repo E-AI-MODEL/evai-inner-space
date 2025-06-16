@@ -5,11 +5,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Edit, Trash, Plus, Database, Upload, Download, BarChart, Settings } from 'lucide-react';
+import { Edit, Trash, Plus, Database, Upload, Download, BarChart, Settings, Key } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { AdvancedSeed, LegacySeed } from '../../types/seed';
+import { AdvancedSeed } from '../../types/seed';
 import { 
   loadAdvancedSeeds, 
   saveAdvancedSeeds, 
@@ -17,8 +16,6 @@ import {
   updateAdvancedSeed, 
   deleteAdvancedSeed 
 } from '../../lib/advancedSeedStorage';
-import { migrateLegacySeeds } from '../../utils/seedMigration';
-import seeds from '../../seeds.json';
 import { v4 as uuidv4 } from 'uuid';
 
 const AdvancedSeedManager = () => {
@@ -28,9 +25,11 @@ const AdvancedSeedManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
+  const [googleApiKey, setGoogleApiKey] = useState('');
 
   useEffect(() => {
     loadSeedsData();
+    loadGoogleApiKey();
   }, []);
 
   const loadSeedsData = () => {
@@ -38,15 +37,91 @@ const AdvancedSeedManager = () => {
     setSeedsData(advanced);
   };
 
-  const migrateLegacyData = () => {
-    const legacySeeds = seeds as LegacySeed[];
-    const migrated = migrateLegacySeeds(legacySeeds);
-    saveAdvancedSeeds(migrated);
-    loadSeedsData();
-    toast({ 
-      title: "Migratie voltooid", 
-      description: `${migrated.length} legacy seeds zijn gemigreerd naar het nieuwe formaat.` 
-    });
+  const loadGoogleApiKey = () => {
+    const savedKey = localStorage.getItem('google-api-key');
+    if (savedKey) {
+      setGoogleApiKey(savedKey);
+    }
+  };
+
+  const saveGoogleApiKey = () => {
+    if (googleApiKey.trim()) {
+      localStorage.setItem('google-api-key', googleApiKey.trim());
+      toast({
+        title: "Google API Key opgeslagen",
+        description: "Je Google API key is lokaal opgeslagen voor neurosymbolische features.",
+      });
+    }
+  };
+
+  const generateSeedWithAI = async (emotion: string, triggers: string[]) => {
+    if (!googleApiKey.trim()) {
+      toast({
+        title: "Geen Google API Key",
+        description: "Voeg eerst een Google API key toe voor AI-gegenereerde seeds.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + googleApiKey, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Genereer een therapeutische response voor de emotie "${emotion}" met triggers: ${triggers.join(', ')}. Geef alleen de Nederlandse response text terug, maximaal 100 woorden, empathisch en ondersteunend.`
+            }]
+          }]
+        })
+      });
+
+      if (!response.ok) throw new Error('Google API fout');
+      
+      const data = await response.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Ik begrijp hoe je je voelt.';
+      
+      const newSeed: AdvancedSeed = {
+        id: uuidv4(),
+        emotion,
+        type: 'validation',
+        label: 'Valideren',
+        triggers,
+        response: { nl: generatedText },
+        context: {
+          severity: 'medium',
+          situation: 'therapy'
+        },
+        meta: {
+          priority: 1,
+          weight: 1.0,
+          confidence: 0.8,
+          usageCount: 0
+        },
+        tags: ['ai-generated'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: 'ai',
+        isActive: true,
+        version: '1.0.0'
+      };
+
+      addAdvancedSeed(newSeed);
+      loadSeedsData();
+      toast({
+        title: "AI Seed gegenereerd",
+        description: `Nieuwe seed voor "${emotion}" is aangemaakt.`
+      });
+    } catch (error) {
+      toast({
+        title: "AI Generatie gefaald",
+        description: "Kon geen seed genereren met Google AI.",
+        variant: "destructive"
+      });
+    }
   };
 
   const filteredSeeds = seedsData.filter(seed => {
@@ -91,6 +166,61 @@ const AdvancedSeedManager = () => {
     toast({ title: "Export voltooid", description: "Seeds zijn geëxporteerd naar JSON bestand." });
   };
 
+  const analyzeConversationPattern = async () => {
+    if (!googleApiKey.trim()) {
+      toast({
+        title: "Geen Google API Key",
+        description: "Google API key vereist voor conversatie analyse.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const usageData = seedsData
+        .filter(seed => seed.meta.usageCount > 0)
+        .sort((a, b) => b.meta.usageCount - a.meta.usageCount)
+        .slice(0, 5);
+
+      const analysisPrompt = `
+        Analyseer deze emotie-patronen van therapeutische sessies:
+        ${usageData.map(seed => `${seed.emotion}: ${seed.meta.usageCount} keer gebruikt, severity: ${seed.context.severity}`).join('\n')}
+        
+        Geef 3 concrete aanbevelingen voor nieuwe seeds die ontbreken, gebaseerd op deze patronen.
+      `;
+
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + googleApiKey, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: analysisPrompt }]
+          }]
+        })
+      });
+
+      if (!response.ok) throw new Error('Google API fout');
+      
+      const data = await response.json();
+      const recommendations = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Geen aanbevelingen beschikbaar.';
+      
+      toast({
+        title: "Patroon Analyse Voltooid",
+        description: "Bekijk de console voor gedetailleerde aanbevelingen."
+      });
+      
+      console.log('🧠 Neurosymbolische Patroon Analyse:', recommendations);
+    } catch (error) {
+      toast({
+        title: "Analyse gefaald",
+        description: "Kon conversatiepatronen niet analyseren.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getLabelColor = (label: string) => {
     switch (label) {
       case 'Valideren': return 'bg-green-100 text-green-800';
@@ -116,8 +246,8 @@ const AdvancedSeedManager = () => {
       <Tabs defaultValue="manage" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="manage">Beheer</TabsTrigger>
+          <TabsTrigger value="neural">Neurosymbolisch</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="migration">Migratie</TabsTrigger>
           <TabsTrigger value="settings">Instellingen</TabsTrigger>
         </TabsList>
 
@@ -275,24 +405,40 @@ const AdvancedSeedManager = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="migration" className="space-y-4">
+        <TabsContent value="neural" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Migratie Tools</CardTitle>
+              <CardTitle>🧠 Neurosymbolische AI Engine</CardTitle>
               <CardDescription>
-                Migreer legacy seeds naar het nieuwe advanced formaat
+                Zelf-lerende conversatie analyse en seed generatie
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Legacy Seeds Migratie</h4>
+                  <h4 className="font-medium mb-2">AI Seed Generatie</h4>
                   <p className="text-sm text-gray-600 mb-4">
-                    Converteer {(seeds as LegacySeed[]).length} legacy seeds naar het nieuwe advanced formaat.
+                    Laat Google AI nieuwe therapeutische seeds genereren
                   </p>
-                  <Button onClick={migrateLegacyData} className="flex items-center gap-2">
-                    <Upload size={16} />
-                    Migreer Legacy Seeds
+                  <div className="flex gap-2">
+                    <Input placeholder="Emotie (bijv. angst)" className="flex-1" id="new-emotion" />
+                    <Button onClick={() => {
+                      const emotion = (document.getElementById('new-emotion') as HTMLInputElement)?.value;
+                      if (emotion) generateSeedWithAI(emotion, [emotion]);
+                    }}>
+                      Genereer
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <h4 className="font-medium mb-2">Patroon Analyse</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Analyseer conversatiepatronen en ontbrekende emoties
+                  </p>
+                  <Button onClick={analyzeConversationPattern} className="w-full">
+                    <BarChart size={16} className="mr-2" />
+                    Analyseer Patronen
                   </Button>
                 </div>
               </div>
@@ -326,15 +472,13 @@ const AdvancedSeedManager = () => {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Gem. Weight</CardTitle>
+                <CardTitle className="text-sm">AI Gegenereerd</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {seedsData.length > 0 
-                    ? (seedsData.reduce((sum, s) => sum + s.meta.weight, 0) / seedsData.length).toFixed(1)
-                    : '0.0'
-                  }
+                  {seedsData.filter(s => s.createdBy === 'ai').length}
                 </div>
+                <div className="text-xs text-gray-500">van totaal</div>
               </CardContent>
             </Card>
           </div>
@@ -343,15 +487,30 @@ const AdvancedSeedManager = () => {
         <TabsContent value="settings" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Systeem Instellingen</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Key size={20} />
+                Google API Configuratie
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="p-4 bg-yellow-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Experimentele Features</h4>
-                  <p className="text-sm text-gray-600">
-                    Advanced seed matching is momenteel in beta fase.
+                  <h4 className="font-medium mb-2">Google Gemini API Key</h4>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Vereist voor neurosymbolische AI features zoals seed generatie en patroon analyse.
                   </p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      value={googleApiKey}
+                      onChange={(e) => setGoogleApiKey(e.target.value)}
+                      placeholder="AIza..."
+                      className="flex-1"
+                    />
+                    <Button onClick={saveGoogleApiKey}>
+                      Opslaan
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -535,8 +694,6 @@ const AdvancedSeedEditor: React.FC<AdvancedSeedEditorProps> = ({ seed, onSave, o
             </div>
           </div>
 
-          
-          
           <div>
             <label className="block text-sm font-medium mb-1">Triggers *</label>
             <div className="flex gap-2 mb-2">

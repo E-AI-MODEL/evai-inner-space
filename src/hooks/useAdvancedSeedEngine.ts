@@ -1,11 +1,9 @@
 
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import { useAdvancedSeedMatcher } from './useAdvancedSeedMatcher';
-import { AdvancedSeed, LegacySeed } from '../types/seed';
+import { AdvancedSeed } from '../types/seed';
 import { ChatHistoryItem } from '../types';
 import { loadAdvancedSeeds } from '../lib/advancedSeedStorage';
-import { migrateLegacySeeds } from '../utils/seedMigration';
-import seeds from "../seeds.json";
 
 export function useAdvancedSeedEngine() {
   const { detectEmotion, isLoading } = useOpenAI();
@@ -16,7 +14,7 @@ export function useAdvancedSeedEngine() {
     apiKey?: string,
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
     history?: ChatHistoryItem[]
-  ): Promise<EmotionDetection | AdvancedSeed | LegacySeed | null> => {
+  ): Promise<EmotionDetection | AdvancedSeed | null> => {
     // Try OpenAI first if API key is available
     if (apiKey && apiKey.trim()) {
       const aiResult = await detectEmotion(input, apiKey, context, history);
@@ -24,22 +22,10 @@ export function useAdvancedSeedEngine() {
     }
     
     // Check for advanced seeds
-    let advancedSeeds = loadAdvancedSeeds();
+    const advancedSeeds = loadAdvancedSeeds();
     
-    // If no advanced seeds exist, migrate legacy seeds
+    // If no advanced seeds exist, return null (no legacy fallback)
     if (advancedSeeds.length === 0) {
-      const legacySeeds = seeds as LegacySeed[];
-      if (legacySeeds.length > 0) {
-        // For first run, return legacy seed matching
-        const lowered = input.toLowerCase();
-        for (const seed of legacySeeds) {
-          for (const trigger of seed.triggers) {
-            if (lowered.includes(trigger.toLowerCase())) {
-              return seed;
-            }
-          }
-        }
-      }
       return null;
     }
     

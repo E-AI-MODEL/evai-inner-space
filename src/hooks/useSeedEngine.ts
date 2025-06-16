@@ -1,7 +1,5 @@
-
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import { useAdvancedSeedEngine } from './useAdvancedSeedEngine';
-import seeds from "../seeds.json";
 import { ChatHistoryItem } from '../types';
 import { loadAdvancedSeeds } from '../lib/advancedSeedStorage';
 
@@ -12,19 +10,6 @@ export interface Seed {
   response: string;
   meta?: string;
   label?: "Valideren" | "Reflectievraag" | "Suggestie";
-}
-
-// Fallback function for legacy seed matching
-function matchSeed(input: string, seeds: Seed[]): Seed | null {
-  const lowered = input.toLowerCase();
-  for (const seed of seeds) {
-    for (const trigger of seed.triggers) {
-      if (lowered.includes(trigger.toLowerCase())) {
-        return seed;
-      }
-    }
-  }
-  return null;
 }
 
 export function useSeedEngine() {
@@ -64,17 +49,13 @@ export function useSeedEngine() {
       return result as EmotionDetection | null;
     }
     
-    // Fallback to original logic
+    // Use AI if available, no fallback to legacy seeds anymore
     if (apiKey && apiKey.trim()) {
       const aiResult = await detectEmotion(input, apiKey, context, history);
       return aiResult;
     }
     
-    if (context?.dislikedLabel) {
-      return null;
-    }
-    
-    return matchSeed(input, seeds as Seed[]);
+    return null;
   };
 
   return { 
