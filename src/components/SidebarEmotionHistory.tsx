@@ -2,6 +2,7 @@
 import React from "react";
 import Icon from "./Icon";
 import { Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import type dynamicIconImports from 'lucide-react/dynamicIconImports';
 
@@ -17,8 +18,15 @@ const SidebarEmotionHistory: React.FC<{
   history?: EmotionHistoryItem[];
   onFocus?: (id: string) => void;
   onClear?: () => void;
-}> = ({ history = [], onFocus, onClear }) => (
-  <aside className="hidden md:flex flex-col justify-between bg-sidebar w-20 py-6 px-2 border-r border-zinc-200 min-h-[calc(100vh-56px)]" style={{ fontFamily: "Inter, sans-serif" }}>
+  className?: string;
+}> = ({ history = [], onFocus, onClear, className }) => (
+  <aside
+    className={cn(
+      "hidden md:flex flex-col justify-between bg-sidebar w-20 py-6 px-2 border-r border-zinc-200 min-h-[calc(100vh-56px)] sticky top-14 overflow-y-auto h-[calc(100vh-56px)]",
+      className
+    )}
+    style={{ fontFamily: "Inter, sans-serif" }}
+  >
     <div className="flex flex-col gap-4 items-center">
       {history.map((item) => (
         <button
