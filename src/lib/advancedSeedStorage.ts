@@ -12,31 +12,39 @@ export async function loadAdvancedSeeds(): Promise<AdvancedSeed[]> {
 
     if (error) throw error;
 
-    return (data ?? []).map((seed: any) => ({
-      id: seed.id,
-      emotion: seed.emotion,
-      type: 'validation', // Default type, adjust based on your data
-      label: seed.label || 'Valideren',
-      triggers: [], // You'll need to extract this from your data structure
-      response: seed.response || { nl: '' },
-      context: {
-        severity: 'medium', // Default, adjust based on your data
-        situation: 'therapy'
-      },
-      meta: {
-        priority: 1,
-        weight: seed.weight || 1.0,
-        confidence: 0.8,
-        usageCount: seed.meta?.usageCount || 0,
-        lastUsed: seed.meta?.lastUsed ? new Date(seed.meta.lastUsed) : undefined
-      },
-      tags: [],
-      createdAt: seed.created_at ? new Date(seed.created_at) : new Date(),
-      updatedAt: seed.updated_at ? new Date(seed.updated_at) : new Date(),
-      createdBy: 'system',
-      isActive: seed.active ?? true,
-      version: '1.0.0'
-    }));
+    return (data ?? []).map((seed: any) => {
+      const meta = seed.meta || {};
+      const {
+        context = { severity: 'medium' },
+        triggers = [],
+        tags = [],
+        type = 'validation',
+        createdBy = 'system',
+        version = '1.0.0',
+        ...restMeta
+      } = meta;
+
+      return {
+        id: seed.id,
+        emotion: seed.emotion,
+        type,
+        label: seed.label,
+        triggers,
+        response: seed.response,
+        context,
+        meta: {
+          ...restMeta,
+          weight: restMeta.weight ?? seed.weight ?? 1,
+          lastUsed: restMeta.lastUsed ? new Date(restMeta.lastUsed) : undefined,
+        },
+        tags,
+        createdAt: seed.created_at ? new Date(seed.created_at) : new Date(),
+        updatedAt: seed.updated_at ? new Date(seed.updated_at) : new Date(),
+        createdBy,
+        isActive: seed.active ?? true,
+        version,
+      } as AdvancedSeed;
+    });
   } catch (error) {
     console.error('Error loading advanced seeds:', error);
     return [];
@@ -53,10 +61,16 @@ export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
       weight: seed.meta.weight,
       active: seed.isActive,
       expires_at: null, // AdvancedSeed doesn't have expiresAt property
-      meta: seed.meta ? {
+      meta: {
         ...seed.meta,
-        lastUsed: seed.meta.lastUsed?.toISOString()
-      } : null,
+        context: seed.context,
+        triggers: seed.triggers,
+        tags: seed.tags,
+        type: seed.type,
+        createdBy: seed.createdBy,
+        version: seed.version,
+        lastUsed: seed.meta.lastUsed?.toISOString(),
+      },
       response: seed.response,
       created_at: seed.createdAt.toISOString(),
       updated_at: seed.updatedAt.toISOString(),
@@ -82,10 +96,16 @@ export async function updateAdvancedSeed(seed: AdvancedSeed): Promise<void> {
       weight: seed.meta.weight,
       active: seed.isActive,
       expires_at: null, // AdvancedSeed doesn't have expiresAt property
-      meta: seed.meta ? {
+      meta: {
         ...seed.meta,
-        lastUsed: seed.meta.lastUsed?.toISOString()
-      } : null,
+        context: seed.context,
+        triggers: seed.triggers,
+        tags: seed.tags,
+        type: seed.type,
+        createdBy: seed.createdBy,
+        version: seed.version,
+        lastUsed: seed.meta.lastUsed?.toISOString(),
+      },
       response: seed.response,
       updated_at: new Date().toISOString(),
     };
