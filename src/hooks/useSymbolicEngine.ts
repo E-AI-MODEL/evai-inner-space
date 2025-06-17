@@ -1,6 +1,8 @@
 
 import { Message } from '../types';
 import { useRubricSymbolicRules } from './useRubricSymbolicRules';
+import { useEmotionalContextEngine } from './useEmotionalContextEngine';
+import { useFeedbackLearning } from './useFeedbackLearning';
 
 export interface SymbolicRule {
   name: string;
@@ -10,6 +12,8 @@ export interface SymbolicRule {
 
 export function useSymbolicEngine() {
   const { rubricBasedRules } = useRubricSymbolicRules();
+  const { analyzeContext } = useEmotionalContextEngine();
+  const { getAdjustedThreshold } = useFeedbackLearning();
 
   const basicRules: SymbolicRule[] = [
     {
@@ -70,6 +74,46 @@ export function useSymbolicEngine() {
     }
   ];
 
+  const contextRules: SymbolicRule[] = [
+    {
+      name: 'LateNightPattern',
+      description: 'Signaleert nachtelijke gesprekken',
+      check: (messages, latest) => {
+        if (latest.from !== 'user') return null;
+        const ctx = analyzeContext(messages);
+        if (ctx.timeOfDay === 'night') {
+          return '🌙 Nachtelijke context - let op vermoeidheid of crisisgedrag';
+        }
+        return null;
+      }
+    },
+    {
+      name: 'LongConversation',
+      description: 'Detecteert langdurige sessies',
+      check: (messages, latest) => {
+        if (latest.from !== 'user') return null;
+        const ctx = analyzeContext(messages);
+        if (ctx.durationMinutes > 45) {
+          return `⏳ Gesprek duurt al ${Math.round(ctx.durationMinutes)} minuten - mogelijk mentale vermoeidheid`;
+        }
+        return null;
+      }
+    },
+    {
+      name: 'TherapeuticEscalation',
+      description: 'Waarschuwt wanneer professionele hulp gewenst is',
+      check: (messages, latest) => {
+        if (latest.from !== 'user') return null;
+        const ctx = analyzeContext(messages);
+        const threshold = getAdjustedThreshold('TherapeuticEscalation', 70);
+        if (ctx.riskScore > threshold || ctx.escalate) {
+          return `🚨 Escalatie nodig - risicoscore ${Math.round(ctx.riskScore)}%, intensiteit ${ctx.intensityScore}`;
+        }
+        return null;
+      }
+    }
+  ];
+
   const evaluate = (messages: Message[], latestMessage: Message): string[] => {
     // Safety check for messages array and latest message
     if (!messages || !Array.isArray(messages) || !latestMessage) {
@@ -77,7 +121,7 @@ export function useSymbolicEngine() {
       return [];
     }
 
-    const allRules = [...basicRules, ...rubricBasedRules];
+    const allRules = [...basicRules, ...rubricBasedRules, ...contextRules];
     const insights: string[] = [];
 
     for (const rule of allRules) {

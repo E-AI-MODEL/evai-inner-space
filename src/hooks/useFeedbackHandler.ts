@@ -2,6 +2,7 @@
 import { Message } from '../types';
 import { loadFeedback, saveFeedback } from '../lib/feedbackStorage';
 import { saveSeedFeedback } from '../api/saveSeedFeedback';
+import { useFeedbackLearning } from './useFeedbackLearning';
 
 type GenerateAiResponseFn = (
     userMessage: Message,
@@ -13,6 +14,7 @@ export function useFeedbackHandler(
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   generateAiResponse: GenerateAiResponseFn
 ) {
+  const { recordFeedback } = useFeedbackLearning();
   const handleDislike = async (dislikedMessage: Message) => {
     const originalUserMessage = messages.find(m => m.id === dislikedMessage.replyTo);
 
@@ -48,6 +50,10 @@ export function useFeedbackHandler(
         dislikedMessage.emotionSeed,
         newFeedback === 'like' ? 'up' : 'down'
       );
+    }
+
+    if (newFeedback && dislikedMessage) {
+      recordFeedback(dislikedMessage, newFeedback);
     }
 
     if (newFeedback === 'dislike' && dislikedMessage) {
