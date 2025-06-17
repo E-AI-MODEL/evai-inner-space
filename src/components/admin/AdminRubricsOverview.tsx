@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Shield, AlertTriangle, Target, TrendingUp, Activity, CheckCircle, Sparkles } from 'lucide-react';
+import { Brain, Shield, AlertTriangle, Target, TrendingUp, Activity, CheckCircle, Sparkles, Settings } from 'lucide-react';
 import { useEvAI56Rubrics } from '../../hooks/useEvAI56Rubrics';
 import { Message } from '../../types';
 import type { RubricAssessment } from '../../hooks/useEvAI56Rubrics';
@@ -16,7 +16,7 @@ interface AdminRubricsOverviewProps {
 }
 
 const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages }) => {
-  const { assessMessage, evai56Rubrics, calculateOverallRisk, getRubricById } = useEvAI56Rubrics();
+  const { assessMessage, evai56Rubrics, calculateOverallRisk, getRubricById, config } = useEvAI56Rubrics();
   const [selectedRubric, setSelectedRubric] = useState<string | null>(null);
 
   // Comprehensive analysis of all messages
@@ -123,6 +123,17 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Configuration Status */}
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2 text-sm text-blue-700">
+                <Settings size={16} />
+                <span className="font-medium">Huidige configuratie: {config.level}</span>
+                <Badge variant="outline" className="text-xs">
+                  Trigger: {config.thresholds.interventionTrigger}
+                </Badge>
+              </div>
+            </div>
+
             <div className="flex items-center justify-center py-12">
               <div className="text-center space-y-4">
                 <Sparkles className="mx-auto text-purple-400" size={48} />
@@ -153,6 +164,27 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Configuration Status */}
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-blue-700">
+                <Settings size={16} />
+                <span className="font-medium">Configuratie: {config.level}</span>
+              </div>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="text-xs">
+                  Trigger: {config.thresholds.interventionTrigger}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  Risk: {config.weights.riskMultiplier}x
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  Protective: {config.weights.protectiveMultiplier}x
+                </Badge>
+              </div>
+            </div>
+          </div>
+
           {/* Overall Statistics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">

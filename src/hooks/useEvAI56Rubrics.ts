@@ -1,4 +1,6 @@
 
+import { useRubricSettings } from './useRubricSettings';
+
 export interface EvAI56Rubric {
   id: string;
   name: string;
@@ -143,6 +145,8 @@ export interface RubricAssessment {
 }
 
 export function useEvAI56Rubrics() {
+  const { config } = useRubricSettings();
+
   const synonymMap: Record<string, string[]> = {
     overweldigende: ["overweldigend"],
     overweldigend: ["overweldigende"],
@@ -165,10 +169,24 @@ export function useEvAI56Rubrics() {
 
   const factorMatches = (factor: string, tokens: Set<string>): boolean => {
     const words = tokenize(factor);
-    // CRUCIALE WIJZIGING: Van .every() naar .some() om de matching veel flexibeler te maken.
-    // Een match op één van de woorden in een factor is nu voldoende voor een trigger.
-    // Dit maakt de detectie exponentieel krachtiger voor alledaagse taal.
-    return words.some(w => wordMatches(w, tokens));
+    
+    // Apply strictness level logic based on current configuration
+    switch (config.level) {
+      case 'strict':
+        // Strict mode: require all words in a factor to match for higher precision
+        return words.every(w => wordMatches(w, tokens));
+      
+      case 'moderate':
+        // Moderate mode: require at least half of the words to match
+        const moderateThreshold = Math.ceil(words.length / 2);
+        const moderateMatches = words.filter(w => wordMatches(w, tokens)).length;
+        return moderateMatches >= moderateThreshold;
+      
+      case 'flexible':
+      default:
+        // Flexible mode: any word match is sufficient for broader interpretation
+        return words.some(w => wordMatches(w, tokens));
+    }
   };
 
   const assessMessage = (content: string): RubricAssessment[] => {
@@ -184,18 +202,22 @@ export function useEvAI56Rubrics() {
       );
 
       if (riskTriggers.length > 0 || protectiveTriggers.length > 0) {
-        const riskScore = riskTriggers.length * rubric.scoreWeights.risk;
-        const protectiveScore = protectiveTriggers.length * rubric.scoreWeights.protective;
+        // Apply strictness weights from configuration
+        const riskScore = riskTriggers.length * rubric.scoreWeights.risk * config.weights.riskMultiplier;
+        const protectiveScore = protectiveTriggers.length * rubric.scoreWeights.protective * config.weights.protectiveMultiplier;
         const overallScore = Math.max(0, riskScore - protectiveScore);
 
-        assessments.push({
-          rubricId: rubric.id,
-          riskScore,
-          protectiveScore,
-          overallScore,
-          triggers: [...riskTriggers, ...protectiveTriggers],
-          timestamp: new Date()
-        });
+        // Only include assessment if it meets the intervention trigger threshold
+        if (overallScore >= config.thresholds.interventionTrigger) {
+          assessments.push({
+            rubricId: rubric.id,
+            riskScore,
+            protectiveScore,
+            overallScore,
+            triggers: [...riskTriggers, ...protectiveTriggers],
+            timestamp: new Date()
+          });
+        }
       }
     });
 
@@ -208,13 +230,23 @@ export function useEvAI56Rubrics() {
     if (assessments.length === 0) return 0;
     const totalScore = assessments.reduce((sum, a) => sum + a.overallScore, 0);
     const maxPossibleScore = assessments.length * 5; // Assuming max 5 risk factors per rubric
-    return Math.min(100, (totalScore / maxPossibleScore) * 100);
+    const riskPercentage = Math.min(100, (totalScore / maxPossibleScore) * 100);
+    
+    // Apply risk categorization based on strictness configuration
+    if (riskPercentage >= config.thresholds.overallRiskHigh) {
+      return Math.min(100, riskPercentage * 1.2); // Amplify high risk
+    } else if (riskPercentage >= config.thresholds.overallRiskModerate) {
+      return riskPercentage;
+    } else {
+      return Math.max(0, riskPercentage * 0.8); // Dampen low risk
+    }
   };
 
   return {
     evai56Rubrics,
     assessMessage,
     getRubricById,
-    calculateOverallRisk
+    calculateOverallRisk,
+    config // Expose current configuration for debugging/monitoring
   };
 }
