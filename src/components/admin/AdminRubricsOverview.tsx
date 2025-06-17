@@ -114,12 +114,10 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain size={20} className="text-purple-600" />
-            EvAI 5.6 Rubrics Overzicht
+            EvAI 5.6 Analyse Overzicht
           </CardTitle>
           <CardDescription>
-            Geen rubriekdata beschikbaar. Gebruik rubriek-specifieke termen
-            (bijv. "emotionele regulatie" of "copingstrategieën") om de analyses te activeren.
-            Zie de factoren in <code>src/hooks/useEvAI56Rubrics.ts</code>.
+            Nog geen analysedata beschikbaar. Start een gesprek om patronen en inzichten te genereren.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -132,10 +130,10 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain size={20} className="text-purple-600" />
-            EvAI 5.6 Rubrics Overzicht & Effectiviteitsanalyse
+            EvAI 5.6 Analyse Overzicht & Effectiviteitsanalyse
           </CardTitle>
           <CardDescription>
-            Uitgebreide analyse van therapeutische rubrics, interventie-effectiviteit en CoT-integratie
+            Uitgebreide analyse van patronen, interventie-effectiviteit en CoT-integratie
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -170,7 +168,7 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
             <div className="bg-white rounded-lg p-4 border border-purple-100">
               <div className="flex items-center gap-2">
                 <Target size={18} className="text-blue-500" />
-                <span className="text-sm font-medium text-gray-700">Actieve Rubrics</span>
+                <span className="text-sm font-medium text-gray-700">Actieve Patronen</span>
               </div>
               <div className="text-2xl font-bold text-blue-600">{overallStats.activeRubrics}/{evai56Rubrics.length}</div>
             </div>
@@ -236,7 +234,7 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
             <TabsContent value="usage" className="space-y-4">
               <Card className="bg-white">
                 <CardHeader>
-                  <CardTitle className="text-lg">Rubric Gebruik Frequentie</CardTitle>
+                  <CardTitle className="text-lg">Patroon Gebruik Frequentie</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -291,9 +289,7 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
                 <Card className="bg-white">
                   <CardContent className="pt-6">
                     <div className="text-center text-gray-500">
-                      Nog geen effectiviteitsdata beschikbaar. Stimuleer gebruik
-                      van rubriek-specifieke termen voor betere metingen. Zie
-                      <code>src/hooks/useEvAI56Rubrics.ts</code>.
+                      Nog geen effectiviteitsdata beschikbaar. Gebruik meer gesprekken voor betere metingen.
                     </div>
                   </CardContent>
                 </Card>
@@ -336,9 +332,7 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
                 <Card className="bg-white">
                   <CardContent className="pt-6">
                     <div className="text-center text-gray-500">
-                      Onvoldoende data voor timeline analyse. Gebruik meer
-                      rubriek-specifieke termen zodat gebeurtenissen herkend
-                      worden. Zie <code>src/hooks/useEvAI56Rubrics.ts</code>.
+                      Onvoldoende data voor timeline analyse. Gebruik meer gesprekken voor uitgebreide analyses.
                     </div>
                   </CardContent>
                 </Card>

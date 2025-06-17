@@ -71,13 +71,11 @@ const RubricsAnalyticsDashboard: React.FC<RubricsAnalyticsDashboardProps> = ({ m
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
         <div className="flex items-center gap-3 mb-4">
           <Brain className="text-blue-600" size={24} />
-          <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Rubrieken Analyse</h3>
+          <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Analyse</h3>
         </div>
         <p className="text-blue-700 text-sm">
-          Nog geen rubriekdata beschikbaar. Gebruik rubriek-specifieke termen
-          (bijv. "emotionele regulatie" of "copingstrategieën") om de analyse te
-          activeren. Zie de factoren in
-          <code>src/hooks/useEvAI56Rubrics.ts</code>.
+          Nog geen analysedata beschikbaar. Start een gesprek om patronen
+          en inzichten te genereren.
         </p>
       </div>
     );
@@ -87,7 +85,7 @@ const RubricsAnalyticsDashboard: React.FC<RubricsAnalyticsDashboardProps> = ({ m
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 space-y-6">
       <div className="flex items-center gap-3 mb-4">
         <Brain className="text-blue-600" size={24} />
-        <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Rubrieken Analyse</h3>
+        <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Analyse</h3>
       </div>
 
       {/* Overall Statistics */}
@@ -113,7 +111,7 @@ const RubricsAnalyticsDashboard: React.FC<RubricsAnalyticsDashboardProps> = ({ m
         <div className="bg-white rounded-lg p-4 border border-blue-100">
           <div className="flex items-center gap-2">
             <TrendingUp size={20} className="text-blue-500" />
-            <span className="text-sm font-medium text-gray-700">Actieve Rubrieken</span>
+            <span className="text-sm font-medium text-gray-700">Actieve Patronen</span>
           </div>
           <div className="text-2xl font-bold text-blue-600">{rubricScores.length}</div>
         </div>
@@ -122,7 +120,7 @@ const RubricsAnalyticsDashboard: React.FC<RubricsAnalyticsDashboardProps> = ({ m
       {/* Rubric Scores Chart */}
       {rubricScores.length > 0 && (
         <div className="bg-white rounded-lg p-4 border border-blue-100">
-          <h4 className="text-md font-semibold text-gray-800 mb-4">Rubrieken Scores</h4>
+          <h4 className="text-md font-semibold text-gray-800 mb-4">Patroon Scores</h4>
           <ChartContainer config={chartConfig} className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={rubricScores} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>

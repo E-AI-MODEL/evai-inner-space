@@ -16,6 +16,15 @@ const AdminDashboard = () => {
   const { messages } = useChatHistory();
   const navigate = useNavigate();
 
+  // Check if rubrics are active (messages contain rubric-related content)
+  const hasRubricActivity = messages.some(msg => 
+    msg.content.toLowerCase().includes('emotionele regulatie') ||
+    msg.content.toLowerCase().includes('coping') ||
+    msg.content.toLowerCase().includes('zelfbewustzijn') ||
+    msg.content.toLowerCase().includes('sociale verbinding') ||
+    msg.content.toLowerCase().includes('betekenis')
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-inter">
       {/* Enhanced Hero Header */}
@@ -55,15 +64,15 @@ const AdminDashboard = () => {
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1">
                     <Sparkles size={14} className="text-yellow-500" />
-                    <span>Neurosymbolische AI Engine</span>
+                    <span>Geavanceerde AI Engine</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Shield size={14} className="text-green-500" />
-                    <span>EvAI 5.6 Rubrics Validated</span>
+                    <span>EvAI 5.6 Gevalideerd</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Activity size={14} className="text-blue-500" />
-                    <span>{messages.length} Active Sessions</span>
+                    <span>{messages.length} Actieve Sessies</span>
                   </div>
                 </div>
               </div>
@@ -95,17 +104,19 @@ const AdminDashboard = () => {
 
       {/* Enhanced Content Area */}
       <div className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="rubrics" className="w-full">
+        <Tabs defaultValue={hasRubricActivity ? "rubrics" : "seeds"} className="w-full">
           <div className="mb-8">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-2">
-              <TabsTrigger 
-                value="rubrics" 
-                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-200"
-              >
-                <Brain size={16} />
-                <span className="hidden sm:inline">EvAI Rubrics</span>
-                <span className="sm:hidden">Rubrics</span>
-              </TabsTrigger>
+              {hasRubricActivity && (
+                <TabsTrigger 
+                  value="rubrics" 
+                  className="flex items-center gap-2 rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-200"
+                >
+                  <Brain size={16} />
+                  <span className="hidden sm:inline">Analyse</span>
+                  <span className="sm:hidden">Analyse</span>
+                </TabsTrigger>
+              )}
               
               <TabsTrigger 
                 value="seeds" 
@@ -137,13 +148,15 @@ const AdminDashboard = () => {
           </div>
 
           <div className="space-y-6">
-            <TabsContent value="rubrics" className="space-y-6">
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">EvAI 5.6 Rubrics Dashboard</h2>
-                <p className="text-gray-600">Evidence-based therapeutische interventies en validatie</p>
-              </div>
-              <AdminRubricsOverview messages={messages} />
-            </TabsContent>
+            {hasRubricActivity && (
+              <TabsContent value="rubrics" className="space-y-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800 mb-2">EvAI 5.6 Analyse Dashboard</h2>
+                  <p className="text-gray-600">Gedetailleerde inzichten en patronen</p>
+                </div>
+                <AdminRubricsOverview messages={messages} />
+              </TabsContent>
+            )}
 
             <TabsContent value="seeds" className="space-y-6">
               <div className="text-center mb-6">
@@ -155,8 +168,8 @@ const AdminDashboard = () => {
 
             <TabsContent value="analytics" className="space-y-6">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Neurosymbolische Analytics</h2>
-                <p className="text-gray-600">Deep learning insights en therapeutische effectiviteit</p>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Geavanceerde Analytics</h2>
+                <p className="text-gray-600">Deep learning insights en effectiviteit</p>
               </div>
               <AdminAnalytics messages={messages} />
             </TabsContent>
