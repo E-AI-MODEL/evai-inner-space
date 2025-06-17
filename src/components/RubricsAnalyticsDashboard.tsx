@@ -4,7 +4,8 @@ import { Message } from '../types';
 import { useEvAI56Rubrics, RubricAssessment } from '../hooks/useEvAI56Rubrics';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
-import { AlertTriangle, Shield, TrendingUp, Brain } from 'lucide-react';
+import { AlertTriangle, Shield, TrendingUp, Brain, Sparkles } from 'lucide-react';
+import PersonalizedInsights from './PersonalizedInsights';
 
 interface RubricsAnalyticsDashboardProps {
   messages: Message[];
@@ -68,99 +69,108 @@ const RubricsAnalyticsDashboard: React.FC<RubricsAnalyticsDashboardProps> = ({ m
 
   if (allAssessments.length === 0) {
     return (
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Brain className="text-blue-600" size={24} />
-          <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Analyse</h3>
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Brain className="text-blue-600" size={24} />
+            <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Analyse</h3>
+          </div>
+          <p className="text-blue-700 text-sm">
+            Nog geen analysedata beschikbaar. Start een gesprek om patronen
+            en inzichten te genereren.
+          </p>
         </div>
-        <p className="text-blue-700 text-sm">
-          Nog geen analysedata beschikbaar. Start een gesprek om patronen
-          en inzichten te genereren.
-        </p>
+        
+        <PersonalizedInsights messages={messages} />
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 space-y-6">
-      <div className="flex items-center gap-3 mb-4">
-        <Brain className="text-blue-600" size={24} />
-        <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Analyse</h3>
-      </div>
+    <div className="space-y-6">
+      {/* Personalized Insights - Now prominently displayed at the top */}
+      <PersonalizedInsights messages={messages} />
 
-      {/* Overall Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg p-4 border border-blue-100">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={20} className={overallRisk > 50 ? "text-red-500" : overallRisk > 25 ? "text-yellow-500" : "text-green-500"} />
-            <span className="text-sm font-medium text-gray-700">Risico Score</span>
-          </div>
-          <div className={`text-2xl font-bold ${overallRisk > 50 ? "text-red-600" : overallRisk > 25 ? "text-yellow-600" : "text-green-600"}`}>
-            {Math.round(overallRisk)}%
-          </div>
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 space-y-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Brain className="text-blue-600" size={24} />
+          <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Technische Analyse</h3>
         </div>
 
-        <div className="bg-white rounded-lg p-4 border border-blue-100">
-          <div className="flex items-center gap-2">
-            <Shield size={20} className="text-green-500" />
-            <span className="text-sm font-medium text-gray-700">Beschermende Factoren</span>
-          </div>
-          <div className="text-2xl font-bold text-green-600">{Math.round(totalProtectiveFactors)}</div>
-        </div>
-
-        <div className="bg-white rounded-lg p-4 border border-blue-100">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={20} className="text-blue-500" />
-            <span className="text-sm font-medium text-gray-700">Actieve Patronen</span>
-          </div>
-          <div className="text-2xl font-bold text-blue-600">{rubricScores.length}</div>
-        </div>
-      </div>
-
-      {/* Rubric Scores Chart */}
-      {rubricScores.length > 0 && (
-        <div className="bg-white rounded-lg p-4 border border-blue-100">
-          <h4 className="text-md font-semibold text-gray-800 mb-4">Patroon Scores</h4>
-          <ChartContainer config={chartConfig} className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={rubricScores} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 12 }}
-                  interval={0}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis tick={{ fontSize: 12 }} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="avgRisk" name="Gemiddeld Risico" fill={chartConfig.risk.color} />
-                <Bar dataKey="avgProtective" name="Gemiddeld Beschermend" fill={chartConfig.protective.color} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </div>
-      )}
-
-      {/* Top Risk Areas */}
-      <div className="bg-white rounded-lg p-4 border border-blue-100">
-        <h4 className="text-md font-semibold text-gray-800 mb-3">Aandachtsgebieden</h4>
-        <div className="space-y-2">
-          {rubricScores.slice(0, 3).map((rubric, index) => (
-            <div key={rubric.name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-              <span className="text-sm font-medium text-gray-700">{rubric.name}</span>
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: getRiskColor(rubric.netScore) }}
-                />
-                <span className="text-sm text-gray-600">
-                  {rubric.netScore > 0 ? `+${rubric.netScore.toFixed(1)}` : rubric.netScore.toFixed(1)}
-                </span>
-              </div>
+        {/* Overall Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={20} className={overallRisk > 50 ? "text-red-500" : overallRisk > 25 ? "text-yellow-500" : "text-green-500"} />
+              <span className="text-sm font-medium text-gray-700">Risico Score</span>
             </div>
-          ))}
+            <div className={`text-2xl font-bold ${overallRisk > 50 ? "text-red-600" : overallRisk > 25 ? "text-yellow-600" : "text-green-600"}`}>
+              {Math.round(overallRisk)}%
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="flex items-center gap-2">
+              <Shield size={20} className="text-green-500" />
+              <span className="text-sm font-medium text-gray-700">Beschermende Factoren</span>
+            </div>
+            <div className="text-2xl font-bold text-green-600">{Math.round(totalProtectiveFactors)}</div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={20} className="text-blue-500" />
+              <span className="text-sm font-medium text-gray-700">Actieve Patronen</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-600">{rubricScores.length}</div>
+          </div>
+        </div>
+
+        {/* Rubric Scores Chart */}
+        {rubricScores.length > 0 && (
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <h4 className="text-md font-semibold text-gray-800 mb-4">Patroon Scores</h4>
+            <ChartContainer config={chartConfig} className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rubricScores} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="avgRisk" name="Gemiddeld Risico" fill={chartConfig.risk.color} />
+                  <Bar dataKey="avgProtective" name="Gemiddeld Beschermend" fill={chartConfig.protective.color} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </div>
+        )}
+
+        {/* Top Risk Areas */}
+        <div className="bg-white rounded-lg p-4 border border-blue-100">
+          <h4 className="text-md font-semibold text-gray-800 mb-3">Aandachtsgebieden</h4>
+          <div className="space-y-2">
+            {rubricScores.slice(0, 3).map((rubric, index) => (
+              <div key={rubric.name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <span className="text-sm font-medium text-gray-700">{rubric.name}</span>
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: getRiskColor(rubric.netScore) }}
+                  />
+                  <span className="text-sm text-gray-600">
+                    {rubric.netScore > 0 ? `+${rubric.netScore.toFixed(1)}` : rubric.netScore.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

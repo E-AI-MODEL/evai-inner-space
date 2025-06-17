@@ -1,10 +1,11 @@
-
 import { Message } from '../types';
 import { SymbolicRule } from './useSymbolicEngine';
 import { useEvAI56Rubrics, RubricAssessment } from './useEvAI56Rubrics';
+import { useEnhancedRubricSymbolicRules } from './useEnhancedRubricSymbolicRules';
 
 export function useRubricSymbolicRules() {
   const { assessMessage, getRubricById, calculateOverallRisk } = useEvAI56Rubrics();
+  const { enhancedRubricBasedRules } = useEnhancedRubricSymbolicRules();
 
   const rubricBasedRules: SymbolicRule[] = [
     {
@@ -93,7 +94,10 @@ export function useRubricSymbolicRules() {
         }
         return null;
       }
-    }
+    },
+    
+    // Add the enhanced personalized rules
+    ...enhancedRubricBasedRules
   ];
 
   return { rubricBasedRules };

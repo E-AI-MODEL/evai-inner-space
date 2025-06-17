@@ -3,6 +3,8 @@ import React from 'react';
 import ChatBubble from "./ChatBubble";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Message } from '../types';
+import PersonalizedInsights from './PersonalizedInsights';
+import { useInsightGenerator } from '../hooks/useInsightGenerator';
 
 interface ChatViewProps {
     messages: Message[];
@@ -21,11 +23,18 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
     [messages]);
 
     const [openInferences, setOpenInferences] = React.useState<Record<string, boolean>>({});
+    const { getPriorityInsights } = useInsightGenerator(messages);
+    
+    // Show insights after every 5 messages or when priority insights are available
+    const shouldShowInsights = messages.length > 0 && 
+        (messages.length % 5 === 0 || getPriorityInsights().length > 0);
     
     return (
         <div className="mb-2">
-            {messages.map((msg) => {
+            {messages.map((msg, index) => {
                 const repliedToMessage = msg.replyTo ? messagesById[msg.replyTo] : undefined;
+                const isLastMessage = index === messages.length - 1;
+                const showInsightsAfter = shouldShowInsights && isLastMessage && !isProcessing;
 
                 return (
                     <div key={msg.id} className="mb-2">
@@ -80,6 +89,17 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
                                         </div>
                                     </CollapsibleContent>
                                 </Collapsible>
+                            </div>
+                        )}
+
+                        {/* Contextual Insights - Show after certain messages */}
+                        {showInsightsAfter && (
+                            <div className="mt-6 mb-4">
+                                <PersonalizedInsights 
+                                    messages={messages} 
+                                    compact={true}
+                                    className="border-l-4 border-blue-400 pl-4"
+                                />
                             </div>
                         )}
                     </div>
