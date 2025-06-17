@@ -1,3 +1,4 @@
+
 import { AdvancedSeed } from '../types/seed';
 
 export interface MatchingContext {
@@ -29,14 +30,20 @@ export function matchSeed(
     }
 
     if (seed.meta.lastUsed) {
-      const hoursSince = (Date.now() - seed.meta.lastUsed.getTime()) / (1000 * 60 * 60);
+      const lastUsedDate = seed.meta.lastUsed instanceof Date 
+        ? seed.meta.lastUsed 
+        : new Date(seed.meta.lastUsed);
+      const hoursSince = (Date.now() - lastUsedDate.getTime()) / (1000 * 60 * 60);
       if (hoursSince > 24) score += 2;
     } else {
       score += 3;
     }
 
     if (seed.meta.ttl && seed.meta.lastUsed) {
-      const minutesSince = (Date.now() - seed.meta.lastUsed.getTime()) / (1000 * 60);
+      const lastUsedDate = seed.meta.lastUsed instanceof Date 
+        ? seed.meta.lastUsed 
+        : new Date(seed.meta.lastUsed);
+      const minutesSince = (Date.now() - lastUsedDate.getTime()) / (1000 * 60);
       if (minutesSince < seed.meta.ttl) score *= 0.5;
     }
 

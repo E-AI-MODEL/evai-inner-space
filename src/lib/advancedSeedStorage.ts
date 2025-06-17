@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { AdvancedSeed, SeedMeta, SeedResponse } from '../types/seed';
 import type { Database } from '@/integrations/supabase/types';
@@ -16,7 +15,7 @@ export async function loadAdvancedSeeds(): Promise<AdvancedSeed[]> {
     return (data ?? []).map((seed: Database['public']['Tables']['emotion_seeds']['Row']) => {
       // Parse meta as an object with safe defaults
       const meta = (seed.meta as SeedMeta) || {};
-      const response = (seed.response as SeedResponse) || { nl: '' };
+      const response = (seed.response as unknown as SeedResponse) || { nl: '' };
       
       return {
         id: seed.id,
@@ -69,9 +68,11 @@ export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
         ttl: seed.meta.ttl,
         confidence: seed.meta.confidence,
         usageCount: seed.meta.usageCount,
-        lastUsed: seed.meta.lastUsed?.toISOString(),
+        lastUsed: seed.meta.lastUsed instanceof Date 
+          ? seed.meta.lastUsed.toISOString() 
+          : seed.meta.lastUsed,
       },
-      response: seed.response,
+      response: seed.response as unknown as Database['public']['Tables']['emotion_seeds']['Insert']['response'],
       created_at: seed.createdAt.toISOString(),
       updated_at: seed.updatedAt.toISOString(),
     };
@@ -107,9 +108,11 @@ export async function updateAdvancedSeed(seed: AdvancedSeed): Promise<void> {
         ttl: seed.meta.ttl,
         confidence: seed.meta.confidence,
         usageCount: seed.meta.usageCount,
-        lastUsed: seed.meta.lastUsed?.toISOString(),
+        lastUsed: seed.meta.lastUsed instanceof Date 
+          ? seed.meta.lastUsed.toISOString() 
+          : seed.meta.lastUsed,
       },
-      response: seed.response,
+      response: seed.response as unknown as Database['public']['Tables']['emotion_seeds']['Update']['response'],
       updated_at: new Date().toISOString(),
     };
 

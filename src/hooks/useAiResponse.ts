@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
@@ -305,25 +304,33 @@ export function useAiResponse(
         };
 
       } else if (matchedResult) {
-        // Advanced seed match
-        const seedResult = matchedResult;
+        // Advanced seed match - fix the type checking issue
+        const seedResult = matchedResult as any; // Type assertion for legacy compatibility
         setSeedConfetti(true);
         
         const evaiNote = newSeedsGenerated > 0 
           ? `\n\n*[🌱 EvAI LEERPROCES: ${newSeedsGenerated} nieuwe patronen toegevoegd + seed toegepast!]*`
           : `\n\n*[EvAI Enhanced: Advanced seed + rubrics guidance]*`;
         
-        const label = seedResult.label === "Interventie" ? "Suggestie" : seedResult.label as "Valideren" | "Reflectievraag" | "Suggestie";
+        // Handle the label mapping properly
+        let label: "Valideren" | "Reflectievraag" | "Suggestie" = "Valideren";
+        if (seedResult.label === "Reflectievraag") {
+          label = "Reflectievraag";
+        } else if (seedResult.label === "Suggestie") {
+          label = "Suggestie";
+        }
+        // "Interventie" defaults to "Valideren" for backward compatibility
+        
         aiResp = {
           id: `ai-evai-seed-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
-          content: `${seedResult.response.nl}${evaiNote}`,
-          explainText: `EvAI Advanced Seed: ${seedResult.triggers.join(", ")} | Risk: ${overallRisk.toFixed(1)}% | New: +${newSeedsGenerated}`,
+          content: `${typeof seedResult.response === 'string' ? seedResult.response : seedResult.response?.nl || ''}${evaiNote}`,
+          explainText: `EvAI Advanced Seed: ${seedResult.triggers?.join(", ") || ''} | Risk: ${overallRisk.toFixed(1)}% | New: +${newSeedsGenerated}`,
           emotionSeed: seedResult.emotion,
           animate: true,
-          meta: `EvAI Seed: ${seedResult.meta.weight.toFixed(1)}x + ${newSeedsGenerated} new`,
+          meta: `EvAI Seed: ${seedResult.meta?.weight?.toFixed(1) || '1.0'}x + ${newSeedsGenerated} new`,
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
@@ -332,8 +339,8 @@ export function useAiResponse(
             ...rubricInsights,
             ...cotRubricGuidance.map(guidance => `🧠 EvAI: ${guidance}`),
             `🌱 NEW SEEDS: ${newSeedsGenerated} generated with EvAI validation`,
-            `🎯 Advanced matching: ${seedResult.triggers.join(", ")}`,
-            `⚡ Usage count: ${seedResult.meta.usageCount} → ${seedResult.meta.usageCount + 1}`
+            `🎯 Advanced matching: ${seedResult.triggers?.join(", ") || ''}`,
+            `⚡ Usage count: ${seedResult.meta?.usageCount || 0} → ${(seedResult.meta?.usageCount || 0) + 1}`
           ]
         };
 
@@ -360,7 +367,8 @@ export function useAiResponse(
                 await refetchSeeds();
                 
                 const mappedLabel: "Valideren" | "Reflectievraag" | "Suggestie" = 
-                  forcedSeed.label === "Interventie" ? "Suggestie" : forcedSeed.label as "Valideren" | "Reflectievraag" | "Suggestie";
+                  forcedSeed.label === "Reflectievraag" ? "Reflectievraag" : 
+                  forcedSeed.label === "Suggestie" ? "Suggestie" : "Valideren";
                 
                 aiResp = {
                   id: `ai-evai-force-${Date.now()}`,

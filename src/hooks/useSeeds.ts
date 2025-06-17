@@ -20,7 +20,7 @@ export function useSeeds() {
       return (data ?? []).map((seed: Database['public']['Tables']['emotion_seeds']['Row']) => {
         // Parse meta as an object, with safe defaults
         const meta = (seed.meta as SeedMeta) || {};
-        const response = (seed.response as SeedResponse) || { nl: '' };
+        const response = (seed.response as unknown as SeedResponse) || { nl: '' };
         
         return {
           id: seed.id,
