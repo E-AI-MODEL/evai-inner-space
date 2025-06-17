@@ -30,14 +30,14 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
         (messages.length % 5 === 0 || getPriorityInsights().length > 0);
     
     return (
-        <div className="mb-2">
+        <div className="space-y-3 pb-4">
             {messages.map((msg, index) => {
                 const repliedToMessage = msg.replyTo ? messagesById[msg.replyTo] : undefined;
                 const isLastMessage = index === messages.length - 1;
                 const showInsightsAfter = shouldShowInsights && isLastMessage && !isProcessing;
 
                 return (
-                    <div key={msg.id} className="mb-2">
+                    <div key={msg.id} className="space-y-2">
                         <ChatBubble
                             id={msg.id}
                             ref={(el) => {
@@ -65,7 +65,7 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
                         
                         {/* Enhanced symbolic inferences display */}
                         {msg.symbolicInferences && msg.symbolicInferences.length > 0 && (
-                            <div className="ml-8 mt-2 mb-4">
+                            <div className="ml-4 md:ml-8 mt-2 mb-4">
                                 <Collapsible
                                     open={!!openInferences[msg.id]}
                                     onOpenChange={(open) =>
@@ -74,15 +74,15 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
                                 >
                                     <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-indigo-800 hover:underline">
                                         <span className="text-lg">🧠</span>
-                                        <span>Neurosymbolische Observatie</span>
+                                        <span className="text-sm md:text-base">Neurosymbolische Observatie</span>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
                                         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-400 rounded-r-lg shadow-sm mt-2">
-                                            <div className="px-4 py-3 space-y-1">
+                                            <div className="px-3 md:px-4 py-3 space-y-1">
                                                 {msg.symbolicInferences.map((inf) => (
                                                     <div key={inf} className="text-sm text-indigo-700 flex items-start gap-2">
                                                         <span className="text-indigo-400 mt-0.5">•</span>
-                                                        <span className="flex-1">{inf}</span>
+                                                        <span className="flex-1 text-sm md:text-base leading-relaxed">{inf}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -108,12 +108,12 @@ const ChatView: React.FC<ChatViewProps> = ({ messages, isProcessing, messageRefs
             
             {isProcessing && (
                 <div className="flex justify-start mb-4">
-                  <div className="bg-blue-100 px-4 py-3 rounded-xl">
+                  <div className="bg-blue-100 px-3 md:px-4 py-3 rounded-xl">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <span className="text-sm text-blue-700 ml-2">AI analyseert...</span>
+                      <span className="text-sm md:text-base text-blue-700 ml-2">AI analyseert...</span>
                     </div>
                   </div>
                 </div>

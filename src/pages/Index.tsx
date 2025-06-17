@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -24,6 +25,7 @@ const Index = () => {
   const isMobile = useIsMobile();
 
   const messageRefs = useRef(new Map<string, HTMLDivElement | null>());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedApiKey = localStorage.getItem("openai-api-key");
@@ -34,6 +36,13 @@ const Index = () => {
   
   const { messages, input, setInput, isProcessing, onSend, seedConfetti, setFeedback, clearHistory } =
     useChat(apiKey);
+
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isProcessing]);
 
   if (showIntro) {
     return <IntroAnimation onFinished={() => setShowIntro(false)} />;
@@ -94,14 +103,19 @@ const Index = () => {
     .reverse();
 
   return (
-    <div className="w-full min-h-screen bg-background font-inter">
+    <div className="w-full h-screen bg-background font-inter flex flex-col overflow-hidden">
       <SeedConfetti show={seedConfetti} />
-      <TopBar 
-        onSettingsClick={() => setIsSettingsOpen(true)}
-        onRubricsToggle={() => setShowAnalytics(!showAnalytics)}
-        showRubrics={showAnalytics}
-        showRubricsButton={messages.length > 0}
-      />
+      
+      {/* Fixed Header */}
+      <div className="flex-shrink-0 z-50">
+        <TopBar 
+          onSettingsClick={() => setIsSettingsOpen(true)}
+          onRubricsToggle={() => setShowAnalytics(!showAnalytics)}
+          showRubrics={showAnalytics}
+          showRubricsButton={messages.length > 0}
+        />
+      </div>
+
       <SettingsSheet
         isOpen={isSettingsOpen}
         onOpenChange={setIsSettingsOpen}
@@ -128,28 +142,28 @@ const Index = () => {
         </DrawerContent>
       </Drawer>
 
-      <div className="flex min-h-[calc(100vh-56px)]">
+      {/* Main Content Area - Full height minus header */}
+      <div className="flex flex-1 min-h-0">
         {/* Desktop sidebar */}
         <SidebarEmotionHistory
-          className="hidden md:flex"
+          className="hidden md:flex flex-shrink-0"
           history={emotionHistory}
           onFocus={handleFocusMessage}
           onClear={clearHistory}
         />
         
-        {/* Main content area */}
-        <main className={`flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] transition-all ${
-          isMobile ? 'px-4' : 'px-12'
-        } py-8`}>
-          <div className="flex-1 flex flex-col justify-end max-w-4xl mx-auto w-full">
-            {/* Analytics Dashboard */}
-            {showAnalytics && (
-              <div className="mb-6">
-                <RubricsAnalyticsDashboard messages={messages} />
-              </div>
-            )}
+        {/* Chat Container - Fixed height with internal scrolling */}
+        <main className="flex-1 flex flex-col min-h-0">
+          {/* Analytics Dashboard - Optional top section */}
+          {showAnalytics && (
+            <div className="flex-shrink-0 p-4 border-b border-zinc-200">
+              <RubricsAnalyticsDashboard messages={messages} />
+            </div>
+          )}
 
-            <div className={`mx-auto w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'}`}>
+          {/* Scrollable Messages Area */}
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'}`}>
               <ChatView
                 messages={messages}
                 isProcessing={isProcessing}
@@ -157,7 +171,13 @@ const Index = () => {
                 focusedMessageId={focusedMessageId}
                 onFeedback={setFeedback}
               />
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
 
+          {/* Fixed Input Bar */}
+          <div className="flex-shrink-0 border-t border-zinc-200 bg-white">
+            <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full px-2' : 'max-w-2xl px-4'}`}>
               <InputBar
                 value={input}
                 onChange={setInput}
