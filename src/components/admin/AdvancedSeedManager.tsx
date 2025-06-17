@@ -663,7 +663,7 @@ const AdvancedSeedEditor: React.FC<AdvancedSeedEditorProps> = ({ seed, onSave, o
                 value={formData.context.severity}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  context: { ...prev.context, severity: e.target.value as any }
+                  context: { ...prev.context, severity: e.target.value as 'low' | 'medium' | 'high' | 'critical' }
                 }))}
                 className="w-full p-2 border rounded-md"
               >

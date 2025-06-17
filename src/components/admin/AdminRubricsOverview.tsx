@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, Shield, AlertTriangle, Target, TrendingUp, Activity, CheckCircle } from 'lucide-react';
 import { useEvAI56Rubrics } from '../../hooks/useEvAI56Rubrics';
 import { Message } from '../../types';
+import type { RubricAssessment } from '../../hooks/useEvAI56Rubrics';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 interface AdminRubricsOverviewProps {
@@ -23,10 +24,10 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
     const userMessages = messages.filter(msg => msg.from === 'user');
     const aiMessages = messages.filter(msg => msg.from === 'ai');
     
-    let allAssessments: any[] = [];
-    let timelineData: any[] = [];
-    let rubricUsage = new Map<string, number>();
-    let interventionEffectiveness = new Map<string, { success: number, total: number }>();
+    const allAssessments: Array<RubricAssessment & { messageIndex: number; timestamp: Date }> = [];
+    const timelineData: Array<{ messageIndex: number; riskScore: number; protectiveFactors: number; timestamp: string }> = [];
+    const rubricUsage = new Map<string, number>();
+    const interventionEffectiveness = new Map<string, { success: number, total: number }>();
 
     userMessages.forEach((msg, index) => {
       const assessments = assessMessage(msg.content);

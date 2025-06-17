@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { useOpenAISeedGenerator } from '../../hooks/useOpenAISeedGenerator';
 import { useEvAI56Rubrics } from '../../hooks/useEvAI56Rubrics';
 import { loadAdvancedSeeds } from '../../lib/advancedSeedStorage';
+import type { AdvancedSeed } from '../../types/seed';
 
 interface SmartSeedInjectorProps {
   apiKey: string;
@@ -19,7 +20,7 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
   const [generatedCount, setGeneratedCount] = useState(0);
   const [injectedCount, setInjectedCount] = useState(0);
   const [currentEmotion, setCurrentEmotion] = useState<string>('');
-  const [seedDatabase, setSeedDatabase] = useState<any[]>([]);
+  const [seedDatabase, setSeedDatabase] = useState<AdvancedSeed[]>([]);
   const [rubricsMode, setRubricsMode] = useState(false);
   
   const { 

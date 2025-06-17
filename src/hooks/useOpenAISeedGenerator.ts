@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AdvancedSeed } from '../types/seed';
+import type { Message } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { addAdvancedSeed } from '../lib/advancedSeedStorage';
 
@@ -170,7 +171,7 @@ Focus op:
   };
 
   const analyzeConversationForSeeds = async (
-    messages: any[],
+    messages: Message[],
     apiKey: string
   ): Promise<string[]> => {
     if (!apiKey || !apiKey.trim()) return [];

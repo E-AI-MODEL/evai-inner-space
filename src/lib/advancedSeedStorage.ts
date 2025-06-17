@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { AdvancedSeed } from '../types/seed';
+import type { Database } from '@/integrations/supabase/types';
 
 export async function loadAdvancedSeeds(): Promise<AdvancedSeed[]> {
   try {
@@ -12,7 +13,7 @@ export async function loadAdvancedSeeds(): Promise<AdvancedSeed[]> {
 
     if (error) throw error;
 
-    return (data ?? []).map((seed: any) => {
+    return (data ?? []).map((seed: Database['public']['Tables']['emotion_seeds']['Row']) => {
       const meta = seed.meta || {};
       const {
         context = { severity: 'medium' },
