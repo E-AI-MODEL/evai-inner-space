@@ -61,10 +61,16 @@ export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
       weight: seed.meta.weight,
       active: seed.isActive,
       expires_at: null, // AdvancedSeed doesn't have expiresAt property
-      meta: seed.meta ? {
+      meta: {
         ...seed.meta,
-        lastUsed: seed.meta.lastUsed?.toISOString()
-      } : null,
+        context: seed.context,
+        triggers: seed.triggers,
+        tags: seed.tags,
+        type: seed.type,
+        createdBy: seed.createdBy,
+        version: seed.version,
+        lastUsed: seed.meta.lastUsed?.toISOString(),
+      },
       response: seed.response,
       created_at: seed.createdAt.toISOString(),
       updated_at: seed.updatedAt.toISOString(),
@@ -90,10 +96,16 @@ export async function updateAdvancedSeed(seed: AdvancedSeed): Promise<void> {
       weight: seed.meta.weight,
       active: seed.isActive,
       expires_at: null, // AdvancedSeed doesn't have expiresAt property
-      meta: seed.meta ? {
+      meta: {
         ...seed.meta,
-        lastUsed: seed.meta.lastUsed?.toISOString()
-      } : null,
+        context: seed.context,
+        triggers: seed.triggers,
+        tags: seed.tags,
+        type: seed.type,
+        createdBy: seed.createdBy,
+        version: seed.version,
+        lastUsed: seed.meta.lastUsed?.toISOString(),
+      },
       response: seed.response,
       updated_at: new Date().toISOString(),
     };
