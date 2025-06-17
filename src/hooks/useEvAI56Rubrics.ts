@@ -13,7 +13,7 @@ export interface EvAI56Rubric {
   };
 }
 
-// EvAI 5.6 Rubrics based on emotional intelligence and therapeutic frameworks
+// EvAI 5.6 Rubrics - Enhanced with broader vocabulary for better matching
 export const evai56Rubrics: EvAI56Rubric[] = [
   {
     id: "emotional-regulation",
@@ -21,12 +21,15 @@ export const evai56Rubrics: EvAI56Rubric[] = [
     description: "Vermogen om emoties te herkennen, begrijpen en reguleren",
     category: "emotional",
     riskFactors: [
-      "overweldigende emoties", "paniek", "woede uitbarstingen", "emotionele labiliteit",
-      "gevoel van verlies van controle", "extreme gevoelens"
+      "overweldigd", "overweldigende emoties", "paniek", "paniekerig", "woede", "boos", "kwaad",
+      "gefrustreerd", "opvliegend", "emotionele labiliteit", "verlies van controle",
+      "extreme gevoelens", "kan het niet aan", "te veel", "chaos", "stress", "gestrest",
+      "zenuwachtig", "angstig", "bang", "trillen", "hartkloppingen", "ademnood"
     ],
     protectiveFactors: [
-      "bewustzijn van emoties", "kunnen benoemen van gevoelens", "zelfregulatie",
-      "mindfulness", "ademhalingstechnieken", "emotionele stabiliteit"
+      "bewust van emoties", "kan mijn gevoelens benoemen", "zelfregulatie",
+      "mindfulness", "ademhalingsoefening", "emotioneel stabiel", "rustig blijven",
+      "het een plek geven", "kalm", "ontspannen", "in balans", "sereen"
     ],
     interventions: [
       "Emotieregulatie technieken aanleren",
@@ -42,12 +45,14 @@ export const evai56Rubrics: EvAI56Rubric[] = [
     description: "Inzicht in eigen gedachten, gevoelens en gedragingen",
     category: "cognitive",
     riskFactors: [
-      "gebrek aan inzicht", "ontkenning", "zelfverwijt", "negatief zelfbeeld",
-      "perfectionalisme", "zelfkritiek"
+      "geen inzicht", "ontkenning", "zelfverwijt", "negatief zelfbeeld", "niets waard",
+      "perfectionistisch", "zelfkritiek", "strenge innerlijke criticus", "ik faal",
+      "waardeloos", "incompetent", "nutteloos", "dom", "slecht", "verkeerd"
     ],
     protectiveFactors: [
-      "zelfkennis", "reflectie", "acceptatie", "realistische zelfperceptie",
-      "groei mindset", "zelfcompassie"
+      "zelfkennis", "reflecteer", "reflectie", "acceptatie", "realistisch zelfbeeld",
+      "groei mindset", "zelfcompassie", "lief voor mezelf zijn", "begrijp mezelf",
+      "eerlijk tegen mezelf", "zelfbewust", "introspectie"
     ],
     interventions: [
       "Zelfobservatie opdrachten",
@@ -63,12 +68,14 @@ export const evai56Rubrics: EvAI56Rubric[] = [
     description: "Effectieve strategieën voor omgang met stress en uitdagingen",
     category: "behavioral",
     riskFactors: [
-      "vermijding", "ontsnapping", "destructieve coping", "isolatie",
-      "zelfmedicatie", "overmatig gebruik"
+      "vermijden", "ontsnappen", "destructieve coping", "isoleren", "isoleer me",
+      "zelfmedicatie", "te veel drinken", "te veel eten", "niets doen", "passief",
+      "procrastineren", "uitstellen", "vluchten", "wegrennen", "opgeven"
     ],
     protectiveFactors: [
-      "probleemoplossend denken", "hulp zoeken", "sociale steun",
-      "gezonde gewoontes", "actieve coping", "adaptabiliteit"
+      "problemen oplossen", "hulp gezocht", "hulp vragen", "sociale steun",
+      "gezonde gewoontes", "actieve coping", "aanpassingsvermogen", "sport",
+      "beweging", "creatief", "hobby", "afleiding zoeken", "actie ondernemen"
     ],
     interventions: [
       "Copingstrategieën ontwikkelen",
@@ -84,12 +91,14 @@ export const evai56Rubrics: EvAI56Rubric[] = [
     description: "Kwaliteit van relaties en sociale ondersteuning",
     category: "interpersonal",
     riskFactors: [
-      "eenzaamheid", "sociale angst", "conflicten", "isolatie",
-      "gebrek aan steun", "relationele problemen"
+      "eenzaam", "alleen voelen", "sociale angst", "conflicten", "ruzies", "isolatie",
+      "geen steun", "relatieproblemen", "niemand begrijpt me", "afgewezen",
+      "buitengesloten", "onbegrepen", "ruzie", "verbroken relatie", "geen vrienden"
     ],
     protectiveFactors: [
-      "ondersteunende relaties", "empathie", "communicatievaardigheden",
-      "vertrouwen", "sociale betrokkenheid", "intimiteit"
+      "ondersteunende relaties", "goede vrienden", "empathie", "goede communicatie",
+      "vertrouwen", "betrokkenheid", "intimiteit", "steun van partner", "familie",
+      "verbonden", "begrepen", "geaccepteerd", "geliefd", "waardering"
     ],
     interventions: [
       "Sociale vaardigheden training",
@@ -105,12 +114,14 @@ export const evai56Rubrics: EvAI56Rubric[] = [
     description: "Gevoel van richting en betekenis in het leven",
     category: "cognitive",
     riskFactors: [
-      "zinloosheid", "leegte", "doelloosheid", "existentiële crisis",
-      "gebrek aan motivatie", "hopelessness"
+      "zinloos", "leeg gevoel", "doelloos", "existentiële crisis", "geen motivatie",
+      "hopeloos", "geen toekomst zien", "nutteloos bestaan", "geen richting",
+      "verloren", "geen doel", "verveling", "apathie", "gedemotiveerd"
     ],
     protectiveFactors: [
-      "levensdoel", "waardenklarheid", "spiritualiteit", "hoop",
-      "toekomstvisie", "betekenisvolle activiteiten"
+      "levensdoel", "mijn waarden", "zingeving", "spiritualiteit", "hoopvol",
+      "toekomstperspectief", "betekenisvolle activiteiten", "dankbaarheid",
+      "passie", "gedreven", "gemotiveerd", "inspiratie", "doelgericht"
     ],
     interventions: [
       "Waardenverheldering",
@@ -134,7 +145,13 @@ export interface RubricAssessment {
 export function useEvAI56Rubrics() {
   const synonymMap: Record<string, string[]> = {
     overweldigende: ["overweldigend"],
-    overweldigend: ["overweldigende"]
+    overweldigend: ["overweldigende"],
+    boos: ["kwaad", "woedend"],
+    kwaad: ["boos", "woedend"],
+    eenzaam: ["alleen"],
+    alleen: ["eenzaam"],
+    gestrest: ["stress"],
+    stress: ["gestrest"]
   };
 
   const tokenize = (text: string): string[] =>
@@ -148,7 +165,10 @@ export function useEvAI56Rubrics() {
 
   const factorMatches = (factor: string, tokens: Set<string>): boolean => {
     const words = tokenize(factor);
-    return words.every(w => wordMatches(w, tokens));
+    // CRUCIALE WIJZIGING: Van .every() naar .some() om de matching veel flexibeler te maken.
+    // Een match op één van de woorden in een factor is nu voldoende voor een trigger.
+    // Dit maakt de detectie exponentieel krachtiger voor alledaagse taal.
+    return words.some(w => wordMatches(w, tokens));
   };
 
   const assessMessage = (content: string): RubricAssessment[] => {
