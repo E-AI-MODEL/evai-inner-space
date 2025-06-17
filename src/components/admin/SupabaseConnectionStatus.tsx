@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Database, Wifi, WifiOff, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '../../hooks/use-mobile';
 
 interface ConnectionMetrics {
   status: 'connected' | 'disconnected' | 'checking';
@@ -19,6 +20,7 @@ const SupabaseConnectionStatus: React.FC = () => {
     lastCheck: new Date(),
     errorCount: 0
   });
+  const isMobile = useIsMobile();
 
   const checkConnection = async () => {
     const startTime = Date.now();
@@ -83,15 +85,25 @@ const SupabaseConnectionStatus: React.FC = () => {
   };
 
   const getStatusIcon = () => {
+    const size = isMobile ? 12 : 14;
     switch (metrics.status) {
-      case 'connected': return <Wifi size={14} className="text-green-600" />;
-      case 'disconnected': return <WifiOff size={14} className="text-red-600" />;
-      case 'checking': return <Clock size={14} className="text-yellow-600 animate-pulse" />;
-      default: return <Database size={14} className="text-gray-600" />;
+      case 'connected': return <Wifi size={size} className="text-green-600" />;
+      case 'disconnected': return <WifiOff size={size} className="text-red-600" />;
+      case 'checking': return <Clock size={size} className="text-yellow-600 animate-pulse" />;
+      default: return <Database size={size} className="text-gray-600" />;
     }
   };
 
   const getStatusText = () => {
+    if (isMobile) {
+      switch (metrics.status) {
+        case 'connected': return 'OK';
+        case 'disconnected': return 'Fout';
+        case 'checking': return '...';
+        default: return '?';
+      }
+    }
+    
     switch (metrics.status) {
       case 'connected': return 'Verbonden';
       case 'disconnected': return 'Geen verbinding';
@@ -108,31 +120,35 @@ const SupabaseConnectionStatus: React.FC = () => {
   };
 
   return (
-    <Card className="bg-white/60 backdrop-blur-sm border-white/20 shadow-lg min-w-0">
-      <CardContent className="p-3">
-        <div className="flex items-center gap-2 min-w-0">
+    <Card className="bg-white/60 backdrop-blur-sm border-white/20 shadow-lg min-w-0 flex-shrink-0">
+      <CardContent className={`${isMobile ? 'p-2' : 'p-3'}`}>
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <div className="flex items-center gap-1 min-w-0">
             {getStatusIcon()}
-            <Badge className={`${getStatusColor()} text-xs flex-shrink-0`}>
+            <Badge className={`${getStatusColor()} text-xs flex-shrink-0 px-1.5 py-0.5`}>
               {getStatusText()}
             </Badge>
           </div>
           
-          {metrics.latency && (
+          {metrics.latency && !isMobile && (
             <div className={`text-xs font-medium ${getLatencyColor(metrics.latency)} flex-shrink-0`}>
               {metrics.latency}ms
             </div>
           )}
         </div>
         
-        <div className="text-xs text-gray-500 mt-1 truncate">
-          Laatste check: {metrics.lastCheck.toLocaleTimeString('nl-NL')}
-        </div>
-        
-        {metrics.errorCount > 0 && (
-          <div className="text-xs text-red-600 mt-1">
-            {metrics.errorCount} fouten
-          </div>
+        {!isMobile && (
+          <>
+            <div className="text-xs text-gray-500 mt-1 truncate">
+              Laatste check: {metrics.lastCheck.toLocaleTimeString('nl-NL')}
+            </div>
+            
+            {metrics.errorCount > 0 && (
+              <div className="text-xs text-red-600 mt-1">
+                {metrics.errorCount} fouten
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
