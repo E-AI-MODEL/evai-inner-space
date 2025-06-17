@@ -61,6 +61,18 @@ const Index = () => {
       setFocusedMessageId(id);
       setTimeout(() => setFocusedMessageId(null), 2500);
     }
+    // Sluit drawer automatisch na selectie op mobiel
+    if (isMobile) {
+      setHistoryOpen(false);
+    }
+  };
+
+  const handleClearHistory = () => {
+    clearHistory();
+    // Sluit drawer automatisch na wissen op mobiel
+    if (isMobile) {
+      setHistoryOpen(false);
+    }
   };
 
   const emotionHistory = messages
@@ -99,34 +111,43 @@ const Index = () => {
         onApiKeySave={saveApiKey}
       />
 
-      {isMobile && (
-        <Drawer open={historyOpen} onOpenChange={setHistoryOpen}>
-          <DrawerTrigger asChild>
-            <button
-              type="button"
-              aria-label="Toon emotiegeschiedenis"
-              className="md:hidden fixed bottom-4 right-4 z-40 p-3 rounded-full bg-white border border-zinc-200 shadow-lg"
-            >
-              <History size={20} />
-            </button>
-          </DrawerTrigger>
-          <DrawerContent className="p-4">
-            <SidebarEmotionHistory
-              className="flex"
-              history={emotionHistory}
-              onFocus={handleFocusMessage}
-              onClear={clearHistory}
-            />
-          </DrawerContent>
-        </Drawer>
-      )}
-      <div className="flex">
+      {/* Mobile drawer voor emotie geschiedenis */}
+      <Drawer open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DrawerTrigger asChild>
+          <button
+            type="button"
+            aria-label="Toon emotiegeschiedenis"
+            className="md:hidden fixed bottom-20 right-4 z-40 p-3 rounded-full bg-white border border-zinc-200 shadow-lg hover:shadow-xl transition-shadow"
+          >
+            <History size={20} className="text-zinc-700" />
+          </button>
+        </DrawerTrigger>
+        <DrawerContent className="p-4 max-h-[80vh]">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-center">Emotie Geschiedenis</h3>
+          </div>
+          <SidebarEmotionHistory
+            className="flex flex-row flex-wrap justify-center gap-4 overflow-y-auto"
+            history={emotionHistory}
+            onFocus={handleFocusMessage}
+            onClear={handleClearHistory}
+          />
+        </DrawerContent>
+      </Drawer>
+
+      <div className="flex min-h-[calc(100vh-56px)]">
+        {/* Desktop sidebar */}
         <SidebarEmotionHistory
+          className="hidden md:flex"
           history={emotionHistory}
           onFocus={handleFocusMessage}
           onClear={clearHistory}
         />
-        <main className="flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] px-0 md:px-12 py-8 transition-all">
+        
+        {/* Main content area */}
+        <main className={`flex-1 flex flex-col justify-between min-h-[calc(100vh-56px)] transition-all ${
+          isMobile ? 'px-4' : 'px-12'
+        } py-8`}>
           <div className="flex-1 flex flex-col justify-end max-w-4xl mx-auto w-full">
             {/* Analytics Dashboard */}
             {showAnalytics && (
@@ -135,7 +156,7 @@ const Index = () => {
               </div>
             )}
 
-            <div className="max-w-2xl mx-auto w-full">
+            <div className={`mx-auto w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'}`}>
               <ChatView
                 messages={messages}
                 isProcessing={isProcessing}

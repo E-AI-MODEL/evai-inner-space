@@ -10,13 +10,13 @@ const InputBar: React.FC<{
 }> = ({ value, onChange, onSend, disabled }) => {
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  // Ctrl+Enter snel verzenden
+  // Enter key verzenden, Ctrl+Enter voor nieuwe regel
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       if (!disabled && value.trim()) onSend();
     }
-    // Automatische hoogtes (optioneel, basic via CSS)
+    // Ctrl+Enter of Shift+Enter voor nieuwe regel (default gedrag)
   };
 
   return (
