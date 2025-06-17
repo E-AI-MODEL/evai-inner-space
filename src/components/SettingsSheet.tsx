@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Zap } from 'lucide-react';
 import ApiKeyInput from './ApiKeyInput';
 import OpenAIApiKey2Input from './OpenAIApiKey2Input';
+import RubricStrictnessControl from './RubricStrictnessControl';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 
@@ -50,7 +51,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="font-inter">
+      <SheetContent className="font-inter overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Instellingen</SheetTitle>
           <SheetDescription>
@@ -130,6 +131,11 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Rubric Settings */}
+          <div className="mb-6">
+            <RubricStrictnessControl />
           </div>
 
           <div className="space-y-4">

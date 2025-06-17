@@ -130,13 +130,42 @@ export type Database = {
           },
         ]
       }
+      settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_setting: {
+        Args: { setting_key: string; default_value?: string }
+        Returns: string
+      }
       increment_seed_usage: {
         Args: Record<PropertyKey, never> | { seed_id: string }
+        Returns: undefined
+      }
+      update_setting: {
+        Args: { setting_key: string; setting_value: string }
         Returns: undefined
       }
     }
