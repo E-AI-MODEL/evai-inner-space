@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,9 +6,10 @@ import { Progress } from '@/components/ui/progress';
 import { CheckCircle, AlertTriangle, Play, Brain, Database } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useSeeds } from '../../hooks/useSeeds';
-import { useOpenAI } from '../../hooks/useOpenAI';
+import { useOpenAI, EmotionDetection } from '../../hooks/useOpenAI';
 import { useOpenAISecondary } from '../../hooks/useOpenAISecondary';
 import { useSeedEngine } from '../../hooks/useSeedEngine';
+import { AdvancedSeed } from '../../types/seed';
 
 interface HealthCheckResult {
   component: string;
@@ -138,13 +138,29 @@ const SystemHealthCheck: React.FC = () => {
           apiKey1
         );
         
+        let resultMessage = 'Geen resultaat';
+        let resultDetails = 'Mogelijk geen matching seeds';
+        
+        if (engineResult) {
+          // Type guard to check if it's an EmotionDetection or AdvancedSeed
+          if ('confidence' in engineResult) {
+            // It's an EmotionDetection
+            const emotionResult = engineResult as EmotionDetection;
+            resultMessage = 'Engine werkend';
+            resultDetails = `AI: ${emotionResult.emotion}`;
+          } else {
+            // It's an AdvancedSeed (fallback from useSeedEngine)
+            const seedResult = engineResult as AdvancedSeed;
+            resultMessage = 'Engine werkend';
+            resultDetails = `Seed: ${seedResult.emotion}`;
+          }
+        }
+        
         tests.push({
           component: 'Seed Engine',
           status: engineResult ? 'success' : 'warning',
-          message: engineResult ? 'Engine werkend' : 'Geen resultaat',
-          details: engineResult ? 
-            ('emotion' in engineResult ? `AI: ${engineResult.emotion}` : `Seed: ${engineResult.emotion}`) : 
-            'Mogelijk geen matching seeds'
+          message: resultMessage,
+          details: resultDetails
         });
       } catch (error) {
         tests.push({

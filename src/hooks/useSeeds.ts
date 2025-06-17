@@ -37,7 +37,12 @@ export function useSeeds() {
             label: seed.label as AdvancedSeed['label'] || 'Valideren',
             triggers: meta.triggers || [],
             response: response,
-            context: meta.context || { severity: 'medium' },
+            context: { 
+              severity: meta.context?.severity || 'medium',
+              userAge: meta.context?.userAge,
+              timeOfDay: meta.context?.timeOfDay,
+              situation: meta.context?.situation
+            },
             meta: {
               priority: meta.priority || 1,
               ttl: meta.ttl,
