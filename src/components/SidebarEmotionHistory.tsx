@@ -19,7 +19,7 @@ const SidebarEmotionHistory: React.FC<{
   onFocus?: (id: string) => void;
   onClear?: () => void;
   className?: string;
-}> = ({ history = [], onFocus, onClear, className }) => {
+}> = ({ history = [], onFocus, onClear, className = "" }) => {
   const isFlexRow = className?.includes('flex-row');
   
   return (
