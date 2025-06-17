@@ -55,7 +55,7 @@ node scripts/importRubrics.ts
 
 ### Checking Supabase integration
 
-Open the Admin Dashboard and navigate to the **Systeem** tab. Use the `Test Supabase` button to perform a quick query and verify that data can be fetched. The result will be shown in the UI and the retrieved row is logged in the browser console.
+Open the Admin Dashboard and navigate to the **Systeem** tab. Use the `Test Supabase` button to perform a quick query and verify that data can be fetched. Below the test you will find the **Seed Overzicht** with totals, most-used seeds and recent additions pulled from Supabase. The result of the connectivity test is shown in the UI and the retrieved row is logged in the browser console.
 
 User feedback on messages is stored in the `seed_feedback` table.
 

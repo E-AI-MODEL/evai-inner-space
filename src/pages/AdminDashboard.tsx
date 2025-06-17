@@ -11,6 +11,7 @@ import AdminSystemMonitor from '../components/admin/AdminSystemMonitor';
 import AdminRubricsOverview from '../components/admin/AdminRubricsOverview';
 import SupabaseConnectionStatus from '../components/admin/SupabaseConnectionStatus';
 import SupabaseDataTest from '../components/admin/SupabaseDataTest';
+import SupabaseSeedOverview from '../components/admin/SupabaseSeedOverview';
 import { useChatHistory } from '../hooks/useChatHistory';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../hooks/use-mobile';
@@ -173,6 +174,7 @@ const AdminDashboard = () => {
               <div className="overflow-hidden space-y-4">
                 <AdminSystemMonitor messages={messages} />
                 <SupabaseDataTest />
+                <SupabaseSeedOverview />
               </div>
             </TabsContent>
           </div>
