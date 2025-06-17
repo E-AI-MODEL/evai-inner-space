@@ -8,6 +8,7 @@ import AdminSystemMonitor from './AdminSystemMonitor';
 import SupabaseDataTest from './SupabaseDataTest';
 import SeedLearningLog from './SeedLearningLog';
 import SystemHealthCheck from './SystemHealthCheck';
+import AdminSystemSettings from './AdminSystemSettings';
 import { Message } from '../../types';
 
 interface AdminTabsContentProps {
@@ -18,22 +19,16 @@ interface AdminTabsContentProps {
 const AdminTabsContent: React.FC<AdminTabsContentProps> = ({ hasRubricActivity, messages }) => {
   return (
     <div className="space-y-4 sm:space-y-6">
-      {hasRubricActivity && (
-        <TabsContent value="rubrics" className="space-y-4 sm:space-y-6 mt-0">
-          <div className="text-center mb-4 sm:mb-6 px-2">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Analyse Dashboard</h2>
-            <p className="text-sm text-gray-600 break-words">Gedetailleerde inzichten en patronen</p>
-          </div>
-          <div className="overflow-hidden">
-            <AdminRubricsOverview messages={messages} />
-          </div>
-        </TabsContent>
-      )}
+      <TabsContent value="analyse" className="space-y-4 sm:space-y-6 mt-0">
+        <div className="overflow-hidden">
+          <AdminRubricsOverview messages={messages} />
+        </div>
+      </TabsContent>
 
       <TabsContent value="seeds" className="space-y-4 sm:space-y-6 mt-0">
         <div className="text-center mb-4 sm:mb-6 px-2">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Seed Management</h2>
-          <p className="text-sm text-gray-600 break-words">AI-gestuurde emotionele intelligence</p>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Kennisbank Management</h2>
+          <p className="text-sm text-gray-600 break-words">AI-gestuurde emotionele intelligence seeds</p>
         </div>
         <div className="overflow-hidden">
           <AdvancedSeedManager />
@@ -42,7 +37,7 @@ const AdminTabsContent: React.FC<AdminTabsContentProps> = ({ hasRubricActivity, 
 
       <TabsContent value="analytics" className="space-y-4 sm:space-y-6 mt-0">
         <div className="text-center mb-4 sm:mb-6 px-2">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Analytics</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Data Analytics</h2>
           <p className="text-sm text-gray-600 break-words">Deep learning insights en effectiviteit</p>
         </div>
         <div className="overflow-hidden">
@@ -52,10 +47,11 @@ const AdminTabsContent: React.FC<AdminTabsContentProps> = ({ hasRubricActivity, 
 
       <TabsContent value="system" className="space-y-4 sm:space-y-6 mt-0">
         <div className="text-center mb-4 sm:mb-6 px-2">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Systeem Monitoring</h2>
-          <p className="text-sm text-gray-600 break-words">Real-time prestaties en AI status</p>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Systeem Instellingen</h2>
+          <p className="text-sm text-gray-600 break-words">Configuratie en monitoring</p>
         </div>
         <div className="overflow-hidden space-y-4">
+          <AdminSystemSettings />
           <SystemHealthCheck />
           <AdminSystemMonitor messages={messages} />
           <SupabaseDataTest />

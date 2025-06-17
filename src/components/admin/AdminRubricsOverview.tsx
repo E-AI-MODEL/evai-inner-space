@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Shield, AlertTriangle, Target, TrendingUp, Activity, CheckCircle } from 'lucide-react';
+import { Brain, Shield, AlertTriangle, Target, TrendingUp, Activity, CheckCircle, Sparkles } from 'lucide-react';
 import { useEvAI56Rubrics } from '../../hooks/useEvAI56Rubrics';
 import { Message } from '../../types';
 import type { RubricAssessment } from '../../hooks/useEvAI56Rubrics';
@@ -111,36 +111,51 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
 
   if (analysisData.allAssessments.length === 0) {
     return (
-      <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain size={20} className="text-purple-600" />
-            EvAI 5.6 Analyse Overzicht
-          </CardTitle>
-          <CardDescription>
-            Nog geen analysedata beschikbaar. Start een gesprek om patronen en inzichten te genereren.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="space-y-6">
+        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain size={20} className="text-purple-600" />
+              Analyse Dashboard
+            </CardTitle>
+            <CardDescription>
+              Gedetailleerde inzichten en patronen op basis van EvAI 5.6 rubrieken.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center space-y-4">
+                <Sparkles className="mx-auto text-purple-400" size={48} />
+                <h3 className="text-lg font-semibold text-gray-700">Nog geen analysedata beschikbaar</h3>
+                <p className="text-gray-500 max-w-md">
+                  Start een gesprek om emotionele patronen en inzichten te genereren. 
+                  De analyse wordt automatisch opgebouwd naarmate er meer interacties plaatsvinden.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Header Card */}
       <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Brain size={20} className="text-purple-600" />
-            EvAI 5.6 Analyse Overzicht & Effectiviteitsanalyse
+            Analyse Dashboard
           </CardTitle>
           <CardDescription>
-            Uitgebreide analyse van patronen, interventie-effectiviteit en CoT-integratie
+            Gedetailleerde inzichten en patronen op basis van EvAI 5.6 rubrieken en effectiviteitsanalyse.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {/* Overall Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg p-4 border border-purple-100">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">
               <div className="flex items-center gap-2">
                 <Activity size={18} className="text-purple-600" />
                 <span className="text-sm font-medium text-gray-700">Totaal Assessments</span>
@@ -148,7 +163,7 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
               <div className="text-2xl font-bold text-purple-600">{overallStats.totalAssessments}</div>
             </div>
             
-            <div className="bg-white rounded-lg p-4 border border-purple-100">
+            <div className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">
               <div className="flex items-center gap-2">
                 <AlertTriangle size={18} className={`${overallStats.riskLevel === 'high' ? 'text-red-500' : overallStats.riskLevel === 'medium' ? 'text-yellow-500' : 'text-green-500'}`} />
                 <span className="text-sm font-medium text-gray-700">Gemiddeld Risico</span>
@@ -158,7 +173,7 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-4 border border-purple-100">
+            <div className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">
               <div className="flex items-center gap-2">
                 <Shield size={18} className="text-green-500" />
                 <span className="text-sm font-medium text-gray-700">Beschermende Factoren</span>
@@ -166,7 +181,7 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
               <div className="text-2xl font-bold text-green-600">{Math.round(overallStats.totalProtectiveFactors)}</div>
             </div>
 
-            <div className="bg-white rounded-lg p-4 border border-purple-100">
+            <div className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">
               <div className="flex items-center gap-2">
                 <Target size={18} className="text-blue-500" />
                 <span className="text-sm font-medium text-gray-700">Actieve Patronen</span>
@@ -174,9 +189,14 @@ const AdminRubricsOverview: React.FC<AdminRubricsOverviewProps> = ({ messages })
               <div className="text-2xl font-bold text-blue-600">{overallStats.activeRubrics}/{evai56Rubrics.length}</div>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
+      {/* Detailed Analysis Tabs */}
+      <Card className="bg-white border border-gray-200">
+        <CardContent className="p-6">
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="overview">Overzicht</TabsTrigger>
               <TabsTrigger value="usage">Gebruik</TabsTrigger>
               <TabsTrigger value="effectiveness">Effectiviteit</TabsTrigger>
