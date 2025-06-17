@@ -4,7 +4,6 @@ import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import InputBar from "../components/InputBar";
 import { Drawer, DrawerContent, DrawerTrigger } from "../components/ui/drawer";
 import { useIsMobile } from "../hooks/use-mobile";
-import { History } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import SeedConfetti from "../components/SeedConfetti";
 import IntroAnimation from "../components/IntroAnimation";
@@ -13,6 +12,7 @@ import SettingsSheet from "../components/SettingsSheet";
 import { useChat } from "../hooks/useChat";
 import ChatView from "../components/ChatView";
 import RubricsAnalyticsDashboard from "../components/RubricsAnalyticsDashboard";
+import DraggableEmotionHistoryButton from "../components/DraggableEmotionHistoryButton";
 
 const Index = () => {
   const [showIntro, setShowIntro] = useState(true);
@@ -113,13 +113,7 @@ const Index = () => {
       {/* Mobile drawer voor emotie geschiedenis */}
       <Drawer open={historyOpen} onOpenChange={setHistoryOpen}>
         <DrawerTrigger asChild>
-          <button
-            type="button"
-            aria-label="Toon emotiegeschiedenis"
-            className="md:hidden fixed bottom-20 left-4 z-40 p-3 rounded-full bg-white border border-zinc-200 shadow-lg hover:shadow-xl transition-shadow"
-          >
-            <History size={20} className="text-zinc-700" />
-          </button>
+          <DraggableEmotionHistoryButton onOpen={() => setHistoryOpen(true)} />
         </DrawerTrigger>
         <DrawerContent className="p-4 max-h-[80vh]">
           <div className="mb-4">
