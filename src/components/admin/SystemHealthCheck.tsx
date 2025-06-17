@@ -8,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { useSeeds } from '../../hooks/useSeeds';
 import { useOpenAI, EmotionDetection } from '../../hooks/useOpenAI';
 import { useOpenAISecondary } from '../../hooks/useOpenAISecondary';
-import { useSeedEngine, Seed } from '../../hooks/useSeedEngine';
+import { useSeedEngine } from '../../hooks/useSeedEngine';
 import { AdvancedSeed } from '../../types/seed';
 
 interface HealthCheckResult {
@@ -143,16 +143,16 @@ const SystemHealthCheck: React.FC = () => {
         
         if (engineResult) {
           // Type guard to check if it's an EmotionDetection
-          if ('confidence' in engineResult) {
-            // It's an EmotionDetection
+          if ('confidence' in engineResult && engineResult.confidence) {
+            // It's an EmotionDetection from OpenAI
             const emotionResult = engineResult as EmotionDetection;
             resultMessage = 'Engine werkend';
-            resultDetails = `AI: ${emotionResult.emotion}`;
+            resultDetails = `OpenAI Detectie: ${emotionResult.emotion}`;
           } else {
-            // It's a Seed (legacy format from useSeedEngine)
-            const seedResult = engineResult as Seed;
+            // It's an AdvancedSeed from the database
+            const seedResult = engineResult as AdvancedSeed;
             resultMessage = 'Engine werkend';
-            resultDetails = `Seed: ${seedResult.emotion}`;
+            resultDetails = `Seed Match: ${seedResult.emotion}`;
           }
         }
         
