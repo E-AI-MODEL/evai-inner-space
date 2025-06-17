@@ -104,8 +104,6 @@ Focus op nuances en de onderliggende gevoelens. De 'response' moet warm, niet-oo
         throw new Error("Kon het antwoord van de AI niet verwerken. Het was geen geldig JSON-formaat.");
       }
 
-    } catch (err) {
-      throw err;
     } finally {
       setIsLoading(false);
     }

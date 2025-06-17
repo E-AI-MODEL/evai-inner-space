@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 
 const SupabaseDataTest: React.FC = () => {
   const [result, setResult] = useState<string>('');
@@ -8,14 +9,17 @@ const SupabaseDataTest: React.FC = () => {
   const runTest = async () => {
     setResult('');
     try {
-      const res = await fetch('/api/test-supabase');
-      const json = await res.json();
-      if (res.ok) {
-        console.log('Supabase data:', json.data);
-        setResult('success');
-      } else {
-        console.error('Supabase error:', json.error);
+      const { data, error } = await supabase
+        .from('emotion_seeds')
+        .select('id')
+        .limit(1);
+
+      if (error) {
+        console.error('Supabase error:', error);
         setResult('error');
+      } else {
+        console.log('Supabase data:', data);
+        setResult('success');
       }
     } catch (err) {
       console.error('Request failed:', err);

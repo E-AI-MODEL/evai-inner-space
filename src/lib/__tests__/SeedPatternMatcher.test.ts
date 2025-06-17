@@ -2,9 +2,10 @@ import { describe, it, expect } from 'vitest';
 import seeds from '../SeedTraceGraph_demo.json';
 import { matchSeed } from '../SeedPatternMatcher';
 import { compileReflection } from '../ReflectionCompiler';
+import type { AdvancedSeed } from '../../types/seed';
 
 // Cast loaded JSON to AdvancedSeed[]
-const demoSeeds = seeds as any;
+const demoSeeds = seeds as AdvancedSeed[];
 
 describe('SeedPatternMatcher', () => {
   it('matches sadness related input', () => {
@@ -25,7 +26,7 @@ describe('SeedPatternMatcher', () => {
 
 describe('ReflectionCompiler', () => {
   it('replaces placeholders in response', () => {
-    const sample = { ...demoSeeds[0], response: { nl: 'Hallo {name}' } } as any;
+    const sample: AdvancedSeed = { ...demoSeeds[0], response: { nl: 'Hallo {name}' } };
     const text = compileReflection(sample, { name: 'Jan' });
     expect(text).toBe('Hallo Jan');
   });

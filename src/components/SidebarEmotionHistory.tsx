@@ -3,9 +3,11 @@ import React from "react";
 import Icon from "./Icon";
 import { Trash2 } from "lucide-react";
 
+import type dynamicIconImports from 'lucide-react/dynamicIconImports';
+
 interface EmotionHistoryItem {
   id: string;
-  icon: string;
+  icon: keyof typeof dynamicIconImports;
   label: string;
   colorClass: string;
   time: string;
@@ -26,7 +28,7 @@ const SidebarEmotionHistory: React.FC<{
           onClick={() => onFocus?.(item.id)}
           aria-label={`${item.label} om ${item.time}`}
         >
-          <Icon name={item.icon as any} className="text-zinc-700" size={24} />
+          <Icon name={item.icon} className="text-zinc-700" size={24} />
           <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-xs opacity-0 group-hover:opacity-100 bg-zinc-900 text-white rounded px-2 py-0.5 duration-200 pointer-events-none">{item.label} · {item.time}</span>
         </button>
       ))}
