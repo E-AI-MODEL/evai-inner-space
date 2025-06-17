@@ -13,9 +13,29 @@ export async function loadAdvancedSeeds(): Promise<AdvancedSeed[]> {
     if (error) throw error;
 
     return (data ?? []).map((seed: any) => ({
-      ...seed,
+      id: seed.id,
+      emotion: seed.emotion,
+      type: 'validation', // Default type, adjust based on your data
+      label: seed.label || 'Valideren',
+      triggers: [], // You'll need to extract this from your data structure
+      response: seed.response || { nl: '' },
+      context: {
+        severity: 'medium', // Default, adjust based on your data
+        situation: 'therapy'
+      },
+      meta: {
+        priority: 1,
+        weight: seed.weight || 1.0,
+        confidence: 0.8,
+        usageCount: seed.meta?.usageCount || 0,
+        lastUsed: seed.meta?.lastUsed ? new Date(seed.meta.lastUsed) : undefined
+      },
+      tags: [],
       createdAt: seed.created_at ? new Date(seed.created_at) : new Date(),
       updatedAt: seed.updated_at ? new Date(seed.updated_at) : new Date(),
+      createdBy: 'system',
+      isActive: seed.active ?? true,
+      version: '1.0.0'
     }));
   } catch (error) {
     console.error('Error loading advanced seeds:', error);
@@ -30,9 +50,9 @@ export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
       id: seed.id,
       emotion: seed.emotion,
       label: seed.label,
-      weight: seed.weight,
-      active: seed.active,
-      expires_at: seed.expiresAt?.toISOString(),
+      weight: seed.meta.weight,
+      active: seed.isActive,
+      expires_at: null, // AdvancedSeed doesn't have expiresAt property
       meta: seed.meta ? {
         ...seed.meta,
         lastUsed: seed.meta.lastUsed?.toISOString()
@@ -59,9 +79,9 @@ export async function updateAdvancedSeed(seed: AdvancedSeed): Promise<void> {
     const dbSeed = {
       emotion: seed.emotion,
       label: seed.label,
-      weight: seed.weight,
-      active: seed.active,
-      expires_at: seed.expiresAt?.toISOString(),
+      weight: seed.meta.weight,
+      active: seed.isActive,
+      expires_at: null, // AdvancedSeed doesn't have expiresAt property
       meta: seed.meta ? {
         ...seed.meta,
         lastUsed: seed.meta.lastUsed?.toISOString()
