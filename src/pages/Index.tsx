@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -117,7 +116,7 @@ const Index = () => {
           <button
             type="button"
             aria-label="Toon emotiegeschiedenis"
-            className="md:hidden fixed bottom-20 right-4 z-40 p-3 rounded-full bg-white border border-zinc-200 shadow-lg hover:shadow-xl transition-shadow"
+            className="md:hidden fixed bottom-20 left-4 z-40 p-3 rounded-full bg-white border border-zinc-200 shadow-lg hover:shadow-xl transition-shadow"
           >
             <History size={20} className="text-zinc-700" />
           </button>
