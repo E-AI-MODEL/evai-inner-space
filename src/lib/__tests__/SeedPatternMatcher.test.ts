@@ -1,11 +1,16 @@
+
 import { describe, it, expect } from 'vitest';
 import seeds from '../SeedTraceGraph_demo.json';
 import { matchSeed } from '../SeedPatternMatcher';
 import { compileReflection } from '../ReflectionCompiler';
 import type { AdvancedSeed } from '../../types/seed';
 
-// Cast loaded JSON to AdvancedSeed[]
-const demoSeeds = seeds as AdvancedSeed[];
+// Cast loaded JSON to AdvancedSeed[] with proper date conversion
+const demoSeeds = seeds.map(seed => ({
+  ...seed,
+  createdAt: new Date(seed.createdAt),
+  updatedAt: new Date(seed.updatedAt)
+})) as AdvancedSeed[];
 
 describe('SeedPatternMatcher', () => {
   it('matches sadness related input', () => {

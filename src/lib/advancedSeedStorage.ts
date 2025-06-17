@@ -14,36 +14,32 @@ export async function loadAdvancedSeeds(): Promise<AdvancedSeed[]> {
     if (error) throw error;
 
     return (data ?? []).map((seed: Database['public']['Tables']['emotion_seeds']['Row']) => {
-      const meta = seed.meta || {};
-      const {
-        context = { severity: 'medium' },
-        triggers = [],
-        tags = [],
-        type = 'validation',
-        createdBy = 'system',
-        version = '1.0.0',
-        ...restMeta
-      } = meta;
-
+      // Parse meta as an object with safe defaults
+      const meta = (seed.meta as any) || {};
+      const response = (seed.response as any) || { nl: '' };
+      
       return {
         id: seed.id,
         emotion: seed.emotion,
-        type,
-        label: seed.label,
-        triggers,
-        response: seed.response,
-        context,
+        type: meta.type || 'validation',
+        label: seed.label as AdvancedSeed['label'] || 'Valideren',
+        triggers: meta.triggers || [],
+        response: response,
+        context: meta.context || { severity: 'medium' },
         meta: {
-          ...restMeta,
-          weight: restMeta.weight ?? seed.weight ?? 1,
-          lastUsed: restMeta.lastUsed ? new Date(restMeta.lastUsed) : undefined,
+          priority: meta.priority || 1,
+          ttl: meta.ttl,
+          weight: seed.weight || 1.0,
+          confidence: meta.confidence || 0.8,
+          lastUsed: meta.lastUsed ? new Date(meta.lastUsed) : undefined,
+          usageCount: meta.usageCount || 0
         },
-        tags,
+        tags: meta.tags || [],
         createdAt: seed.created_at ? new Date(seed.created_at) : new Date(),
         updatedAt: seed.updated_at ? new Date(seed.updated_at) : new Date(),
-        createdBy,
+        createdBy: meta.createdBy || 'system',
         isActive: seed.active ?? true,
-        version,
+        version: meta.version || '1.0.0'
       } as AdvancedSeed;
     });
   } catch (error) {
@@ -63,13 +59,16 @@ export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
       active: seed.isActive,
       expires_at: null, // AdvancedSeed doesn't have expiresAt property
       meta: {
-        ...seed.meta,
         context: seed.context,
         triggers: seed.triggers,
         tags: seed.tags,
         type: seed.type,
         createdBy: seed.createdBy,
         version: seed.version,
+        priority: seed.meta.priority,
+        ttl: seed.meta.ttl,
+        confidence: seed.meta.confidence,
+        usageCount: seed.meta.usageCount,
         lastUsed: seed.meta.lastUsed?.toISOString(),
       },
       response: seed.response,
@@ -98,13 +97,16 @@ export async function updateAdvancedSeed(seed: AdvancedSeed): Promise<void> {
       active: seed.isActive,
       expires_at: null, // AdvancedSeed doesn't have expiresAt property
       meta: {
-        ...seed.meta,
         context: seed.context,
         triggers: seed.triggers,
         tags: seed.tags,
         type: seed.type,
         createdBy: seed.createdBy,
         version: seed.version,
+        priority: seed.meta.priority,
+        ttl: seed.meta.ttl,
+        confidence: seed.meta.confidence,
+        usageCount: seed.meta.usageCount,
         lastUsed: seed.meta.lastUsed?.toISOString(),
       },
       response: seed.response,
