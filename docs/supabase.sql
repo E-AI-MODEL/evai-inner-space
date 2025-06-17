@@ -33,3 +33,21 @@ create table if not exists rubrics (
   code text unique,
   rubric_json jsonb
 );
+
+-- Function to increment usage count and update timestamp
+create or replace function increment_seed_usage(seed_id uuid)
+returns void
+language plpgsql
+as $$
+begin
+  update emotion_seeds
+  set meta = jsonb_set(
+        coalesce(meta, '{}'::jsonb),
+        '{usageCount}',
+        to_jsonb(coalesce((meta->>'usageCount')::int, 0) + 1),
+        true
+      ),
+      updated_at = now()
+  where id = seed_id;
+end;
+$$;
