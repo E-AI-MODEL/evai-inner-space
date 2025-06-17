@@ -12,7 +12,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Brain, Shield } from 'lucide-react';
+import { Brain, Shield, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface AdminAuthProps {
   onAuthenticated: () => void;
@@ -23,6 +24,7 @@ const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "admin123";
 const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
   const [password, setPassword] = useState('');
   const [isOpen, setIsOpen] = useState(true);
+  const navigate = useNavigate();
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
@@ -42,10 +44,24 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
     }
   };
 
+  const handleClose = () => {
+    setIsOpen(false);
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
       <AlertDialog open={isOpen}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className="max-w-md relative">
+          {/* Close button */}
+          <button
+            onClick={handleClose}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-10"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Sluiten</span>
+          </button>
+
           <AlertDialogHeader className="text-center">
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full">
