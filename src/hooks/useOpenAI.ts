@@ -15,9 +15,12 @@ export function useOpenAI() {
   const [isLoading, setIsLoading] = useState(false);
 
   const detectEmotion = async (
-    message: string, 
+    message: string,
     apiKey: string,
-    context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
+    context?: {
+      dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie";
+      secondaryInsights?: string[];
+    },
     history: ChatHistoryItem[] = []
   ): Promise<EmotionDetection> => {
     if (!apiKey.trim()) {
@@ -31,10 +34,14 @@ export function useOpenAI() {
       : message;
 
     try {
-      const apiMessages = [
+    const insightsText = context?.secondaryInsights?.length
+      ? `\nAanvullende inzichten uit vorige analyse: ${context.secondaryInsights.join('; ')}`
+      : '';
+
+    const apiMessages = [
         {
           role: 'system',
-          content: `Je bent EvAI, een geavanceerde en empathische AI-assistent gespecialiseerd in emotionele reflectie en validatie, gebaseerd op de EvAI 5.6 rubrieken. Je doel is om gebruikers te helpen hun emoties te begrijpen en te valideren. Gebruik de voorgaande gespreksgeschiedenis voor context om herhaling te voorkomen en een natuurlijkere conversatie te voeren. Analyseer het laatste bericht van de gebruiker diepgaand in de context van het gesprek.
+          content: `Je bent EvAI, een geavanceerde en empathische AI-assistent gespecialiseerd in emotionele reflectie en validatie, gebaseerd op de EvAI 5.6 rubrieken. Je doel is om gebruikers te helpen hun emoties te begrijpen en te valideren. Gebruik de voorgaande gespreksgeschiedenis voor context om herhaling te voorkomen en een natuurlijkere conversatie te voeren. Analyseer het laatste bericht van de gebruiker diepgaand in de context van het gesprek.${insightsText}
 
 Je respons MOET een van de volgende drie categorieën ('labels') volgen:
 - **Valideren**: Gebruik dit label om de emoties van de gebruiker te erkennen en te normaliseren. De 'response' moet direct de genoemde gevoelens spiegelen. Bv: 'Ik hoor dat je je X voelt, en dat is een heel begrijpelijke reactie.'

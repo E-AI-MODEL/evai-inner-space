@@ -85,6 +85,23 @@ export function useAiResponse(
           content: msg.content
         }));
 
+      let secondaryInsights: string[] = [];
+      if (hasOpenAi2) {
+        try {
+          const contextString = history.map(h => `${h.role}: ${h.content}`).join('\n');
+          const preAnalysis = await analyzeNeurosymbolic(
+            userMessage.content,
+            contextString,
+            openAiKey2!
+          );
+          if (preAnalysis) {
+            secondaryInsights = preAnalysis.insights;
+          }
+        } catch (preErr) {
+          console.error('Secondary analysis for prompt failed:', preErr);
+        }
+      }
+
       // 🔥 STEP 1: Enhanced EvAI 5.6 Rubrics Analysis with CoT Integration
       console.log('📊 Running Enhanced EvAI 5.6 Rubrics analysis with CoT integration...');
       const rubricsAssessments = assessMessage(userMessage.content);
@@ -157,13 +174,16 @@ export function useAiResponse(
               console.log(`🚀 GENERATING EvAI-VALIDATED SEED: "${emotion}"`);
               
               // Enhanced context with rubrics guidance
-              const rubricContext = cotRubricGuidance.length > 0 
+              const rubricContext = cotRubricGuidance.length > 0
                 ? ` | EvAI Guidance: ${cotRubricGuidance.join('; ')}`
+                : '';
+              const secondaryContext = secondaryInsights.length > 0
+                ? ` | Sec inzichten: ${secondaryInsights.join('; ')}`
                 : '';
               
               const generatedSeed = await generateOpenAISeed({
                 emotion,
-                context: `EvAI 5.6 ULTRA LEARNING: "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}% | Rubrics-Validated${rubricContext}`,
+                context: `EvAI 5.6 ULTRA LEARNING: "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}% | Rubrics-Validated${rubricContext}${secondaryContext}`,
                 conversationHistory: history.slice(-2).map(h => h.content),
                 severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium'
               }, apiKey);
@@ -238,13 +258,16 @@ export function useAiResponse(
             console.log(`🎯 EvAI MISSING EMOTIONS FOUND: ${missingEmotions.length}`);
             
             const priorityEmotion = missingEmotions[0];
-            const rubricGuidanceContext = cotRubricGuidance.length > 0 
+            const rubricGuidanceContext = cotRubricGuidance.length > 0
               ? ` | EvAI Interventions: ${cotRubricGuidance.slice(0, 2).join('; ')}`
+              : '';
+            const secondaryContext = secondaryInsights.length > 0
+              ? ` | Sec inzichten: ${secondaryInsights.join('; ')}`
               : '';
               
             const learningSeed = await generateOpenAISeed({
               emotion: priorityEmotion,
-              context: `EvAI GAP ANALYSIS: Missing from conversation patterns | Risk: ${overallRisk.toFixed(1)}%${rubricGuidanceContext}`,
+              context: `EvAI GAP ANALYSIS: Missing from conversation patterns | Risk: ${overallRisk.toFixed(1)}%${rubricGuidanceContext}${secondaryContext}`,
               conversationHistory: history.slice(-3).map(h => h.content),
               severity: overallRisk > 60 ? 'high' : 'medium'
             }, apiKey);
@@ -261,7 +284,12 @@ export function useAiResponse(
       }
 
       // 🔥 STEP 5: Enhanced Seed Matching with EvAI Integration
-      const matchedResult = await checkInput(userMessage.content, apiKey, context, history);
+      const matchedResult = await checkInput(
+        userMessage.content,
+        apiKey,
+        { ...context, secondaryInsights },
+        history
+      );
       let aiResp: Message;
 
       if (matchedResult && "confidence" in matchedResult) {
@@ -338,9 +366,13 @@ export function useAiResponse(
             const dominantEmotion = detectAllEmotions(userMessage.content, rubricsAssessments)[0] || 'onzekerheid';
             const primaryGuidance = cotRubricGuidance[0] || 'emotionele validatie';
 
+            const secondaryContext = secondaryInsights.length > 0
+              ? ` | Sec inzichten: ${secondaryInsights.join('; ')}`
+              : '';
+
             const forcedSeed = await generateOpenAISeed({
               emotion: dominantEmotion,
-              context: `EvAI FORCE LEARN: No existing pattern for "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}% | Guidance: ${primaryGuidance}`,
+              context: `EvAI FORCE LEARN: No existing pattern for "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}% | Guidance: ${primaryGuidance}${secondaryContext}`,
               conversationHistory: history.slice(-2).map(h => h.content),
               severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium'
             }, apiKey);

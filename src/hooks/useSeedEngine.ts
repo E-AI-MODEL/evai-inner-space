@@ -16,9 +16,12 @@ export function useSeedEngine() {
   const { checkInput: checkAdvancedInput } = useAdvancedSeedEngine();
 
   const checkInput = async (
-    input: string, 
+    input: string,
     apiKey?: string,
-    context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" },
+    context?: {
+      dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie";
+      secondaryInsights?: string[];
+    },
     history?: ChatHistoryItem[]
   ): Promise<EmotionDetection | Seed | null> => {
     // Check if we have advanced seeds available via the advanced engine
