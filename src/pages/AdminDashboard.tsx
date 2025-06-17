@@ -10,6 +10,7 @@ import AdminAnalytics from '../components/admin/AdminAnalytics';
 import AdminSystemMonitor from '../components/admin/AdminSystemMonitor';
 import AdminRubricsOverview from '../components/admin/AdminRubricsOverview';
 import SupabaseConnectionStatus from '../components/admin/SupabaseConnectionStatus';
+import SupabaseDataTest from '../components/admin/SupabaseDataTest';
 import { useChatHistory } from '../hooks/useChatHistory';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../hooks/use-mobile';
@@ -169,8 +170,9 @@ const AdminDashboard = () => {
                 <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Systeem Monitoring</h2>
                 <p className="text-sm text-gray-600 break-words">Real-time prestaties en AI status</p>
               </div>
-              <div className="overflow-hidden">
+              <div className="overflow-hidden space-y-4">
                 <AdminSystemMonitor messages={messages} />
+                <SupabaseDataTest />
               </div>
             </TabsContent>
           </div>

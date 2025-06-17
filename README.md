@@ -39,8 +39,8 @@ npm run dev
 Create a `.env` file based on `.env.example` and provide your Supabase credentials:
 
 ```
-VITE_SUPABASE_URL=<your-supabase-url>
-VITE_SUPABASE_ANON_KEY=<your-anon-key>
+VITE_SUPABASE_URL=https://ngcyfbstajfcfdhlelbz.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nY3lmYnN0YWpmY2ZkaGxlbGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNjI5NDcsImV4cCI6MjA2NDYzODk0N30.MkZRcC_HGNTZW3hUvFiNmHY5Px9FPvRmnzAiKTWi9e4
 ```
 
 ### Supabase setup
@@ -52,6 +52,10 @@ After setting up the tables you can import rubric JSON files with:
 ```bash
 node scripts/importRubrics.ts
 ```
+
+### Checking Supabase integration
+
+Open the Admin Dashboard and navigate to the **Systeem** tab. Use the `Test Supabase` button to perform a quick query and verify that data can be fetched. The result will be shown in the UI and the retrieved row is logged in the browser console.
 
 User feedback on messages is stored in the `seed_feedback` table.
 
