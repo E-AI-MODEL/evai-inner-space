@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 
 export interface SecondaryAnalysis {
@@ -45,7 +46,8 @@ Geef het resultaat als JSON met:
 
 Focus op Nederlandse therapeutische context.`;
 
-      const response = await fetch('/api/openai-secondary', {
+      // Gebruik de correcte proxy URL
+      const response = await fetch('http://localhost:3001/api/openai-secondary', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,13 +63,13 @@ Focus op Nederlandse therapeutische context.`;
         })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        const proxyError = data?.error?.message || `${response.status} ${response.statusText}`;
+        const errorData = await response.json().catch(() => ({}));
+        const proxyError = errorData?.error?.message || `${response.status} ${response.statusText}`;
         throw new Error(`OpenAI proxy fout: ${proxyError}`);
       }
 
+      const data = await response.json();
       const content = data.choices[0]?.message?.content;
 
       if (!content) {
@@ -81,7 +83,12 @@ Focus op Nederlandse therapeutische context.`;
         if (jsonMatch) {
           const analysis = JSON.parse(jsonMatch[0]);
           console.log('✅ OpenAI secondary analysis successful:', analysis);
-          return analysis;
+          return {
+            patterns: analysis.patterns || ['Complexe emotionele structuur gedetecteerd'],
+            insights: analysis.insights || ['Secundaire analyse uitgevoerd'],
+            seedSuggestion: analysis.seedSuggestion,
+            confidence: analysis.confidence || 0.75
+          };
         } else {
           return {
             patterns: ['Complexe emotionele structuur gedetecteerd'],
@@ -99,6 +106,47 @@ Focus op Nederlandse therapeutische context.`;
       }
     } catch (error) {
       console.error('🔴 OpenAI secondary API error:', error);
+      
+      // Fallback voor locale development
+      if (error instanceof Error && error.message.includes('fetch')) {
+        console.log('🔄 Trying direct OpenAI API as fallback...');
+        try {
+          const fallbackResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4.1-2025-04-14',
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.7,
+              max_tokens: 500
+            })
+          });
+
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+            const fallbackContent = fallbackData.choices[0]?.message?.content;
+            
+            if (fallbackContent) {
+              try {
+                const jsonMatch = fallbackContent.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                  const analysis = JSON.parse(jsonMatch[0]);
+                  console.log('✅ OpenAI secondary fallback successful:', analysis);
+                  return analysis;
+                }
+              } catch (parseError) {
+                // Continue to throw original error
+              }
+            }
+          }
+        } catch (fallbackError) {
+          console.error('🔴 Fallback also failed:', fallbackError);
+        }
+      }
+      
       throw new Error(`OpenAI fout: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
     } finally {
       setIsAnalyzing(false);
@@ -125,11 +173,38 @@ Maak een empathische Nederlandse response van 50-80 woorden die:
 
 Geef alleen de response tekst terug, geen JSON.`;
 
-      const response = await fetch('/api/openai-secondary', {
+      // Probeer eerst de proxy
+      try {
+        const response = await fetch('http://localhost:3001/api/openai-secondary', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKey
+          },
+          body: JSON.stringify({
+            model: 'gpt-4.1-2025-04-14',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.8,
+            max_tokens: 200
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const seedResponse = data.choices[0]?.message?.content?.trim();
+          console.log('✅ OpenAI secondary seed generated:', seedResponse?.substring(0, 50) + '...');
+          return seedResponse || null;
+        }
+      } catch (proxyError) {
+        console.log('🔄 Proxy failed, using direct API...');
+      }
+
+      // Fallback naar directe API
+      const directResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          'X-API-Key': apiKey
         },
         body: JSON.stringify({
           model: 'gpt-4.1-2025-04-14',
@@ -139,16 +214,14 @@ Geef alleen de response tekst terug, geen JSON.`;
         })
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        const proxyError = data?.error?.message || `${response.status}`;
-        throw new Error(`OpenAI proxy fout: ${proxyError}`);
+      if (!directResponse.ok) {
+        throw new Error(`OpenAI API error: ${directResponse.status}`);
       }
 
-      const seedResponse = data.choices[0]?.message?.content?.trim();
+      const directData = await directResponse.json();
+      const seedResponse = directData.choices[0]?.message?.content?.trim();
 
-      console.log('✅ OpenAI secondary seed generated:', seedResponse?.substring(0, 50) + '...');
+      console.log('✅ OpenAI secondary seed generated (direct):', seedResponse?.substring(0, 50) + '...');
       return seedResponse || null;
 
     } catch (error) {

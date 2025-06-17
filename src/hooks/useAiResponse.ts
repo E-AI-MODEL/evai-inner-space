@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
@@ -11,6 +12,7 @@ import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message, ChatHistoryItem } from "../types";
 import { useSymbolicEngine } from "./useSymbolicEngine";
 import { loadAdvancedSeeds } from "../lib/advancedSeedStorage";
+import { useSeeds } from "./useSeeds";
 
 export function useAiResponse(
   messages: Message[],
@@ -30,6 +32,7 @@ export function useAiResponse(
   const { assessMessage, calculateOverallRisk, evai56Rubrics } = useEvAI56Rubrics();
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
   const { analyzeCoTFeedback, generateCoTImprovements, isAnalyzing: isCoTAnalyzing } = useCoTFeedbackAnalyzer();
+  const { refetch: refetchSeeds } = useSeeds();
 
   const runSecondaryAnalysis = async (history: Message[], key: string) => {
     if (!key || !key.trim()) return;
@@ -50,14 +53,20 @@ export function useAiResponse(
           response: { nl: analysis.insights.join(' ') },
           context: { severity: 'medium', situation: 'therapy' },
           meta: { priority: 1, weight: 1.0, confidence: analysis.confidence || 0.7, usageCount: 0 },
-          tags: ['secondary-analysis'],
+          tags: ['secondary-analysis', 'auto-generated'],
           createdAt: new Date(),
           updatedAt: new Date(),
           createdBy: 'ai',
           isActive: true,
           version: '1.0.0'
         };
-        await injectSeedToDatabase(secondarySeed);
+        
+        const injected = await injectSeedToDatabase(secondarySeed);
+        if (injected) {
+          console.log('✅ Secondary analysis seed injected:', analysis.seedSuggestion);
+          // Refresh seeds in cache
+          await refetchSeeds();
+        }
       }
     } catch (err) {
       console.error('Secondary analysis failed', err);
@@ -74,7 +83,8 @@ export function useAiResponse(
     const hasOpenAI = apiKey && apiKey.trim().length > 0;
     const hasOpenAi2 = openAiKey2 && openAiKey2.trim().length > 0;
     
-    console.log('🔥 ULTRA AGGRESSIVE EvAI-ENHANCED LEARNING MODE ACTIVATED 🔥');
+    console.log('🔥 EvAI-ENHANCED LEARNING MODE GEACTIVEERD 🔥');
+    console.log('🔑 API Keys beschikbaar:', { hasOpenAI, hasOpenAi2 });
 
     try {
       const messageIndex = messages.findIndex(m => m.id === userMessage.id);
@@ -85,6 +95,7 @@ export function useAiResponse(
           content: msg.content
         }));
 
+      // STAP 1: Pre-Analysis met OpenAI Secondary
       let secondaryInsights: string[] = [];
       if (hasOpenAi2) {
         try {
@@ -96,14 +107,15 @@ export function useAiResponse(
           );
           if (preAnalysis) {
             secondaryInsights = preAnalysis.insights;
+            console.log('🧠 Secondary insights:', secondaryInsights);
           }
         } catch (preErr) {
-          console.error('Secondary analysis for prompt failed:', preErr);
+          console.error('🔴 Secondary analysis failed:', preErr);
         }
       }
 
-      // 🔥 STEP 1: Enhanced EvAI 5.6 Rubrics Analysis with CoT Integration
-      console.log('📊 Running Enhanced EvAI 5.6 Rubrics analysis with CoT integration...');
+      // STAP 2: EvAI 5.6 Rubrics Analysis
+      console.log('📊 EvAI 5.6 Rubrics analysis...');
       const rubricsAssessments = assessMessage(userMessage.content);
       const overallRisk = calculateOverallRisk(rubricsAssessments);
       
@@ -114,7 +126,6 @@ export function useAiResponse(
         rubricInsights = rubricsAssessments.map(assessment => {
           const rubricData = evai56Rubrics.find(r => r.id === assessment.rubricId);
           
-          // Generate CoT guidance based on rubric
           if (rubricData && assessment.riskScore > 1) {
             const intervention = rubricData.interventions[0];
             cotRubricGuidance.push(`${rubricData.name}: ${intervention}`);
@@ -124,19 +135,17 @@ export function useAiResponse(
         });
         
         console.log(`🎯 EvAI detected ${rubricsAssessments.length} areas, overall risk: ${overallRisk.toFixed(1)}%`);
-        console.log(`🧠 CoT Rubric Guidance: ${cotRubricGuidance.join('; ')}`);
       }
 
-      // 🔥 STEP 2: Enhanced CoT Feedback Learning with Rubrics
+      // STAP 3: Enhanced CoT Feedback Learning
       if (messages.length > 1) {
-        console.log('🧠 EvAI-Enhanced CoT FEEDBACK ANALYSIS...');
+        console.log('🧠 CoT FEEDBACK ANALYSIS...');
         try {
           const feedbackPatterns = await analyzeCoTFeedback(messages, apiKey);
           
           if (feedbackPatterns.length > 0) {
-            console.log(`📊 EvAI CoT patterns found: ${feedbackPatterns.length}`);
+            console.log(`📊 CoT patterns found: ${feedbackPatterns.length}`);
             
-            // Generate rubrics-validated improvements
             const improvements = await generateCoTImprovements(
               feedbackPatterns, 
               userMessage.content, 
@@ -144,25 +153,24 @@ export function useAiResponse(
             );
             
             if (improvements.length > 0) {
-              console.log('🎯 EvAI-validated CoT improvements generated:', improvements);
+              console.log('🎯 CoT improvements generated:', improvements);
               cotRubricGuidance.push(...improvements);
             }
           }
         } catch (cotError) {
-          console.error('🔴 EvAI CoT feedback analysis failed:', cotError);
+          console.error('🔴 CoT feedback analysis failed:', cotError);
         }
       }
 
-      // 🔥 STEP 3: AGGRESSIVE RUBRICS-GUIDED SEED ANALYSIS & GENERATION
+      // STAP 4: AGGRESSIVE SEED GENERATION EN INJECTION
       let newSeedsGenerated = 0;
       const currentSeeds = await loadAdvancedSeeds();
       
       if (hasOpenAI) {
-        console.log('🌱 EXTREME AGGRESSIVE MODE: EvAI-Guided emotion analysis...');
+        console.log('🌱 AGGRESSIVE SEED GENERATION...');
         
-        // Enhanced emotion detection with rubrics integration
         const emotionVariants = detectAllEmotions(userMessage.content, rubricsAssessments);
-        console.log(`🎯 EvAI-Enhanced detected ${emotionVariants.length} emotion variants:`, emotionVariants);
+        console.log(`🎯 Detected ${emotionVariants.length} emotion variants:`, emotionVariants);
         
         for (const emotion of emotionVariants) {
           try {
@@ -171,180 +179,119 @@ export function useAiResponse(
             );
             
             if (!existingSeed) {
-              console.log(`🚀 GENERATING EvAI-VALIDATED SEED: "${emotion}"`);
+              console.log(`🚀 GENERATING SEED: "${emotion}"`);
               
-              // Enhanced context with rubrics guidance
               const rubricContext = cotRubricGuidance.length > 0
                 ? ` | EvAI Guidance: ${cotRubricGuidance.join('; ')}`
                 : '';
               const secondaryContext = secondaryInsights.length > 0
-                ? ` | Sec inzichten: ${secondaryInsights.join('; ')}`
+                ? ` | Secondary: ${secondaryInsights.join('; ')}`
                 : '';
               
               const generatedSeed = await generateOpenAISeed({
                 emotion,
-                context: `EvAI 5.6 ULTRA LEARNING: "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}% | Rubrics-Validated${rubricContext}${secondaryContext}`,
+                context: `EvAI LEARNING: "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}%${rubricContext}${secondaryContext}`,
                 conversationHistory: history.slice(-2).map(h => h.content),
                 severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium'
               }, apiKey);
               
               if (generatedSeed) {
-                await injectSeedToDatabase(generatedSeed);
-                newSeedsGenerated++;
-                console.log(`✅ EvAI-VALIDATED SEED INJECTED: "${emotion}"`);
+                const injected = await injectSeedToDatabase(generatedSeed);
+                if (injected) {
+                  newSeedsGenerated++;
+                  console.log(`✅ SEED INJECTED: "${emotion}"`);
 
-                toast({
-                  title: "🌱 EvAI LEERMODE: Nieuwe Rubrics-Seed!",
-                  description: `"${emotion}" geleerd met EvAI validatie!`,
-                });
-
-                // 👉 NEW: Generate additional seed with OpenAI secondary
-                if (hasOpenAi2) {
-                  try {
-                    const secondaryText = await generateSeed(
-                      emotion,
-                      userMessage.content,
-                      openAiKey2!
-                    );
-                    if (secondaryText) {
-                      const secondarySeed: AdvancedSeed = {
-                        id: uuidv4(),
+                  // Generate secondary seed if available
+                  if (hasOpenAi2) {
+                    try {
+                      const secondaryText = await generateSeed(
                         emotion,
-                        type: 'validation',
-                        label: 'Valideren',
-                        triggers: [emotion],
-                        response: { nl: secondaryText },
-                        context: {
-                          severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium',
-                          situation: 'therapy'
-                        },
-                        meta: {
-                          priority: 1,
-                          weight: 1.0,
-                          confidence: 0.75,
-                          usageCount: 0
-                        },
-                        tags: ['openai-secondary', 'auto-generated'],
-                        createdAt: new Date(),
-                        updatedAt: new Date(),
-                        createdBy: 'ai',
-                        isActive: true,
-                        version: '1.0.0'
-                      };
+                        userMessage.content,
+                        openAiKey2!
+                      );
+                      if (secondaryText) {
+                        const secondarySeed: AdvancedSeed = {
+                          id: uuidv4(),
+                          emotion,
+                          type: 'validation',
+                          label: 'Valideren',
+                          triggers: [emotion],
+                          response: { nl: secondaryText },
+                          context: {
+                            severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium',
+                            situation: 'therapy'
+                          },
+                          meta: {
+                            priority: 1,
+                            weight: 1.0,
+                            confidence: 0.75,
+                            usageCount: 0
+                          },
+                          tags: ['openai-secondary', 'auto-generated'],
+                          createdAt: new Date(),
+                          updatedAt: new Date(),
+                          createdBy: 'ai',
+                          isActive: true,
+                          version: '1.0.0'
+                        };
 
-                      await injectSeedToDatabase(secondarySeed);
-                      newSeedsGenerated++;
-                      console.log(`✅ OpenAI secondary seed injected: "${emotion}"`);
+                        const secondaryInjected = await injectSeedToDatabase(secondarySeed);
+                        if (secondaryInjected) {
+                          newSeedsGenerated++;
+                          console.log(`✅ Secondary seed injected: "${emotion}"`);
+                        }
+                      }
+                    } catch (secError) {
+                      console.error('🔴 Secondary seed generation failed:', secError);
                     }
-                  } catch (secError) {
-                    console.error('🔴 OpenAI secondary seed generation failed:', secError);
                   }
                 }
               }
             }
             
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 300));
           } catch (error) {
-            console.error(`❌ Failed to generate EvAI seed for ${emotion}:`, error);
+            console.error(`❌ Failed to generate seed for ${emotion}:`, error);
           }
         }
         
-        // 🔥 STEP 4: EvAI-GUIDED CONVERSATION GAP ANALYSIS
-        console.log('🔍 EvAI-GUIDED CONVERSATION GAP ANALYSIS...');
-        try {
-          const missingEmotions = await analyzeConversationForSeeds(messages, apiKey);
-          
-          if (missingEmotions.length > 0) {
-            console.log(`🎯 EvAI MISSING EMOTIONS FOUND: ${missingEmotions.length}`);
-            
-            const priorityEmotion = missingEmotions[0];
-            const rubricGuidanceContext = cotRubricGuidance.length > 0
-              ? ` | EvAI Interventions: ${cotRubricGuidance.slice(0, 2).join('; ')}`
-              : '';
-            const secondaryContext = secondaryInsights.length > 0
-              ? ` | Sec inzichten: ${secondaryInsights.join('; ')}`
-              : '';
-              
-            const learningSeed = await generateOpenAISeed({
-              emotion: priorityEmotion,
-              context: `EvAI GAP ANALYSIS: Missing from conversation patterns | Risk: ${overallRisk.toFixed(1)}%${rubricGuidanceContext}${secondaryContext}`,
-              conversationHistory: history.slice(-3).map(h => h.content),
-              severity: overallRisk > 60 ? 'high' : 'medium'
-            }, apiKey);
-
-            if (learningSeed) {
-              await injectSeedToDatabase(learningSeed);
-              newSeedsGenerated++;
-              console.log(`✅ EvAI GAP FILLED: New rubrics-validated seed "${priorityEmotion}" generated`);
-            }
-          }
-        } catch (gapError) {
-          console.error('🔴 EvAI gap analysis failed:', gapError);
+        // Refresh seeds after injection
+        if (newSeedsGenerated > 0) {
+          console.log('🔄 Refreshing seeds after injection...');
+          await refetchSeeds();
         }
       }
 
-      // 🔥 STEP 5: Enhanced Seed Matching with EvAI Integration
+      // STAP 5: Enhanced Seed Matching met Fresh Data
+      console.log('🎯 ENHANCED SEED MATCHING...');
       const matchedResult = await checkInput(
         userMessage.content,
         apiKey,
         { ...context, secondaryInsights },
         history
       );
+
       let aiResp: Message;
 
       if (matchedResult && "confidence" in matchedResult) {
-        // OpenAI seed match - Enhanced with EvAI learning context
+        // OpenAI result
         setSeedConfetti(true);
         
-        const evaiEnhancement = cotRubricGuidance.length > 0 
-          ? `\n\n*[EvAI Enhanced: ${cotRubricGuidance[0]} + ${newSeedsGenerated} nieuwe rubrics-patronen]*`
-          : `\n\n*[EvAI Evolution: ${newSeedsGenerated} nieuwe patronen geleerd + toegepast]*`;
+        const evaiNote = newSeedsGenerated > 0 
+          ? `\n\n*[🔥 EvAI LEARNING: ${newSeedsGenerated} nieuwe patronen geleerd tijdens dit gesprek!]*`
+          : `\n\n*[EvAI Enhanced: Rubrics-guided response + ${cotRubricGuidance.length} guidance patterns]*`;
         
         const label = matchedResult.label || "Valideren";
         aiResp = {
-          id: `ai-evai-learning-${Date.now()}`,
+          id: `ai-evai-openai-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
-          content: `${matchedResult.response}${evaiEnhancement}`,
-          explainText: `${matchedResult.reasoning} | EvAI Risk: ${overallRisk.toFixed(1)}% | Seeds: +${newSeedsGenerated}`,
+          content: `${matchedResult.response}${evaiNote}`,
+          explainText: `${matchedResult.reasoning} | EvAI Risk: ${overallRisk.toFixed(1)}% | New Seeds: +${newSeedsGenerated}`,
           emotionSeed: matchedResult.emotion,
           animate: true,
-          meta: `EvAI LEARNING: +${newSeedsGenerated} rubrics-seeds – ${Math.round(matchedResult.confidence * 100)}%`,
-          brilliant: true,
-          timestamp: new Date(),
-          replyTo: userMessage.id,
-          feedback: null,
-          symbolicInferences: [
-            ...rubricInsights,
-            ...cotRubricGuidance.map(guidance => `🧠 EvAI CoT: ${guidance}`),
-            `🌱 EvAI SEEDS: ${newSeedsGenerated} rubrics-validated patterns learned`,
-            `🎯 Total seeds: ${currentSeeds.length + newSeedsGenerated}`,
-            `🔥 EvAI ULTRA LEARNING: Active rubrics-guided pattern recognition`,
-            `📊 Risk-adapted learning: ${overallRisk.toFixed(1)}%`
-          ]
-        };
-
-      } else if (matchedResult) {
-        // Advanced seed match with EvAI enhancement
-        const seedResult = matchedResult;
-        setSeedConfetti(true);
-        
-        const evaiNote = cotRubricGuidance.length > 0 
-          ? `\n\n*[EvAI Guidance: ${cotRubricGuidance[0]} + ${newSeedsGenerated} nieuwe rubrics-patronen]*`
-          : `\n\n*[EvAI Leerproces: ${newSeedsGenerated} nieuwe patronen tijdens dit gesprek]*`;
-        
-        const label = seedResult.label || "Valideren";
-        aiResp = {
-          id: `ai-evai-seed-learning-${Date.now()}`,
-          from: "ai",
-          label: label,
-          accentColor: getLabelVisuals(label).accentColor,
-          content: `${seedResult.response}${evaiNote}`,
-          explainText: `EvAI Advanced Seed + Learning: ${seedResult.triggers.join(", ")} | Risk: ${overallRisk.toFixed(1)}%`,
-          emotionSeed: seedResult.emotion,
-          animate: true,
-          meta: `EvAI Seed Evolution: +${newSeedsGenerated} – Rubrics Active`,
+          meta: `EvAI OpenAI: ${Math.round(matchedResult.confidence * 100)}% + ${newSeedsGenerated} seeds`,
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
@@ -352,131 +299,158 @@ export function useAiResponse(
           symbolicInferences: [
             ...rubricInsights,
             ...cotRubricGuidance.map(guidance => `🧠 EvAI Guidance: ${guidance}`),
-            `🌱 EvAI NEW SEEDS: ${newSeedsGenerated} generated with rubrics validation`,
-            `🧠 Advanced matching + continuous EvAI learning`,
-            `📈 Database growth: ${currentSeeds.length} → ${currentSeeds.length + newSeedsGenerated}`
+            `🌱 EvAI SEEDS: ${newSeedsGenerated} nieuwe patronen geleerd`,
+            `🧠 OpenAI confidence: ${Math.round(matchedResult.confidence * 100)}%`
+          ]
+        };
+
+      } else if (matchedResult) {
+        // Advanced seed match
+        const seedResult = matchedResult;
+        setSeedConfetti(true);
+        
+        const evaiNote = newSeedsGenerated > 0 
+          ? `\n\n*[🌱 EvAI LEERPROCES: ${newSeedsGenerated} nieuwe patronen toegevoegd + seed toegepast!]*`
+          : `\n\n*[EvAI Enhanced: Advanced seed + rubrics guidance]*`;
+        
+        const label = seedResult.label === "Interventie" ? "Suggestie" : seedResult.label as "Valideren" | "Reflectievraag" | "Suggestie";
+        aiResp = {
+          id: `ai-evai-seed-${Date.now()}`,
+          from: "ai",
+          label: label,
+          accentColor: getLabelVisuals(label).accentColor,
+          content: `${seedResult.response.nl}${evaiNote}`,
+          explainText: `EvAI Advanced Seed: ${seedResult.triggers.join(", ")} | Risk: ${overallRisk.toFixed(1)}% | New: +${newSeedsGenerated}`,
+          emotionSeed: seedResult.emotion,
+          animate: true,
+          meta: `EvAI Seed: ${seedResult.meta.weight.toFixed(1)}x + ${newSeedsGenerated} new`,
+          brilliant: true,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+          symbolicInferences: [
+            ...rubricInsights,
+            ...cotRubricGuidance.map(guidance => `🧠 EvAI: ${guidance}`),
+            `🌱 NEW SEEDS: ${newSeedsGenerated} generated with EvAI validation`,
+            `🎯 Advanced matching: ${seedResult.triggers.join(", ")}`,
+            `⚡ Usage count: ${seedResult.meta.usageCount} → ${seedResult.meta.usageCount + 1}`
           ]
         };
 
       } else {
-        // Force generate with EvAI guidance
+        // Force generate new response
         if (hasOpenAI) {
-          console.log('🎯 EvAI NO MATCH = LEARNING OPPORTUNITY: Force generating with rubrics guidance...');
+          console.log('🎯 NO MATCH = FORCE GENERATE...');
           try {
             const dominantEmotion = detectAllEmotions(userMessage.content, rubricsAssessments)[0] || 'onzekerheid';
             const primaryGuidance = cotRubricGuidance[0] || 'emotionele validatie';
 
-            const secondaryContext = secondaryInsights.length > 0
-              ? ` | Sec inzichten: ${secondaryInsights.join('; ')}`
-              : '';
-
             const forcedSeed = await generateOpenAISeed({
               emotion: dominantEmotion,
-              context: `EvAI FORCE LEARN: No existing pattern for "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}% | Guidance: ${primaryGuidance}${secondaryContext}`,
+              context: `EvAI FORCE LEARN: "${userMessage.content}" | Risk: ${overallRisk.toFixed(1)}% | Guidance: ${primaryGuidance}`,
               conversationHistory: history.slice(-2).map(h => h.content),
               severity: overallRisk > 70 ? 'critical' : overallRisk > 40 ? 'high' : 'medium'
             }, apiKey);
             
             if (forcedSeed) {
-              await injectSeedToDatabase(forcedSeed);
-              newSeedsGenerated++;
-              
-              const mappedLabel: "Valideren" | "Reflectievraag" | "Suggestie" = 
-                forcedSeed.label === "Interventie" ? "Suggestie" : forcedSeed.label as "Valideren" | "Reflectievraag" | "Suggestie";
-              
-              aiResp = {
-                id: `ai-evai-force-learn-${Date.now()}`,
-                from: "ai",
-                label: mappedLabel,
-                accentColor: getLabelVisuals(mappedLabel).accentColor,
-                content: `${forcedSeed.response.nl}\n\n*[🔥 EvAI REAL-TIME LEREN: Nieuw "${dominantEmotion}" patroon met rubrics-validatie direct toegepast!]*`,
-                explainText: `EvAI Force Learning: New "${forcedSeed.emotion}" pattern | Risk: ${overallRisk.toFixed(1)}% | Guidance: ${primaryGuidance}`,
-                emotionSeed: forcedSeed.emotion,
-                animate: true,
-                meta: `EvAI FORCE LEARNING: Immediate Rubrics-Validated Pattern`,
-                brilliant: true,
-                timestamp: new Date(),
-                replyTo: userMessage.id,
-                feedback: null,
-                symbolicInferences: [
-                  ...rubricInsights,
-                  ...cotRubricGuidance.map(guidance => `🧠 EvAI Applied: ${guidance}`),
-                  `🚀 EvAI FORCE LEARNING: "${forcedSeed.emotion}" pattern created with rubrics validation`,
-                  `🌱 Total new seeds: ${newSeedsGenerated}`,
-                  `🧠 Real-time EvAI adaptation: Learning from every interaction`,
-                  `📊 Risk-responsive with rubrics: ${overallRisk.toFixed(1)}% severity`,
-                  `⚡ Instant EvAI application: Pattern learned and validated immediately`
-                ]
-              };
-              
-              toast({
-                title: "🚀 EvAI FORCE LEARNING!",
-                description: `NIEUW: "${dominantEmotion}" direct geleerd met rubrics validatie!`,
-              });
+              const injected = await injectSeedToDatabase(forcedSeed);
+              if (injected) {
+                newSeedsGenerated++;
+                // Refresh and immediately use the new seed
+                await refetchSeeds();
+                
+                const mappedLabel: "Valideren" | "Reflectievraag" | "Suggestie" = 
+                  forcedSeed.label === "Interventie" ? "Suggestie" : forcedSeed.label as "Valideren" | "Reflectievraag" | "Suggestie";
+                
+                aiResp = {
+                  id: `ai-evai-force-${Date.now()}`,
+                  from: "ai",
+                  label: mappedLabel,
+                  accentColor: getLabelVisuals(mappedLabel).accentColor,
+                  content: `${forcedSeed.response.nl}\n\n*[🚀 EvAI REAL-TIME LEARNING: Nieuw "${dominantEmotion}" patroon direct toegepast!]*`,
+                  explainText: `EvAI Force Learning: "${forcedSeed.emotion}" | Risk: ${overallRisk.toFixed(1)}% | Generated & Applied`,
+                  emotionSeed: forcedSeed.emotion,
+                  animate: true,
+                  meta: `EvAI FORCE LEARNING: Immediate Pattern Application`,
+                  brilliant: true,
+                  timestamp: new Date(),
+                  replyTo: userMessage.id,
+                  feedback: null,
+                  symbolicInferences: [
+                    ...rubricInsights,
+                    ...cotRubricGuidance.map(guidance => `🧠 EvAI Applied: ${guidance}`),
+                    `🚀 FORCE LEARNING: "${forcedSeed.emotion}" pattern created & applied`,
+                    `🌱 Total new seeds: ${newSeedsGenerated}`,
+                    `⚡ Real-time EvAI adaptation: Learning → Application in same response`
+                  ]
+                };
+                
+                toast({
+                  title: "🚀 EvAI FORCE LEARNING!",
+                  description: `NIEUW: "${dominantEmotion}" direct geleerd en toegepast!`,
+                });
+              }
             }
           } catch (forceError) {
-            console.error('🔴 EvAI force learning failed:', forceError);
-            // Enhanced fallback with EvAI context
-            const label = overallRisk > 50 ? "Suggestie" : "Valideren";
-            const fallbackGuidance = cotRubricGuidance[0] || 'emotionele ondersteuning';
-            
-            aiResp = {
-              id: `ai-evai-learning-fallback-${Date.now()}`,
-              from: "ai",
-              label: label,
-              accentColor: getLabelVisuals(label).accentColor,
-              content: `Ik hoor je en leer van elk gesprek met EvAI 5.6 rubrics. Zelfs als ik nog geen perfect patroon heb, werk ik eraan om je beter te begrijpen met therapeutische validatie. *[EvAI Learning: ${newSeedsGenerated} rubrics-patronen toegevoegd + ${fallbackGuidance}]*`,
-              explainText: `EvAI Learning Fallback | Risk: ${overallRisk.toFixed(1)}% | Guidance: ${fallbackGuidance} | New Seeds: ${newSeedsGenerated}`,
-              emotionSeed: null,
-              animate: true,
-              meta: `EvAI Learning Fallback: +${newSeedsGenerated} rubrics-seeds`,
-              brilliant: false,
-              timestamp: new Date(),
-              replyTo: userMessage.id,
-              feedback: null,
-              symbolicInferences: [
-                ...rubricInsights,
-                ...cotRubricGuidance.map(guidance => `🧠 EvAI Fallback: ${guidance}`),
-                `🌱 EvAI seeds generated: ${newSeedsGenerated}`,
-                `🧠 EvAI learning continues even in fallback mode with rubrics guidance`
-              ]
-            };
+            console.error('🔴 Force learning failed:', forceError);
           }
+        }
+
+        // Fallback if force generation failed
+        if (!aiResp!) {
+          const label = overallRisk > 50 ? "Suggestie" : "Valideren";
+          const fallbackGuidance = cotRubricGuidance[0] || 'emotionele ondersteuning';
+          
+          aiResp = {
+            id: `ai-evai-fallback-${Date.now()}`,
+            from: "ai",
+            label: label,
+            accentColor: getLabelVisuals(label).accentColor,
+            content: `Ik hoor je en leer van elk gesprek. ${newSeedsGenerated > 0 ? `Tijdens ons gesprek heb ik ${newSeedsGenerated} nieuwe patronen geleerd om je beter te kunnen helpen.` : 'Ik werk continu aan het verbeteren van mijn begrip.'} *[EvAI Learning: ${fallbackGuidance}]*`,
+            explainText: `EvAI Learning Fallback | Risk: ${overallRisk.toFixed(1)}% | New Seeds: ${newSeedsGenerated}`,
+            emotionSeed: null,
+            animate: true,
+            meta: `EvAI Learning: +${newSeedsGenerated} patterns`,
+            brilliant: false,
+            timestamp: new Date(),
+            replyTo: userMessage.id,
+            feedback: null,
+            symbolicInferences: [
+              ...rubricInsights,
+              ...cotRubricGuidance.map(guidance => `🧠 EvAI: ${guidance}`),
+              `🌱 Seeds generated: ${newSeedsGenerated}`,
+              `🧠 EvAI learning continues with rubrics guidance`
+            ]
+          };
         }
       }
 
-      // 🔥 STEP 6: Enhanced OpenAI secondary integration with EvAI context
+      // STAP 6: Enhanced OpenAI secondary integration
       if (hasOpenAi2) {
-        console.log('🚀 Running OpenAI secondary enhancement with EvAI context...');
-        let geminiAnalysis: SecondaryAnalysis | null = null;
+        console.log('🚀 OpenAI secondary enhancement...');
         try {
           const contextString = history.map(h => `${h.role}: ${h.content}`).join('\n');
-          const evaiContext = cotRubricGuidance.length > 0 ? ` | EvAI Guidance: ${cotRubricGuidance.join('; ')}` : '';
+          const evaiContext = cotRubricGuidance.length > 0 ? ` | EvAI: ${cotRubricGuidance.join('; ')}` : '';
 
-          geminiAnalysis = await analyzeNeurosymbolic(
+          const analysis = await analyzeNeurosymbolic(
             userMessage.content + evaiContext,
             contextString,
             openAiKey2!
           );
-        } catch (geminiError) {
-          console.error('🔴 OpenAI secondary enhancement failed:', geminiError);
-        }
 
-        if (geminiAnalysis) {
-          aiResp.symbolicInferences = [
-            ...(aiResp.symbolicInferences || []),
-            ...geminiAnalysis.patterns,
-            ...geminiAnalysis.insights
-          ];
-        } else {
-          aiResp.symbolicInferences = [
-            ...(aiResp.symbolicInferences || []),
-            'Geen resultaten van secundaire analyse'
-          ];
+          if (analysis) {
+            aiResp.symbolicInferences = [
+              ...(aiResp.symbolicInferences || []),
+              ...analysis.patterns,
+              ...analysis.insights
+            ];
+          }
+        } catch (secondaryError) {
+          console.error('🔴 Secondary enhancement failed:', secondaryError);
         }
       }
 
-      // 🔥 STEP 7: Enhanced Symbolic rules evaluation with EvAI safety check
+      // STAP 7: Symbolic rules evaluation
       try {
         const extendedMessages = [...messages, aiResp];
         const aiSymbolic = evaluateSymbolic(extendedMessages, aiResp);
@@ -487,25 +461,26 @@ export function useAiResponse(
         console.error('🔴 Symbolic evaluation failed:', symbolicError);
       }
 
-      // 🔥 FINAL EvAI SUCCESS NOTIFICATION
-      const finalSeedCount = (await loadAdvancedSeeds()).length;
-      console.log(`✅ EvAI ULTRA LEARNING COMPLETE: Generated ${newSeedsGenerated} new rubrics-validated seeds | Total: ${finalSeedCount}`);
+      // Success notification
+      console.log(`✅ EvAI LEARNING COMPLETE: Generated ${newSeedsGenerated} new seeds`);
       
       if (hasOpenAI && newSeedsGenerated > 0) {
         toast({
-          title: "🔥 EvAI ULTRA LEARNING MODE",
-          description: `${newSeedsGenerated} nieuwe rubrics-patronen geleerd! Totaal: ${finalSeedCount}`,
+          title: "🔥 EvAI LEARNING SUCCESS",
+          description: `${newSeedsGenerated} nieuwe patronen geleerd en toegepast!`,
         });
       }
 
       setMessages((prev) => [...prev, aiResp]);
+      
+      // Run secondary analysis in background
       if (hasOpenAi2) {
-        await runSecondaryAnalysis([...messages, aiResp], openAiKey2!);
+        runSecondaryAnalysis([...messages, aiResp], openAiKey2!);
       }
       
     } catch (err) {
-      console.error("Error in EvAI ultra learning AI:", err);
-      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de EvAI ultra learning AI.";
+      console.error("Error in EvAI enhanced AI:", err);
+      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de EvAI enhanced AI.";
       const errorResponse: Message = {
         id: `ai-evai-error-${Date.now()}`,
         from: "ai",
@@ -521,7 +496,7 @@ export function useAiResponse(
       };
       setMessages((prev) => [...prev, errorResponse]);
       toast({
-        title: "Fout bij EvAI ultra learning",
+        title: "Fout bij EvAI processing",
         description: errorMessage,
         variant: "destructive",
       });
@@ -530,7 +505,7 @@ export function useAiResponse(
     }
   };
 
-  // Enhanced emotion detection function with EvAI rubrics integration
+  // Enhanced emotion detection function
   const detectAllEmotions = (content: string, assessments: RubricAssessment[]): string[] => {
     const emotions: string[] = [];
     const lowerContent = content.toLowerCase();
@@ -549,7 +524,7 @@ export function useAiResponse(
     if (lowerContent.includes('moe') || lowerContent.includes('uitgeput')) emotions.push('uitputting');
     if (lowerContent.includes('hopeloos') || lowerContent.includes('geen hoop')) emotions.push('hopeloosheid');
     
-    // Enhanced EvAI rubrics-based emotion mapping
+    // EvAI rubrics-based emotion mapping
     if (assessments.length > 0) {
       const emotionMap: Record<string, string> = {
         'emotional-regulation': 'emotionele disregulatie',
@@ -564,7 +539,6 @@ export function useAiResponse(
           const mappedEmotion = emotionMap[assessment.rubricId];
           if (mappedEmotion) {
             emotions.push(mappedEmotion);
-            // Add specific triggers as emotions for more precise matching
             if (assessment.triggers.length > 0) {
               emotions.push(...assessment.triggers.slice(0, 2));
             }
@@ -578,7 +552,7 @@ export function useAiResponse(
       emotions.push('onzekerheid');
     }
     
-    // Remove duplicates and return up to 4 emotions per message (increased for EvAI)
+    // Remove duplicates and return up to 4 emotions
     return [...new Set(emotions)].slice(0, 4);
   };
 
