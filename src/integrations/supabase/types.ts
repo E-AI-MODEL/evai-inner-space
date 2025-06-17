@@ -165,7 +165,9 @@ export type Database = {
         Returns: undefined
       }
       update_setting: {
-        Args: { setting_key: string; setting_value: string }
+        Args:
+          | Record<PropertyKey, never>
+          | { setting_key: string; setting_value: string }
         Returns: undefined
       }
     }

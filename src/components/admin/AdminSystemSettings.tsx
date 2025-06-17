@@ -32,7 +32,7 @@ const AdminSystemSettings = () => {
         return {
           icon: <AlertTriangle className="text-red-500" size={16} />,
           color: 'bg-red-100 text-red-800 border-red-200',
-          description: 'Hoge precisie, meer conservatieve triggers'
+          description: 'Hoge precisie, conservatieve triggers'
         };
       case 'moderate':
         return {
@@ -44,7 +44,7 @@ const AdminSystemSettings = () => {
         return {
           icon: <Shield className="text-green-500" size={16} />,
           color: 'bg-green-100 text-green-800 border-green-200',
-          description: 'Bredere interpretatie, meer empathische benadering'
+          description: 'Bredere interpretatie, empathische benadering'
         };
       default:
         return {
@@ -57,50 +57,56 @@ const AdminSystemSettings = () => {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Settings size={20} />
-            Systeem Instellingen
+            <span className="break-words">Systeem Instellingen</span>
           </CardTitle>
-          <CardDescription>Laden van instellingen...</CardDescription>
+          <CardDescription className="text-sm break-words">
+            Laden van instellingen...
+          </CardDescription>
         </CardHeader>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings size={20} />
-          Rubric Engine Instellingen
+    <Card className="w-full overflow-hidden">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <Settings size={20} className="flex-shrink-0" />
+          <span className="break-words">Rubric Engine Instellingen</span>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm break-words leading-relaxed">
           Bepaal hoe strikt de engine moet zijn bij het analyseren van emotionele patronen en triggers.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
         {/* Current Setting Display */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-700">Huidige instelling:</span>
-            <div className="flex items-center gap-2">
+        <div className="bg-gray-50 rounded-lg p-3 sm:p-4 overflow-hidden">
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <span className="text-sm font-medium text-gray-700 flex-shrink-0">
+              Huidige instelling:
+            </span>
+            <div className="flex items-center gap-2 flex-shrink-0">
               {getStrictnessInfo(config.level).icon}
-              <Badge variant="outline" className={getStrictnessInfo(config.level).color}>
+              <Badge variant="outline" className={`${getStrictnessInfo(config.level).color} text-xs`}>
                 {config.level}
               </Badge>
             </div>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 break-words leading-relaxed">
             {getStrictnessInfo(config.level).description}
           </p>
         </div>
 
         {/* Strictness Controls */}
-        <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-700">Kies strengheidsniveau:</label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="space-y-3 overflow-hidden">
+          <label className="text-sm font-medium text-gray-700 block">
+            Kies strengheidsniveau:
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {availableLevels.map((level) => {
               const info = getStrictnessInfo(level);
               const isActive = config.level === level;
@@ -110,11 +116,13 @@ const AdminSystemSettings = () => {
                   key={level}
                   variant={isActive ? "default" : "outline"}
                   onClick={() => handleStrictnessChange(level)}
-                  className="flex flex-col items-center gap-2 h-auto py-4"
+                  className="flex flex-col items-center gap-2 h-auto py-3 px-2 text-center overflow-hidden"
                 >
-                  {info.icon}
-                  <span className="font-medium capitalize">{level}</span>
-                  <span className="text-xs text-center opacity-75">
+                  <div className="flex-shrink-0">{info.icon}</div>
+                  <span className="font-medium capitalize text-sm break-words">
+                    {level}
+                  </span>
+                  <span className="text-xs text-center opacity-75 break-words leading-tight">
                     {info.description.split(',')[0]}
                   </span>
                 </Button>
@@ -124,24 +132,42 @@ const AdminSystemSettings = () => {
         </div>
 
         {/* Technical Details */}
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">Technische Details</h4>
-          <div className="grid grid-cols-2 gap-4 text-xs">
-            <div>
-              <span className="text-blue-700 font-medium">Risico Alert:</span>
-              <span className="text-blue-600 ml-2">{config.thresholds.riskAlert}</span>
+        <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200 overflow-hidden">
+          <h4 className="text-sm font-semibold text-blue-900 mb-3 break-words">
+            Technische Details
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+            <div className="break-words">
+              <span className="text-blue-700 font-medium block sm:inline">
+                Risico Alert:
+              </span>
+              <span className="text-blue-600 sm:ml-2 block sm:inline">
+                {config.thresholds.riskAlert}
+              </span>
             </div>
-            <div>
-              <span className="text-blue-700 font-medium">Interventie Trigger:</span>
-              <span className="text-blue-600 ml-2">{config.thresholds.interventionTrigger}</span>
+            <div className="break-words">
+              <span className="text-blue-700 font-medium block sm:inline">
+                Interventie Trigger:
+              </span>
+              <span className="text-blue-600 sm:ml-2 block sm:inline">
+                {config.thresholds.interventionTrigger}
+              </span>
             </div>
-            <div>
-              <span className="text-blue-700 font-medium">Risico Multiplier:</span>
-              <span className="text-blue-600 ml-2">{config.weights.riskMultiplier}x</span>
+            <div className="break-words">
+              <span className="text-blue-700 font-medium block sm:inline">
+                Risico Multiplier:
+              </span>
+              <span className="text-blue-600 sm:ml-2 block sm:inline">
+                {config.weights.riskMultiplier}x
+              </span>
             </div>
-            <div>
-              <span className="text-blue-700 font-medium">Beschermend Multiplier:</span>
-              <span className="text-blue-600 ml-2">{config.weights.protectiveMultiplier}x</span>
+            <div className="break-words">
+              <span className="text-blue-700 font-medium block sm:inline">
+                Beschermend Multiplier:
+              </span>
+              <span className="text-blue-600 sm:ml-2 block sm:inline">
+                {config.weights.protectiveMultiplier}x
+              </span>
             </div>
           </div>
         </div>
