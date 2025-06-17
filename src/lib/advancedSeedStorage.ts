@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { AdvancedSeed } from '../types/seed';
 
@@ -23,28 +24,89 @@ export async function loadAdvancedSeeds(): Promise<AdvancedSeed[]> {
 }
 
 export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
-  const { error } = await supabase.from('emotion_seeds').insert({
-    ...seed,
-    created_at: seed.createdAt.toISOString(),
-    updated_at: seed.updatedAt.toISOString(),
-  });
-  if (error) console.error('Error adding advanced seed:', error);
+  try {
+    // Convert the AdvancedSeed to the database format
+    const dbSeed = {
+      id: seed.id,
+      emotion: seed.emotion,
+      label: seed.label,
+      weight: seed.weight,
+      active: seed.active,
+      expires_at: seed.expiresAt?.toISOString(),
+      meta: seed.meta ? {
+        ...seed.meta,
+        lastUsed: seed.meta.lastUsed?.toISOString()
+      } : null,
+      response: seed.response,
+      created_at: seed.createdAt.toISOString(),
+      updated_at: seed.updatedAt.toISOString(),
+    };
+
+    const { error } = await supabase.from('emotion_seeds').insert(dbSeed);
+    if (error) {
+      console.error('Error adding advanced seed:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error adding advanced seed:', error);
+    throw error;
+  }
 }
 
 export async function updateAdvancedSeed(seed: AdvancedSeed): Promise<void> {
-  const { error } = await supabase
-    .from('emotion_seeds')
-    .update({ ...seed, updated_at: new Date().toISOString() })
-    .eq('id', seed.id);
-  if (error) console.error('Error updating advanced seed:', error);
+  try {
+    // Convert the AdvancedSeed to the database format
+    const dbSeed = {
+      emotion: seed.emotion,
+      label: seed.label,
+      weight: seed.weight,
+      active: seed.active,
+      expires_at: seed.expiresAt?.toISOString(),
+      meta: seed.meta ? {
+        ...seed.meta,
+        lastUsed: seed.meta.lastUsed?.toISOString()
+      } : null,
+      response: seed.response,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('emotion_seeds')
+      .update(dbSeed)
+      .eq('id', seed.id);
+      
+    if (error) {
+      console.error('Error updating advanced seed:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error updating advanced seed:', error);
+    throw error;
+  }
 }
 
 export async function deleteAdvancedSeed(seedId: string): Promise<void> {
-  const { error } = await supabase.from('emotion_seeds').delete().eq('id', seedId);
-  if (error) console.error('Error deleting advanced seed:', error);
+  try {
+    const { error } = await supabase.from('emotion_seeds').delete().eq('id', seedId);
+    if (error) {
+      console.error('Error deleting advanced seed:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error deleting advanced seed:', error);
+    throw error;
+  }
 }
 
 export async function incrementSeedUsage(seedId: string): Promise<void> {
-  const { error } = await supabase.rpc('increment_seed_usage', { seed_id: seedId });
-  if (error) console.error('Error incrementing seed usage:', error);
+  try {
+    const { error } = await supabase.rpc('increment_seed_usage', { seed_id: seedId });
+    if (error) {
+      console.error('Error incrementing seed usage:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error incrementing seed usage:', error);
+    throw error;
+  }
 }
