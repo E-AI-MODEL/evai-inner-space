@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
@@ -304,8 +305,8 @@ export function useAiResponse(
         };
 
       } else if (matchedResult) {
-        // Advanced seed match - fix the type checking issue
-        const seedResult = matchedResult as any; // Type assertion for legacy compatibility
+        // Advanced seed match - properly typed now
+        const seedResult = matchedResult as AdvancedSeed;
         setSeedConfetti(true);
         
         const evaiNote = newSeedsGenerated > 0 
@@ -326,7 +327,7 @@ export function useAiResponse(
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
-          content: `${typeof seedResult.response === 'string' ? seedResult.response : seedResult.response?.nl || ''}${evaiNote}`,
+          content: `${seedResult.response.nl}${evaiNote}`,
           explainText: `EvAI Advanced Seed: ${seedResult.triggers?.join(", ") || ''} | Risk: ${overallRisk.toFixed(1)}% | New: +${newSeedsGenerated}`,
           emotionSeed: seedResult.emotion,
           animate: true,
@@ -405,7 +406,7 @@ export function useAiResponse(
         }
 
         // Fallback if force generation failed
-        if (!aiResp!) {
+        if (!aiResp) {
           const label = overallRisk > 50 ? "Suggestie" : "Valideren";
           const fallbackGuidance = cotRubricGuidance[0] || 'emotionele ondersteuning';
           
