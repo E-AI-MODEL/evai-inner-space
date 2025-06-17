@@ -136,7 +136,7 @@ export type Database = {
     }
     Functions: {
       increment_seed_usage: {
-        Args: { seed_id: string }
+        Args: Record<PropertyKey, never> | { seed_id: string }
         Returns: undefined
       }
     }

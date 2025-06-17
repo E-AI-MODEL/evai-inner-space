@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Database, Wifi, WifiOff, Clock } from 'lucide-react';
+import { Database, Activity, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '../../hooks/use-mobile';
 
@@ -87,8 +87,8 @@ const SupabaseConnectionStatus: React.FC = () => {
   const getStatusIcon = () => {
     const size = isMobile ? 12 : 14;
     switch (metrics.status) {
-      case 'connected': return <Wifi size={size} className="text-green-600" />;
-      case 'disconnected': return <WifiOff size={size} className="text-red-600" />;
+      case 'connected': return <CheckCircle2 size={size} className="text-green-600" />;
+      case 'disconnected': return <AlertCircle size={size} className="text-red-600" />;
       case 'checking': return <Clock size={size} className="text-yellow-600 animate-pulse" />;
       default: return <Database size={size} className="text-gray-600" />;
     }
@@ -106,8 +106,8 @@ const SupabaseConnectionStatus: React.FC = () => {
     
     switch (metrics.status) {
       case 'connected': return 'Verbonden';
-      case 'disconnected': return 'Geen verbinding';
-      case 'checking': return 'Controleren...';
+      case 'disconnected': return 'Fout';
+      case 'checking': return 'Check...';
       default: return 'Onbekend';
     }
   };
@@ -123,9 +123,9 @@ const SupabaseConnectionStatus: React.FC = () => {
     <Card className="bg-white/60 backdrop-blur-sm border-white/20 shadow-lg min-w-0 flex-shrink-0">
       <CardContent className={`${isMobile ? 'p-2' : 'p-3'}`}>
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <div className="flex items-center gap-1 min-w-0">
+          <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
             {getStatusIcon()}
-            <Badge className={`${getStatusColor()} text-xs flex-shrink-0 px-1.5 py-0.5`}>
+            <Badge className={`${getStatusColor()} text-xs flex-shrink-0 px-1.5 py-0.5 font-medium`}>
               {getStatusText()}
             </Badge>
           </div>
@@ -140,7 +140,10 @@ const SupabaseConnectionStatus: React.FC = () => {
         {!isMobile && (
           <>
             <div className="text-xs text-gray-500 mt-1 truncate">
-              Laatste check: {metrics.lastCheck.toLocaleTimeString('nl-NL')}
+              {metrics.lastCheck.toLocaleTimeString('nl-NL', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
             </div>
             
             {metrics.errorCount > 0 && (

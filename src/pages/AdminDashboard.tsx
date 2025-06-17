@@ -44,29 +44,29 @@ const AdminDashboard = () => {
         }} />
         
         <div className="relative container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Top Row - Back Button and Title */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
                 variant="ghost"
                 size={isMobile ? "sm" : "default"}
                 onClick={handleBackClick}
                 aria-label="Terug naar chat"
-                className="flex items-center gap-2 hover:bg-white/60 backdrop-blur-sm border border-white/20 flex-shrink-0 min-w-[80px] bg-white/50"
+                className="flex items-center gap-1.5 sm:gap-2 hover:bg-white/60 backdrop-blur-sm border border-white/20 flex-shrink-0 bg-white/50 px-2 sm:px-3 py-1.5 sm:py-2"
               >
-                <ArrowLeft size={isMobile ? 14 : 16} />
-                <span>Terug</span>
+                <ArrowLeft size={isMobile ? 16 : 18} />
+                <span className="text-sm sm:text-base">Terug</span>
               </Button>
               
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <div className="p-1.5 sm:p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg sm:rounded-xl flex-shrink-0">
-                  <Brain className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                <div className="p-1.5 sm:p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex-shrink-0">
+                  <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent truncate">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent truncate">
                     EvAI Admin
                   </h1>
-                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200 text-xs">
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200 text-xs mt-1">
                     v5.6 Pro
                   </Badge>
                 </div>
@@ -74,19 +74,21 @@ const AdminDashboard = () => {
             </div>
 
             {/* Mobile Stats Row */}
-            <div className="flex items-center justify-between gap-2 overflow-x-auto">
-              <div className="flex items-center gap-2 text-xs text-gray-600 flex-shrink-0">
+            <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
+              <div className="flex items-center gap-3 text-xs text-gray-600 flex-shrink-0">
                 <div className="flex items-center gap-1">
-                  <Sparkles size={12} className="text-yellow-500" />
+                  <Sparkles size={12} className="text-yellow-500 flex-shrink-0" />
                   <span className="whitespace-nowrap">AI Engine</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Activity size={12} className="text-blue-500" />
-                  <span className="whitespace-nowrap">{messages.length} Sessies</span>
+                  <Activity size={12} className="text-blue-500 flex-shrink-0" />
+                  <span className="whitespace-nowrap">{messages.length} Berichten</span>
                 </div>
               </div>
               
-              <SupabaseConnectionStatus />
+              <div className="flex-shrink-0">
+                <SupabaseConnectionStatus />
+              </div>
             </div>
           </div>
         </div>
@@ -96,39 +98,39 @@ const AdminDashboard = () => {
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <Tabs defaultValue={hasRubricActivity ? "rubrics" : "seeds"} className="w-full" orientation="horizontal">
           <div className="mb-4 sm:mb-6">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg border border-white/20 p-1.5 sm:p-2 gap-1">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-1 sm:p-1.5 gap-0.5 sm:gap-1">
               {hasRubricActivity && (
                 <TabsTrigger 
                   value="rubrics" 
-                  className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg sm:rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-2 py-2"
+                  className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-1.5 sm:px-3 py-2 sm:py-2.5"
                 >
                   <Brain size={14} className="flex-shrink-0" />
-                  <span className="truncate">Analyse</span>
+                  <span className="hidden xs:inline sm:inline truncate">Analyse</span>
                 </TabsTrigger>
               )}
               
               <TabsTrigger 
                 value="seeds" 
-                className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg sm:rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-2 py-2"
+                className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-1.5 sm:px-3 py-2 sm:py-2.5"
               >
                 <Database size={14} className="flex-shrink-0" />
-                <span className="truncate">Seeds</span>
+                <span className="hidden xs:inline sm:inline truncate">Seeds</span>
               </TabsTrigger>
               
               <TabsTrigger 
                 value="analytics" 
-                className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg sm:rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-2 py-2"
+                className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-1.5 sm:px-3 py-2 sm:py-2.5"
               >
                 <BarChart size={14} className="flex-shrink-0" />
-                <span className="truncate">Analytics</span>
+                <span className="hidden xs:inline sm:inline truncate">Analytics</span>
               </TabsTrigger>
               
               <TabsTrigger 
                 value="system" 
-                className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg sm:rounded-xl data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-2 py-2"
+                className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-1.5 sm:px-3 py-2 sm:py-2.5"
               >
                 <Monitor size={14} className="flex-shrink-0" />
-                <span className="truncate">Systeem</span>
+                <span className="hidden xs:inline sm:inline truncate">Systeem</span>
               </TabsTrigger>
             </TabsList>
           </div>
