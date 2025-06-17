@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Edit, Trash, Plus, Database, Upload, Download, BarChart, Settings, Key } from 'lucide-react';
+import { Edit, Trash, Plus, Database, Upload, Download, BarChart } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AdvancedSeed } from '../../types/seed';
 import {
@@ -40,16 +40,6 @@ const AdvancedSeedManager = () => {
     const savedKey = localStorage.getItem('openai-api-key-2');
     if (savedKey) {
       setOpenAiKey2(savedKey);
-    }
-  };
-
-  const saveOpenAiKey2 = () => {
-    if (openAiKey2.trim()) {
-      localStorage.setItem('openai-api-key-2', openAiKey2.trim());
-      toast({
-        title: "OpenAI Key 2 opgeslagen",
-        description: "Deze key wordt gebruikt voor extra AI-functionaliteit.",
-      });
     }
   };
 
@@ -249,11 +239,10 @@ const AdvancedSeedManager = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="manage" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="manage">Beheer</TabsTrigger>
           <TabsTrigger value="neural">Neurosymbolisch</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="settings">Instellingen</TabsTrigger>
         </TabsList>
 
         <TabsContent value="manage" className="space-y-4">
@@ -491,38 +480,6 @@ const AdvancedSeedManager = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key size={20} />
-                OpenAI Key 2 Configuratie
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 bg-yellow-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Tweede OpenAI API Key</h4>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Vereist voor extra AI-functies zoals seed generatie en patroon analyse.
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      type="password"
-                      value={openAiKey2}
-                      onChange={(e) => setOpenAiKey2(e.target.value)}
-                      placeholder="sk-..."
-                      className="flex-1"
-                    />
-                    <Button onClick={saveOpenAiKey2}>
-                      Opslaan
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {(editingSeed || isCreating) && (
