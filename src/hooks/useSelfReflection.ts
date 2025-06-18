@@ -39,7 +39,7 @@ export function useSelfReflection() {
 
     if (recentFeedback.length >= 3) {
       const negativeCount = recentFeedback.filter(m => 
-        m.feedback?.rating === 'dislike' || m.feedback?.rating === 'inappropriate'
+        m.feedback === 'dislike'
       ).length;
 
       if (negativeCount >= 2) {
@@ -121,7 +121,7 @@ export function useSelfReflection() {
 
         // Analyze feedback patterns
         const labelIssues = feedbackContext.patterns.reduce((acc: Record<string, number>, p: any) => {
-          if (p.feedback?.rating === 'dislike') {
+          if (p.feedback === 'dislike') {
             acc[p.label] = (acc[p.label] || 0) + 1;
           }
           return acc;

@@ -85,7 +85,11 @@ export function useVectorEmbeddings() {
         return [];
       }
 
-      return data || [];
+      // Cast the metadata from Json to Record<string, any>
+      return (data || []).map(item => ({
+        ...item,
+        metadata: (item.metadata as Record<string, any>) || {},
+      }));
     } catch (error) {
       console.error('Vector similarity search failed:', error);
       return [];
