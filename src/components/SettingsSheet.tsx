@@ -8,9 +8,10 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, AlertCircle, Zap } from 'lucide-react';
+import { CheckCircle, AlertCircle, Zap, Brain } from 'lucide-react';
 import ApiKeyInput from './ApiKeyInput';
 import OpenAIApiKey2Input from './OpenAIApiKey2Input';
+import VectorApiKeyInput from './VectorApiKeyInput';
 import RubricStrictnessControl from './RubricStrictnessControl';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -31,11 +32,16 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
   onApiKeySave,
 }) => {
   const [openAiKey2, setOpenAiKey2] = useState('');
+  const [vectorApiKey, setVectorApiKey] = useState('');
 
   useEffect(() => {
-    const savedKey = localStorage.getItem('openai-api-key-2');
-    if (savedKey) {
-      setOpenAiKey2(savedKey);
+    const savedKey2 = localStorage.getItem('openai-api-key-2');
+    const savedVectorKey = localStorage.getItem('vector-api-key');
+    if (savedKey2) {
+      setOpenAiKey2(savedKey2);
+    }
+    if (savedVectorKey) {
+      setVectorApiKey(savedVectorKey);
     }
   }, []);
 
@@ -45,9 +51,16 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
     }
   };
 
+  const handleVectorApiKeySave = () => {
+    if (vectorApiKey.trim()) {
+      localStorage.setItem('vector-api-key', vectorApiKey.trim());
+    }
+  };
+
   const openAiActive = apiKey && apiKey.trim().length > 0;
   const openAi2Active = openAiKey2 && openAiKey2.trim().length > 0;
-  const bothActive = openAiActive && openAi2Active;
+  const vectorActive = vectorApiKey && vectorApiKey.trim().length > 0;
+  const allThreeActive = openAiActive && openAi2Active && vectorActive;
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -69,7 +82,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">OpenAI Emotiedetectie</span>
+                <span className="text-sm text-gray-700">OpenAI Emotiedetectie (Key 1)</span>
                 <div className="flex items-center gap-2">
                   {openAiActive ? (
                     <CheckCircle size={16} className="text-green-600" />
@@ -97,6 +110,20 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
               </div>
 
               <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">Vector/Embedding API (Key 3)</span>
+                <div className="flex items-center gap-2">
+                  {vectorActive ? (
+                    <CheckCircle size={16} className="text-green-600" />
+                  ) : (
+                    <AlertCircle size={16} className="text-orange-500" />
+                  )}
+                  <Badge variant={vectorActive ? "default" : "secondary"}>
+                    {vectorActive ? "Actief" : "Inactief"}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-700">Supabase Verbinding</span>
                 <div className="flex items-center gap-2">
                   {supabaseUrl ? (
@@ -112,21 +139,29 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
               
               <div className="pt-2 border-t border-blue-200">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-800">Volledige AI Samenwerking</span>
+                  <span className="text-sm font-medium text-gray-800 flex items-center gap-2">
+                    <Brain size={16} className="text-purple-600" />
+                    Hybride Neurosymbolisch Model
+                  </span>
                   <div className="flex items-center gap-2">
-                    {bothActive ? (
+                    {allThreeActive ? (
                       <CheckCircle size={16} className="text-green-600" />
                     ) : (
                       <AlertCircle size={16} className="text-orange-500" />
                     )}
-                    <Badge variant={bothActive ? "default" : "destructive"}>
-                      {bothActive ? "Volledig Actief" : "Gedeeltelijk"}
+                    <Badge variant={allThreeActive ? "default" : "destructive"}>
+                      {allThreeActive ? "Volledig Actief" : "Gedeeltelijk"}
                     </Badge>
                   </div>
                 </div>
-                {bothActive && (
+                {allThreeActive && (
                   <p className="text-xs text-green-700 mt-1">
-                    🚀 Beide AI engines werken samen voor optimale prestaties
+                    🚀 Alle drie AI engines werken samen: Symbolisch (offline) + Neuraal (online) + Vector (similarity search)
+                  </p>
+                )}
+                {!allThreeActive && (
+                  <p className="text-xs text-orange-700 mt-1">
+                    ⚠️ Voor het volledige hybride model zijn alle drie API keys vereist
                   </p>
                 )}
               </div>
@@ -148,6 +183,11 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
               value={openAiKey2}
               onChange={setOpenAiKey2}
               onSave={handleOpenAiKey2Save}
+            />
+            <VectorApiKeyInput
+              value={vectorApiKey}
+              onChange={setVectorApiKey}
+              onSave={handleVectorApiKeySave}
             />
           </div>
         </div>
