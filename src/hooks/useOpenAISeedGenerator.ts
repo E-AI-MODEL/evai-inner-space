@@ -50,6 +50,7 @@ Maak een JSON object met deze structuur:
   "meta": {
     "priority": 1,
     "weight": 1.0,
+    "ttl": 43200, // Default TTL of 30 days (30 * 24 * 60 minutes)
     "confidence": 0.85
   },
   "tags": ["auto-generated", "openai", "therapeutisch"]
@@ -117,6 +118,7 @@ Focus op:
             meta: {
               priority: seedData.meta?.priority || 1,
               weight: seedData.meta?.weight || 1.0,
+              ttl: seedData.meta?.ttl || 43200, // Default TTL of 30 days (30 * 24 * 60 minutes)
               confidence: seedData.meta?.confidence || 0.8,
               usageCount: 0
             },
@@ -150,6 +152,7 @@ Focus op:
           meta: {
             priority: 1,
             weight: 1.0,
+            ttl: 43200, // Default TTL of 30 days for fallback seeds too
             confidence: 0.7,
             usageCount: 0
           },

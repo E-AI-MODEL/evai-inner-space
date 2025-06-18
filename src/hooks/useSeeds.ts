@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdvancedSeed, SeedMeta, SeedResponse } from '@/types/seed';
@@ -14,7 +13,7 @@ export function useSeeds() {
         .from('emotion_seeds')
         .select('*')
         .eq('active', true)
-        .gt('expires_at', new Date().toISOString())
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order('weight', { ascending: false });
 
       if (error) {

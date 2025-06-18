@@ -49,6 +49,14 @@ export async function loadAdvancedSeeds(): Promise<AdvancedSeed[]> {
 
 export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
   try {
+    // Calculate expires_at if ttl is present
+    let expiresAt: string | null = null;
+    if (seed.meta.ttl && seed.meta.ttl > 0) {
+      const expires = new Date();
+      expires.setMinutes(expires.getMinutes() + seed.meta.ttl);
+      expiresAt = expires.toISOString();
+    }
+
     // Convert the AdvancedSeed to the database format
     const dbSeed = {
       id: seed.id,
@@ -56,7 +64,7 @@ export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
       label: seed.label,
       weight: seed.meta.weight,
       active: seed.isActive,
-      expires_at: null, // AdvancedSeed doesn't have expiresAt property
+      expires_at: expiresAt,
       meta: {
         context: seed.context,
         triggers: seed.triggers,
@@ -90,13 +98,21 @@ export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
 
 export async function updateAdvancedSeed(seed: AdvancedSeed): Promise<void> {
   try {
+    // Calculate expires_at if ttl is present
+    let expiresAt: string | null = null;
+    if (seed.meta.ttl && seed.meta.ttl > 0) {
+      const expires = new Date();
+      expires.setMinutes(expires.getMinutes() + seed.meta.ttl);
+      expiresAt = expires.toISOString();
+    }
+
     // Convert the AdvancedSeed to the database format
     const dbSeed = {
       emotion: seed.emotion,
       label: seed.label,
       weight: seed.meta.weight,
       active: seed.isActive,
-      expires_at: null, // AdvancedSeed doesn't have expiresAt property
+      expires_at: expiresAt,
       meta: {
         context: seed.context,
         triggers: seed.triggers,
