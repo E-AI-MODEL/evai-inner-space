@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      decision_logs: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          final_response: string
+          hybrid_decision: Json
+          id: string
+          neural_similarities: Json | null
+          processing_time_ms: number | null
+          symbolic_matches: Json | null
+          user_input: string
+        }
+        Insert: {
+          confidence_score: number
+          created_at?: string
+          final_response: string
+          hybrid_decision: Json
+          id?: string
+          neural_similarities?: Json | null
+          processing_time_ms?: number | null
+          symbolic_matches?: Json | null
+          user_input: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          final_response?: string
+          hybrid_decision?: Json
+          id?: string
+          neural_similarities?: Json | null
+          processing_time_ms?: number | null
+          symbolic_matches?: Json | null
+          user_input?: string
+        }
+        Relationships: []
+      }
       emotion_seeds: {
         Row: {
           active: boolean | null
@@ -45,6 +81,39 @@ export type Database = {
           response?: Json | null
           updated_at?: string | null
           weight?: number | null
+        }
+        Relationships: []
+      }
+      reflection_logs: {
+        Row: {
+          actions_taken: Json | null
+          context: Json
+          created_at: string
+          id: string
+          insights: Json | null
+          learning_impact: number | null
+          new_seeds_generated: number | null
+          trigger_type: string
+        }
+        Insert: {
+          actions_taken?: Json | null
+          context: Json
+          created_at?: string
+          id?: string
+          insights?: Json | null
+          learning_impact?: number | null
+          new_seeds_generated?: number | null
+          trigger_type: string
+        }
+        Update: {
+          actions_taken?: Json | null
+          context?: Json
+          created_at?: string
+          id?: string
+          insights?: Json | null
+          learning_impact?: number | null
+          new_seeds_generated?: number | null
+          trigger_type?: string
         }
         Relationships: []
       }
@@ -151,24 +220,175 @@ export type Database = {
         }
         Relationships: []
       }
+      vector_embeddings: {
+        Row: {
+          content_id: string
+          content_text: string
+          content_type: string
+          created_at: string
+          embedding: string | null
+          id: string
+          metadata: Json | null
+          updated_at: string
+        }
+        Insert: {
+          content_id: string
+          content_text: string
+          content_type: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          content_id?: string
+          content_text?: string
+          content_type?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          metadata?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
+      find_similar_embeddings: {
+        Args: {
+          query_embedding: string
+          similarity_threshold?: number
+          max_results?: number
+        }
+        Returns: {
+          content_id: string
+          content_type: string
+          content_text: string
+          similarity_score: number
+          metadata: Json
+        }[]
+      }
       get_setting: {
         Args: { setting_key: string; default_value?: string }
         Returns: string
       }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       increment_seed_usage: {
         Args: Record<PropertyKey, never> | { seed_id: string }
         Returns: undefined
+      }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: unknown
+      }
+      log_hybrid_decision: {
+        Args: {
+          p_user_input: string
+          p_symbolic_matches: Json
+          p_neural_similarities: Json
+          p_hybrid_decision: Json
+          p_final_response: string
+          p_confidence_score: number
+          p_processing_time_ms?: number
+        }
+        Returns: string
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
       update_setting: {
         Args:
           | Record<PropertyKey, never>
           | { setting_key: string; setting_value: string }
         Returns: undefined
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
     }
     Enums: {

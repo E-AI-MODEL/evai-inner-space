@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
 import { useOpenAISeedGenerator } from "./useOpenAISeedGenerator";
+import { useNeurosymbolicWorkflow } from "./useNeurosymbolicWorkflow";
 import { v4 as uuidv4 } from "uuid";
 import { AdvancedSeed } from "../types/seed";
 import { useEvAI56Rubrics, RubricAssessment } from "./useEvAI56Rubrics";
@@ -33,6 +33,7 @@ export function useAiResponse(
   const { evaluate: evaluateSymbolic } = useSymbolicEngine();
   const { analyzeCoTFeedback, generateCoTImprovements, isAnalyzing: isCoTAnalyzing } = useCoTFeedbackAnalyzer();
   const { refetch: refetchSeeds } = useSeeds();
+  const { processInput: processNeurosymbolic, storeConversationEmbedding } = useNeurosymbolicWorkflow();
 
   const runSecondaryAnalysis = async (history: Message[], key: string) => {
     if (!key || !key.trim()) return;
@@ -64,7 +65,6 @@ export function useAiResponse(
         const injected = await injectSeedToDatabase(secondarySeed);
         if (injected) {
           console.log('✅ Secondary analysis seed injected:', analysis.seedSuggestion);
-          // Refresh seeds in cache
           await refetchSeeds();
         }
       }
@@ -80,11 +80,13 @@ export function useAiResponse(
     setIsProcessing(true);
     
     const openAiKey2 = localStorage.getItem('openai-api-key-2');
+    const vectorApiKey = localStorage.getItem('vector-api-key');
     const hasOpenAI = apiKey && apiKey.trim().length > 0;
     const hasOpenAi2 = openAiKey2 && openAiKey2.trim().length > 0;
+    const hasVectorAPI = vectorApiKey && vectorApiKey.trim().length > 0;
     
-    console.log('🔥 EvAI-ENHANCED LEARNING MODE GEACTIVEERD 🔥');
-    console.log('🔑 API Keys beschikbaar:', { hasOpenAI, hasOpenAi2 });
+    console.log('🔥 EvAI-ENHANCED NEUROSYMBOLIC MODE ACTIVATED 🔥');
+    console.log('🔑 API Keys:', { hasOpenAI, hasOpenAi2, hasVectorAPI });
 
     try {
       const messageIndex = messages.findIndex(m => m.id === userMessage.id);
@@ -94,6 +96,86 @@ export function useAiResponse(
           role: msg.from === 'user' ? 'user' : 'assistant',
           content: msg.content
         }));
+
+      // ENHANCED: Use complete neurosymbolic workflow if all keys available
+      if (hasOpenAI && hasVectorAPI) {
+        console.log('🧠 FULL NEUROSYMBOLIC WORKFLOW');
+        
+        try {
+          const neurosymbolicResult = await processNeurosymbolic(
+            userMessage.content,
+            apiKey,
+            vectorApiKey,
+            {
+              messages: messages,
+              userId: 'current-user', // Would be actual user ID in production
+              conversationId: `conv-${Date.now()}`,
+            }
+          );
+
+          console.log(`✅ Neurosymbolic result: ${neurosymbolicResult.responseType} (${(neurosymbolicResult.confidence * 100).toFixed(1)}%)`);
+
+          // Store conversation embedding for future learning
+          setTimeout(() => {
+            storeConversationEmbedding(
+              [...messages, userMessage],
+              vectorApiKey,
+              `conv-${Date.now()}`
+            );
+          }, 2000);
+
+          setSeedConfetti(true);
+
+          // Map response type to label
+          let label: "Valideren" | "Reflectievraag" | "Suggestie";
+          if (neurosymbolicResult.seed?.label === "Reflectievraag") {
+            label = "Reflectievraag";
+          } else if (neurosymbolicResult.seed?.label === "Suggestie") {
+            label = "Suggestie";
+          } else {
+            label = "Valideren";
+          }
+
+          const aiResp: Message = {
+            id: `ai-neurosymbolic-${Date.now()}`,
+            from: "ai",
+            label: label,
+            accentColor: getLabelVisuals(label).accentColor,
+            content: `${neurosymbolicResult.response}\n\n*[🧠 NEUROSYMBOLIC: ${neurosymbolicResult.responseType.toUpperCase()} • ${(neurosymbolicResult.confidence * 100).toFixed(1)}% confidence • ${neurosymbolicResult.processingTime}ms]*`,
+            explainText: neurosymbolicResult.reasoning,
+            emotionSeed: neurosymbolicResult.seed?.emotion || null,
+            animate: true,
+            meta: `Neurosymbolic ${neurosymbolicResult.responseType}: ${(neurosymbolicResult.confidence * 100).toFixed(1)}%`,
+            brilliant: true,
+            timestamp: new Date(),
+            replyTo: userMessage.id,
+            feedback: null,
+            symbolicInferences: [
+              `🧠 Neurosymbolic Decision: ${neurosymbolicResult.responseType}`,
+              `⚖️ Symbolic: ${(neurosymbolicResult.metadata.symbolicContribution * 100).toFixed(1)}% | Neural: ${(neurosymbolicResult.metadata.neuralContribution * 100).toFixed(1)}%`,
+              `🎯 Confidence: ${(neurosymbolicResult.confidence * 100).toFixed(1)}%`,
+              `⚡ Processing: ${neurosymbolicResult.processingTime}ms`,
+              `🔍 Neural matches: ${neurosymbolicResult.metadata.neuralSimilarities || 0}`,
+              neurosymbolicResult.reasoning
+            ]
+          };
+
+          setMessages((prev) => [...prev, aiResp]);
+          
+          toast({
+            title: "🧠 NEUROSYMBOLIC SUCCESS",
+            description: `${neurosymbolicResult.responseType.toUpperCase()} response with ${(neurosymbolicResult.confidence * 100).toFixed(1)}% confidence`,
+          });
+
+          return;
+        } catch (neurosymbolicError) {
+          console.error('🔴 Neurosymbolic workflow failed, falling back:', neurosymbolicError);
+          // Continue with existing enhanced workflow
+        }
+      }
+
+      // FALLBACK: Original enhanced workflow
+      console.log('🔄 Falling back to enhanced workflow...');
 
       // STAP 1: Pre-Analysis met OpenAI Secondary
       let secondaryInsights: string[] = [];
@@ -162,7 +244,7 @@ export function useAiResponse(
         }
       }
 
-      // STAP 4: AGGRESSIVE SEED GENERATION EN INJECTION
+      // AGGRESSIVE SEED GENERATION EN INJECTION
       let newSeedsGenerated = 0;
       const currentSeeds = await loadAdvancedSeeds();
       
@@ -470,16 +552,6 @@ export function useAiResponse(
         console.error('🔴 Symbolic evaluation failed:', symbolicError);
       }
 
-      // Success notification
-      console.log(`✅ EvAI LEARNING COMPLETE: Generated ${newSeedsGenerated} new seeds`);
-      
-      if (hasOpenAI && newSeedsGenerated > 0) {
-        toast({
-          title: "🔥 EvAI LEARNING SUCCESS",
-          description: `${newSeedsGenerated} nieuwe patronen geleerd en toegepast!`,
-        });
-      }
-
       setMessages((prev) => [...prev, aiResp]);
       
       // Run secondary analysis in background
@@ -514,7 +586,6 @@ export function useAiResponse(
     }
   };
 
-  // Enhanced emotion detection function
   const detectAllEmotions = (content: string, assessments: RubricAssessment[]): string[] => {
     const emotions: string[] = [];
     const lowerContent = content.toLowerCase();
