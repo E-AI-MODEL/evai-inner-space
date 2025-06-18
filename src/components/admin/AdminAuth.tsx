@@ -50,9 +50,9 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <AlertDialog open={isOpen}>
-        <AlertDialogContent className="max-w-md relative">
+        <AlertDialogContent className="w-full max-w-md mx-auto relative sm:max-w-lg">
           {/* Close button */}
           <button
             onClick={handleClose}
@@ -62,20 +62,20 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
             <span className="sr-only">Sluiten</span>
           </button>
 
-          <AlertDialogHeader className="text-center">
+          <AlertDialogHeader className="text-center pt-2">
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full">
-                <Shield className="h-8 w-8 text-white" />
+                <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
             </div>
-            <AlertDialogTitle className="text-xl font-bold bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
+            <AlertDialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
               EvAI Admin Authenticatie
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-600">
+            <AlertDialogDescription className="text-gray-600 text-sm sm:text-base px-2">
               Voer het admin wachtwoord in om toegang te krijgen tot het dashboard.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-4">
+          <div className="py-4 px-2">
             <Input
               type="password"
               placeholder="Admin wachtwoord..."
@@ -86,7 +86,7 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
               autoFocus
             />
           </div>
-          <AlertDialogFooter className="flex justify-center">
+          <AlertDialogFooter className="flex justify-center px-2">
             <Button onClick={handleLogin} className="w-full">
               <Brain className="h-4 w-4 mr-2" />
               Toegang Verkrijgen

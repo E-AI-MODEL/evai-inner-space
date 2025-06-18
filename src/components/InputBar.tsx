@@ -1,6 +1,7 @@
 
 import React, { useRef } from "react";
 import { Send } from "lucide-react";
+import { useIsMobile } from "../hooks/use-mobile";
 
 const InputBar: React.FC<{
   value: string;
@@ -9,6 +10,7 @@ const InputBar: React.FC<{
   disabled?: boolean;
 }> = ({ value, onChange, onSend, disabled }) => {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const isMobile = useIsMobile();
 
   // Enter key verzenden, Ctrl+Enter voor nieuwe regel
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -21,7 +23,11 @@ const InputBar: React.FC<{
 
   return (
     <form
-      className="flex gap-3 items-end bg-white shadow-card rounded-xl px-3 py-2 my-3 border border-zinc-200 mx-auto w-full"
+      className={`flex gap-3 items-end bg-white shadow-card rounded-xl border border-zinc-200 mx-auto w-full ${
+        isMobile 
+          ? 'px-2 py-2 my-2' 
+          : 'px-3 py-2 my-3'
+      }`}
       onSubmit={e => {
         e.preventDefault();
         if (!disabled && value.trim()) onSend();
@@ -31,7 +37,9 @@ const InputBar: React.FC<{
       <textarea
         ref={ref}
         rows={1}
-        className="resize-none w-full border-none bg-transparent outline-none p-0 text-sm md:text-base min-h-[32px] max-h-[100px] font-inter flex-1 leading-relaxed"
+        className={`resize-none w-full border-none bg-transparent outline-none p-0 text-sm md:text-base min-h-[32px] max-h-[100px] font-inter flex-1 leading-relaxed ${
+          isMobile ? 'text-base' : ''
+        }`}
         placeholder="Vertel wat je voelt…"
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -39,14 +47,18 @@ const InputBar: React.FC<{
         onKeyDown={handleKeyDown}
         aria-label="Typ je gevoel"
         style={{ 
-          fontSize: 'max(16px, 1rem)', // Prevents zoom on iOS
+          fontSize: isMobile ? '16px' : 'max(16px, 1rem)', // Prevents zoom on iOS
           lineHeight: '1.5'
         }}
       />
       <button
         type="submit"
         disabled={disabled || !value.trim()}
-        className="ml-1 p-2 rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors disabled:opacity-60 flex-shrink-0"
+        className={`rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors disabled:opacity-60 flex-shrink-0 ${
+          isMobile 
+            ? 'ml-1 p-2' 
+            : 'ml-1 p-2'
+        }`}
         aria-label="Verzenden"
       >
         <Send size={18} className="text-blue-700" />

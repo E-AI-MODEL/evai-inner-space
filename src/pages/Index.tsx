@@ -103,7 +103,7 @@ const Index = () => {
     .reverse();
 
   return (
-    <div className="w-full h-screen bg-background font-inter flex flex-col overflow-hidden">
+    <div className={`w-full bg-background font-inter flex flex-col ${isMobile ? 'h-[100dvh]' : 'h-screen'} overflow-hidden`}>
       <SeedConfetti show={seedConfetti} />
       
       {/* Fixed Header */}
@@ -162,7 +162,7 @@ const Index = () => {
           )}
 
           {/* Scrollable Messages Area */}
-          <div className="flex-1 overflow-y-auto px-4 py-4">
+          <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-2 py-2' : 'px-4 py-4'}`}>
             <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'}`}>
               <ChatView
                 messages={messages}
@@ -176,7 +176,7 @@ const Index = () => {
           </div>
 
           {/* Fixed Input Bar */}
-          <div className="flex-shrink-0 border-t border-zinc-200 bg-white">
+          <div className={`flex-shrink-0 border-t border-zinc-200 bg-white ${isMobile ? 'pb-safe' : ''}`}>
             <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full px-2' : 'max-w-2xl px-4'}`}>
               <InputBar
                 value={input}
