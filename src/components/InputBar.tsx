@@ -37,9 +37,7 @@ const InputBar: React.FC<{
       <textarea
         ref={ref}
         rows={1}
-        className={`resize-none w-full border-none bg-transparent outline-none p-0 text-sm md:text-base min-h-[32px] max-h-[100px] font-inter flex-1 leading-relaxed ${
-          isMobile ? 'text-base' : ''
-        }`}
+        className={`resize-none w-full border-none bg-transparent outline-none p-0 min-h-[32px] max-h-[100px] font-inter flex-1 leading-relaxed`}
         placeholder="Vertel wat je voelt…"
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -47,7 +45,7 @@ const InputBar: React.FC<{
         onKeyDown={handleKeyDown}
         aria-label="Typ je gevoel"
         style={{ 
-          fontSize: isMobile ? '16px' : 'max(16px, 1rem)', // Prevents zoom on iOS
+          fontSize: '16px', // Fixed font-size to prevent zoom on iOS
           lineHeight: '1.5'
         }}
       />
