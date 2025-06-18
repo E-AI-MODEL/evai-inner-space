@@ -13,21 +13,24 @@ const RubricStrictnessControl: React.FC = () => {
     switch (level) {
       case 'flexible':
         return {
-          icon: <Shield className="w-4 h-4" />,
+          icon: <Shield className="w-3 h-3" />,
           color: 'bg-green-100 text-green-800 border-green-200',
-          description: 'Hogere drempelwaarden, minder gevoelig voor kleine risico\'s'
+          description: 'Hogere drempelwaarden, minder gevoelig',
+          shortLabel: 'Flexibel'
         };
       case 'moderate':
         return {
-          icon: <Gauge className="w-4 h-4" />,
+          icon: <Gauge className="w-3 h-3" />,
           color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-          description: 'Gebalanceerde gevoeligheid voor risico- en beschermende factoren'
+          description: 'Gebalanceerde gevoeligheid',
+          shortLabel: 'Gemiddeld'
         };
       case 'strict':
         return {
-          icon: <AlertTriangle className="w-4 h-4" />,
+          icon: <AlertTriangle className="w-3 h-3" />,
           color: 'bg-red-100 text-red-800 border-red-200',
-          description: 'Lagere drempelwaarden, zeer gevoelig voor risicosignalen'
+          description: 'Lagere drempelwaarden, zeer gevoelig',
+          shortLabel: 'Strikt'
         };
     }
   };
@@ -55,23 +58,23 @@ const RubricStrictnessControl: React.FC = () => {
     <Card className="bg-white/60 backdrop-blur-sm border-white/20 shadow-lg">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
-          <Gauge className="w-4 h-4" />
-          Rubric Gevoeligheid
+          <Gauge className="w-4 h-4 flex-shrink-0" />
+          <span className="truncate">Rubric Gevoeligheid</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2">
-          <Badge className={currentInfo.color} variant="outline">
+          <Badge className={`${currentInfo.color} text-xs flex items-center gap-1`} variant="outline">
             {currentInfo.icon}
-            <span className="ml-1 capitalize">{config.level}</span>
+            <span className="truncate">{currentInfo.shortLabel}</span>
           </Badge>
         </div>
         
-        <p className="text-xs text-gray-600 leading-relaxed">
+        <p className="text-xs text-gray-600 leading-relaxed break-words">
           {currentInfo.description}
         </p>
 
-        <div className="grid grid-cols-3 gap-1">
+        <div className="space-y-2">
           {availableLevels.map((level) => {
             const info = getStrictnessInfo(level);
             const isActive = level === config.level;
@@ -81,22 +84,29 @@ const RubricStrictnessControl: React.FC = () => {
                 key={level}
                 size="sm"
                 variant={isActive ? "default" : "outline"}
-                className={`text-xs h-8 ${isActive ? '' : 'text-gray-600'}`}
+                className={`w-full text-xs h-8 justify-start gap-2 ${isActive ? '' : 'text-gray-600'}`}
                 onClick={() => handleStrictnessChange(level)}
                 disabled={isActive}
               >
-                {info.icon}
-                <span className="ml-1 capitalize">{level}</span>
+                <span className="flex-shrink-0">{info.icon}</span>
+                <span className="truncate">{info.shortLabel}</span>
               </Button>
             );
           })}
         </div>
 
-        <div className="border-t pt-3">
-          <div className="text-xs text-gray-500 space-y-1">
-            <div>Risico drempel: {config.thresholds.riskAlert}</div>
-            <div>Hoog risico: {config.thresholds.overallRiskHigh}%</div>
-            <div>Beschermende factoren: {config.thresholds.protectiveFactorsMin}+</div>
+        <div className="border-t pt-3 space-y-1 text-xs text-gray-500">
+          <div className="flex justify-between items-center">
+            <span className="truncate">Risico drempel:</span>
+            <span className="flex-shrink-0 ml-2">{config.thresholds.riskAlert}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="truncate">Hoog risico:</span>
+            <span className="flex-shrink-0 ml-2">{config.thresholds.overallRiskHigh}%</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="truncate">Beschermend min:</span>
+            <span className="flex-shrink-0 ml-2">{config.thresholds.protectiveFactorsMin}+</span>
           </div>
         </div>
       </CardContent>
