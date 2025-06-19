@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Edit, Trash, Plus, Database, Upload, Download, BarChart } from 'lucide-react';
+import { Edit, Trash, Plus, Database, Upload, Download, BarChart, BrainCircuit } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AdvancedSeed } from '../../types/seed';
 import {
@@ -15,6 +15,8 @@ import {
   updateAdvancedSeed,
   deleteAdvancedSeed
 } from '../../lib/advancedSeedStorage';
+import { useVectorEmbeddings } from '../../hooks/useVectorEmbeddings';
+import { useSeeds } from '../../hooks/useSeeds';
 import { v4 as uuidv4 } from 'uuid';
 
 const AdvancedSeedManager = () => {
@@ -25,6 +27,9 @@ const AdvancedSeedManager = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [openAiKey2, setOpenAiKey2] = useState('');
+
+  const { data: seedsDataFromHook } = useSeeds();
+  const { processSeedBatch, isProcessing: isEmbedding } = useVectorEmbeddings();
 
   useEffect(() => {
     loadSeedsData();
@@ -40,6 +45,45 @@ const AdvancedSeedManager = () => {
     const savedKey = localStorage.getItem('openai-api-key-2');
     if (savedKey) {
       setOpenAiKey2(savedKey);
+    }
+  };
+
+  const handleEmbedAllSeeds = async () => {
+    const apiKey = localStorage.getItem('vector-api-key') || localStorage.getItem('openai-api-key');
+    if (!apiKey) {
+      toast({ 
+        title: "Vector/Embedding API Key ontbreekt", 
+        description: "Voeg eerst een API key toe voor vector embeddings.",
+        variant: "destructive" 
+      });
+      return;
+    }
+    if (!seedsDataFromHook || seedsDataFromHook.length === 0) {
+      toast({ 
+        title: "Geen seeds om te embedden", 
+        description: "Er zijn geen actieve seeds beschikbaar.",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    toast({ 
+      title: "Starten met embedden van alle seeds...", 
+      description: `${seedsDataFromHook.length} seeds worden verwerkt. Dit kan even duren.` 
+    });
+    
+    try {
+      const result = await processSeedBatch(seedsDataFromHook, apiKey);
+      toast({
+        title: "Embedding voltooid",
+        description: `${result.success} seeds succesvol verwerkt, ${result.failed} mislukt.`
+      });
+    } catch (error) {
+      toast({
+        title: "Embedding gefaald",
+        description: "Er is een fout opgetreden tijdens het verwerken van embeddings.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -291,6 +335,15 @@ const AdvancedSeedManager = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button 
+                      onClick={handleEmbedAllSeeds}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      disabled={isEmbedding}
+                    >
+                      <BrainCircuit size={16} />
+                      {isEmbedding ? 'Bezig...' : 'Genereer Alle Embeddings'}
+                    </Button>
+                    <Button 
                       onClick={exportSeeds}
                       variant="outline"
                       className="flex items-center gap-2"
@@ -310,6 +363,11 @@ const AdvancedSeedManager = () => {
                 
                 <div className="text-sm text-gray-600">
                   {filteredSeeds.length} van {seedsData.length} seeds ({seedsData.filter(s => s.isActive).length} actief)
+                  {seedsDataFromHook && (
+                    <span className="ml-4 text-blue-600">
+                      • {seedsDataFromHook.length} Supabase seeds beschikbaar voor embedding
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -597,7 +655,7 @@ const AdvancedSeedEditor: React.FC<AdvancedSeedEditorProps> = ({ seed, onSave, o
                 onChange={(e) => {
                   const type = e.target.value as AdvancedSeed['type'];
                   let label: AdvancedSeed['label'] = 'Valideren';
-                  if (type === 'reflection') label = 'Reflectievraag';
+                  if (type === 'reflection') label = 'Reflectie';
                   else if (type === 'suggestion') label = 'Suggestie';
                   else if (type === 'intervention') label = 'Interventie';
                   
