@@ -1,15 +1,19 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Brain, Zap, Database, CheckCircle, AlertCircle, Target, PieChart } from 'lucide-react';
+import { Brain, Zap, Target, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useOpenAISeedGenerator } from '../../hooks/useOpenAISeedGenerator';
 import { useEvAI56Rubrics } from '../../hooks/useEvAI56Rubrics';
 import { useEnhancedSeedGeneration } from '../../hooks/useEnhancedSeedGeneration';
 import { loadAdvancedSeeds } from '../../lib/advancedSeedStorage';
+import { enhancedEmotionList } from '../../lib/enhancedEmotionConfig';
 import type { AdvancedSeed } from '../../types/seed';
+import SeedInjectorStats from './SeedInjectorStats';
+import TypeDistributionAnalysis from './TypeDistributionAnalysis';
+import SeedGenerationProgress from './SeedGenerationProgress';
 
 interface SmartSeedInjectorProps {
   apiKey: string;
@@ -26,13 +30,11 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
   
   const { 
     generateSeed, 
-    analyzeConversationForSeeds, 
     injectSeedToDatabase,
     isGenerating 
   } = useOpenAISeedGenerator();
 
   const { SEED_TYPE_WEIGHTS } = useEnhancedSeedGeneration();
-  const { evai56Rubrics } = useEvAI56Rubrics();
 
   useEffect(() => {
     loadSeedDatabase();
@@ -50,29 +52,6 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
     
     setTypeDistribution(distribution);
   };
-
-  // Enhanced emotion list with variety focus
-  const enhancedEmotionList = [
-    // High-variety emotions for better type distribution
-    { emotion: 'paniek', severity: 'critical' as const, expectedType: 'intervention' },
-    { emotion: 'onzekerheid', severity: 'medium' as const, expectedType: 'reflection' },
-    { emotion: 'motivatie', severity: 'low' as const, expectedType: 'suggestion' },
-    { emotion: 'verdriet', severity: 'medium' as const, expectedType: 'validation' },
-    { emotion: 'frustratie', severity: 'high' as const, expectedType: 'suggestion' },
-    { emotion: 'eenzaamheid', severity: 'high' as const, expectedType: 'reflection' },
-    { emotion: 'stress', severity: 'high' as const, expectedType: 'intervention' },
-    { emotion: 'teleurstelling', severity: 'medium' as const, expectedType: 'reflection' },
-    { emotion: 'angst', severity: 'high' as const, expectedType: 'intervention' },
-    { emotion: 'blijdschap', severity: 'low' as const, expectedType: 'validation' },
-    { emotion: 'woede', severity: 'high' as const, expectedType: 'suggestion' },
-    { emotion: 'schaamte', severity: 'medium' as const, expectedType: 'reflection' }
-  ];
-
-  const commonMissingEmotions = [
-    'faalangst', 'perfectionalisme', 'eenzaamheid', 'overweldiging', 
-    'teleurstelling', 'onmacht', 'schaamte', 'schuld', 'rouw',
-    'jaloezie', 'frustratie', 'onzekerheid', 'angst', 'paniek'
-  ];
 
   const runEnhancedSeedGeneration = async () => {
     if (!apiKey.trim()) {
@@ -92,8 +71,8 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
 
     try {
       for (const emotionConfig of emotionsToProcess) {
-        const emotion = typeof emotionConfig === 'string' ? emotionConfig : emotionConfig.emotion;
-        const severity = typeof emotionConfig === 'object' ? emotionConfig.severity : 'medium';
+        const emotion = emotionConfig.emotion;
+        const severity = emotionConfig.severity;
         
         // Check if seed already exists
         const existingSeed = seedDatabase.find(s => 
@@ -188,48 +167,15 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-4 gap-3">
-          <div className="text-center p-3 bg-white rounded-lg border">
-            <div className="text-2xl font-bold text-purple-600">{seedDatabase.length}</div>
-            <div className="text-xs text-gray-600">Totaal Seeds</div>
-          </div>
-          <div className="text-center p-3 bg-white rounded-lg border">
-            <div className="text-2xl font-bold text-green-600">{generatedCount}</div>
-            <div className="text-xs text-gray-600">Gegenereerd</div>
-          </div>
-          <div className="text-center p-3 bg-white rounded-lg border">
-            <div className="text-2xl font-bold text-blue-600">{injectedCount}</div>
-            <div className="text-xs text-gray-600">Geïnjecteerd</div>
-          </div>
-          <div className="text-center p-3 bg-white rounded-lg border">
-            <div className="text-2xl font-bold text-orange-600">{Object.keys(typeDistribution).length}</div>
-            <div className="text-xs text-gray-600">Type Variatie</div>
-          </div>
-        </div>
+        <SeedInjectorStats
+          totalSeeds={seedDatabase.length}
+          generatedCount={generatedCount}
+          injectedCount={injectedCount}
+          typeVariety={Object.keys(typeDistribution).length}
+          isActive={isActive}
+        />
 
-        {/* Type Distribution Dashboard */}
-        <div className="bg-white p-4 rounded-lg border">
-          <h4 className="font-medium mb-3 flex items-center gap-2">
-            <PieChart size={16} />
-            Type Distributie Analyse
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {expectedDistribution.map(({ type, expected, actual, count }) => (
-              <div key={type} className="text-center p-2 bg-gray-50 rounded">
-                <div className="text-sm font-medium capitalize">{type}</div>
-                <div className="text-xs text-gray-600">
-                  {count} seeds ({actual}%)
-                </div>
-                <div className="text-xs text-blue-600">
-                  Doel: {expected}%
-                </div>
-                <div className={`text-xs ${actual >= expected ? 'text-green-600' : 'text-orange-600'}`}>
-                  {actual >= expected ? '✓' : '↗'} {actual >= expected ? 'Goed' : 'Verbeteren'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <TypeDistributionAnalysis expectedDistribution={expectedDistribution} />
 
         {/* Mode Selection */}
         <div className="flex gap-2">
@@ -253,22 +199,11 @@ const SmartSeedInjector: React.FC<SmartSeedInjectorProps> = ({ apiKey }) => {
           </Button>
         </div>
 
-        {isActive && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span>Genereren van diverse seed types...</span>
-              <span>{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} className="w-full" />
-            {currentEmotion && (
-              <div className="text-sm text-gray-600 flex items-center gap-2">
-                <Zap size={14} className="animate-pulse text-yellow-500" />
-                Bezig met: <Badge variant="outline">{currentEmotion}</Badge>
-                <Badge variant="secondary" className="bg-purple-100 text-purple-800 text-xs">Enhanced</Badge>
-              </div>
-            )}
-          </div>
-        )}
+        <SeedGenerationProgress
+          isActive={isActive}
+          progress={progress}
+          currentEmotion={currentEmotion}
+        />
 
         <div className="flex items-center gap-2">
           <Button 
