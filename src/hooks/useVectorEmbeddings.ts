@@ -1,10 +1,11 @@
 
 import { useState } from 'react';
 import { generateEmbedding } from '../lib/embeddingUtils';
-import { storeEmbedding, findSimilar, VectorEmbedding, SimilarityResult } from '../services/embeddingService';
+import { storeEmbedding, findSimilar } from '../services/embeddingService';
+import type { VectorEmbedding, SimilarityResult } from '../services/embeddingService';
 import { useSeedBatchProcessor } from './useSeedBatchProcessor';
 
-export { VectorEmbedding, SimilarityResult };
+export type { VectorEmbedding, SimilarityResult };
 
 export function useVectorEmbeddings() {
   const [isProcessing, setIsProcessing] = useState(false);
