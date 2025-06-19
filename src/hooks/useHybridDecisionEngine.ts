@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { AdvancedSeed } from '../types/seed';
 import { SimilarityResult } from './useVectorEmbeddings';
@@ -18,7 +19,7 @@ export interface NeuralMatch {
 
 export interface HybridDecision {
   selectedResponse: string;
-  responseType: 'symbolic' | 'neural' | 'hybrid' | 'generated';
+  responseType: 'symbolic' | 'neural' | 'hybrid' | 'generated' | 'ai_injected';
   confidence: number;
   reasoning: string;
   symbolicContribution: number;

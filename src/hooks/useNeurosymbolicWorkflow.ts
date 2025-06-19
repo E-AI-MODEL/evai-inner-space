@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useVectorEmbeddings } from './useVectorEmbeddings';
 import { useHybridDecisionEngine } from './useHybridDecisionEngine';
@@ -202,7 +201,7 @@ export function useNeurosymbolicWorkflow() {
       console.log(`✅ Enhanced Decision: ${hybridDecision.responseType} (${(hybridDecision.confidence * 100).toFixed(1)}%)`);
       
       // If we injected a seed and it was selected, mark response type appropriately
-      let finalResponseType = hybridDecision.responseType;
+      let finalResponseType: NeurosymbolicResult['responseType'] = hybridDecision.responseType;
       if (seedInjectionUsed && hybridDecision.seed?.id === newlyGeneratedSeed?.id) {
         finalResponseType = 'ai_injected';
         console.log('🎯 NEWLY INJECTED SEED WAS SELECTED FOR RESPONSE!');
