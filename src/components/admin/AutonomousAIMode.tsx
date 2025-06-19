@@ -11,6 +11,7 @@ import AutonomousAIModeDescription from './AutonomousAIModeDescription';
 import LearningProgress from './LearningProgress';
 import ActivityList from './ActivityList';
 import { LearningActivity } from './ActivityItem';
+import { v4 as uuidv4 } from 'uuid';
 
 const AutonomousAIMode: React.FC = () => {
   const [isAutonomous, setIsAutonomous] = useState(false);
@@ -38,7 +39,7 @@ const AutonomousAIMode: React.FC = () => {
   const addActivity = (activity: Omit<LearningActivity, 'id' | 'timestamp'>) => {
     const newActivity: LearningActivity = {
       ...activity,
-      id: Math.random().toString(36).substr(2, 9),
+      id: uuidv4(),
       timestamp: new Date(),
     };
     setActivities(prev => [newActivity, ...prev.slice(0, 9)]); // Keep last 10 activities
