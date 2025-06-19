@@ -4,7 +4,8 @@ import { Message } from '../../types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertTriangle, CheckCircle, Clock, Zap, Server, Activity, Brain } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AlertTriangle, CheckCircle, Clock, Zap, Server, Activity, Brain, ChevronDown } from 'lucide-react';
 
 interface AdminSystemMonitorProps {
   messages: Message[];
@@ -25,7 +26,6 @@ const AdminSystemMonitor: React.FC<AdminSystemMonitorProps> = ({ messages }) => 
     lastError: errors.length > 0 ? errors[errors.length - 1].timestamp : null
   };
 
-  // Performance metrics
   const performanceMetrics = [
     { name: 'API Calls', value: aiResponses.length, trend: 'up', color: 'text-blue-600' },
     { name: 'Success Rate', value: `${((successfulDetections.length / Math.max(aiResponses.length, 1)) * 100).toFixed(1)}%`, trend: 'up', color: 'text-green-600' },
@@ -33,7 +33,6 @@ const AdminSystemMonitor: React.FC<AdminSystemMonitorProps> = ({ messages }) => 
     { name: 'Cache Hits', value: recentMessages.filter(m => m.meta?.includes('Lokaal')).length, trend: 'up', color: 'text-orange-600' }
   ];
 
-  // Symbolic inferences stats
   const symbolicStats = messages.reduce(
     (acc, msg) => {
       if (msg.symbolicInferences && msg.symbolicInferences.length) {
@@ -55,7 +54,6 @@ const AdminSystemMonitor: React.FC<AdminSystemMonitorProps> = ({ messages }) => 
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
 
-  // Recent activities
   const recentActivities = messages.slice(-10).reverse().map(msg => ({
     id: msg.id,
     type: msg.from === 'user' ? 'user_input' : 'ai_response',
@@ -176,85 +174,103 @@ const AdminSystemMonitor: React.FC<AdminSystemMonitorProps> = ({ messages }) => 
         </CardContent>
       </Card>
 
-      {/* Recent Activity Log */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock size={20} />
-            Recente Activiteit
-          </CardTitle>
-          <CardDescription>Laatste systeem activiteiten en logs</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tijd</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Content</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Meta</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentActivities.map((activity) => (
-                  <TableRow key={activity.id}>
-                    <TableCell className="text-xs text-gray-500">
-                      {activity.timestamp.toLocaleTimeString('nl-NL')}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={activity.type === 'user_input' ? 'default' : 'secondary'}>
-                        {activity.type === 'user_input' ? 'User' : 'AI'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {activity.content}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={activity.status === 'error' ? getStatusColor('error') : getStatusColor('healthy')}>
-                        {activity.status === 'error' ? 'Error' : 'Success'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-gray-500">
-                      {activity.meta}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Error Analysis */}
-      {errors.length > 0 && (
+      {/* Recent Activity Log - Now Collapsible */}
+      <Collapsible>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle size={20} />
-              Error Analysis
-            </CardTitle>
-            <CardDescription>Recente fouten en problemen</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {errors.slice(-5).map((error, index) => (
-                <div key={error.timestamp.getTime()} className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-medium text-red-800">Error #{errors.length - index}</p>
-                      <p className="text-sm text-red-600 mt-1">{error.content}</p>
-                    </div>
-                    <span className="text-xs text-red-500">
-                      {error.timestamp.toLocaleString('nl-NL')}
-                    </span>
-                  </div>
+            <CollapsibleTrigger className="w-full">
+              <CardTitle className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Clock size={20} />
+                  Recente Activiteit
                 </div>
-              ))}
-            </div>
-          </CardContent>
+                <ChevronDown className="h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
+              </CardTitle>
+            </CollapsibleTrigger>
+            <CardDescription>Laatste systeem activiteiten en logs</CardDescription>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tijd</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Content</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Meta</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recentActivities.map((activity) => (
+                      <TableRow key={activity.id}>
+                        <TableCell className="text-xs text-gray-500">
+                          {activity.timestamp.toLocaleTimeString('nl-NL')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={activity.type === 'user_input' ? 'default' : 'secondary'}>
+                            {activity.type === 'user_input' ? 'User' : 'AI'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {activity.content}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={activity.status === 'error' ? getStatusColor('error') : getStatusColor('healthy')}>
+                            {activity.status === 'error' ? 'Error' : 'Success'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-gray-500">
+                          {activity.meta}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
         </Card>
+      </Collapsible>
+
+      {/* Error Analysis - Also Collapsible when present */}
+      {errors.length > 0 && (
+        <Collapsible>
+          <Card>
+            <CardHeader>
+              <CollapsibleTrigger className="w-full">
+                <CardTitle className="flex items-center justify-between gap-2 text-red-600">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle size={20} />
+                    Error Analysis
+                  </div>
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
+                </CardTitle>
+              </CollapsibleTrigger>
+              <CardDescription>Recente fouten en problemen</CardDescription>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent>
+                <div className="space-y-3">
+                  {errors.slice(-5).map((error, index) => (
+                    <div key={error.timestamp.getTime()} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium text-red-800">Error #{errors.length - index}</p>
+                          <p className="text-sm text-red-600 mt-1">{error.content}</p>
+                        </div>
+                        <span className="text-xs text-red-500">
+                          {error.timestamp.toLocaleString('nl-NL')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       )}
     </div>
   );
