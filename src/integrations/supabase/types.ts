@@ -87,6 +87,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       reflection_logs: {
         Row: {
           actions_taken: Json | null
@@ -213,18 +240,21 @@ export type Database = {
           id: string
           key: string
           updated_at: string | null
+          user_id: string | null
           value: string
         }
         Insert: {
           id?: string
           key: string
           updated_at?: string | null
+          user_id?: string | null
           value: string
         }
         Update: {
           id?: string
           key?: string
           updated_at?: string | null
+          user_id?: string | null
           value?: string
         }
         Relationships: []
@@ -294,6 +324,10 @@ export type Database = {
         Args: { setting_key: string; default_value?: string }
         Returns: string
       }
+      get_user_setting: {
+        Args: { setting_key: string; default_value?: string }
+        Returns: string
+      }
       increment_seed_usage: {
         Args: Record<PropertyKey, never> | { seed_id: string }
         Returns: undefined
@@ -325,6 +359,10 @@ export type Database = {
         Args:
           | Record<PropertyKey, never>
           | { setting_key: string; setting_value: string }
+        Returns: undefined
+      }
+      update_user_setting: {
+        Args: { setting_key: string; setting_value: string }
         Returns: undefined
       }
     }

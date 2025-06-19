@@ -1,8 +1,16 @@
 
-import { Settings, BarChart, Shield, LogIn } from "lucide-react";
+import { Settings, BarChart, Shield, LogOut, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 interface TopBarProps {
   onSettingsClick: () => void;
@@ -19,20 +27,23 @@ const TopBar = ({
 }: TopBarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const isOnAdminPage = location.pathname === '/admin';
 
-  const handleLogin = async () => {
-    // Dit logt de huidige (anonieme) gebruiker uit
-    const { error: signOutError } = await supabase.auth.signOut();
-    if (signOutError) {
-      toast({ title: "Uitloggen mislukt", description: signOutError.message, variant: "destructive" });
-      return;
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({ 
+        title: "Uitgelogd", 
+        description: "Je bent succesvol uitgelogd.",
+      });
+    } catch (error) {
+      toast({ 
+        title: "Fout", 
+        description: "Er ging iets mis bij het uitloggen.",
+        variant: "destructive"
+      });
     }
-
-    // Supabase maakt automatisch een nieuwe anonieme sessie aan.
-    // We herladen de pagina om zeker te weten dat alle state wordt gereset.
-    toast({ title: "Nieuwe Anonieme Sessie Gestart", description: "Je vorige sessie is gewist." });
-    window.location.reload();
   };
 
   return (
@@ -64,14 +75,6 @@ const TopBar = ({
         )}
 
         <button
-          onClick={handleLogin}
-          className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
-          aria-label="Start Nieuwe Anonieme Sessie"
-        >
-          <LogIn size={22} />
-        </button>
-        
-        <button
           type="button"
           onClick={onSettingsClick}
           className="p-2 rounded-lg hover:bg-zinc-100 transition-colors"
@@ -79,6 +82,24 @@ const TopBar = ({
         >
           <Settings size={22} />
         </button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="p-2">
+              <User size={20} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem disabled className="text-xs text-gray-500">
+              {user?.email}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Uitloggen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

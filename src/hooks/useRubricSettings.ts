@@ -80,39 +80,31 @@ export function useRubricSettings() {
       
       if (userError) {
         console.error('❌ Auth error:', userError);
-      } else {
-        console.log('👤 Current user:', user?.id ? 'Authenticated' : 'Anonymous');
+        setIsLoading(false);
+        return;
       }
 
-      // Try direct query first
-      console.log('🔍 Attempting direct settings query...');
-      const { data: directData, error: directError } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'rubric_strictness')
-        .maybeSingle();
+      if (!user) {
+        console.log('⚠️ No authenticated user found');
+        setIsLoading(false);
+        return;
+      }
 
-      if (directError) {
-        console.error('❌ Direct query error:', directError);
-        console.log('🔄 Falling back to RPC function...');
-        
-        // Fallback to RPC function
-        const { data: rpcData, error: rpcError } = await supabase.rpc('get_setting', {
-          setting_key: 'rubric_strictness',
-          default_value: 'flexible'
-        });
+      console.log('👤 Current user:', user.id);
 
-        if (rpcError) {
-          console.error('❌ RPC function error:', rpcError);
-          console.log('⚠️ Using default configuration');
-        } else {
-          console.log('✅ RPC function success:', rpcData);
-          const level = (rpcData as RubricStrictnessLevel) || 'flexible';
-          setConfig(STRICTNESS_CONFIGS[level] || STRICTNESS_CONFIGS.flexible);
-        }
+      // Use the new user-specific function
+      console.log('🔍 Attempting user-specific settings query...');
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_user_setting', {
+        setting_key: 'rubric_strictness',
+        default_value: 'flexible'
+      });
+
+      if (rpcError) {
+        console.error('❌ RPC function error:', rpcError);
+        console.log('⚠️ Using default configuration');
       } else {
-        console.log('✅ Direct query success:', directData);
-        const level = (directData?.value as RubricStrictnessLevel) || 'flexible';
+        console.log('✅ RPC function success:', rpcData);
+        const level = (rpcData as RubricStrictnessLevel) || 'flexible';
         setConfig(STRICTNESS_CONFIGS[level] || STRICTNESS_CONFIGS.flexible);
       }
     } catch (error) {
@@ -126,36 +118,18 @@ export function useRubricSettings() {
     console.log('💾 Updating rubric strictness to:', level);
     
     try {
-      // First try direct update
-      console.log('🔄 Attempting direct settings update...');
-      const { error: directError } = await supabase
-        .from('settings')
-        .upsert({
-          key: 'rubric_strictness',
-          value: level,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'key'
-        });
+      // Use the new user-specific function
+      console.log('🔄 Attempting user-specific settings update...');
+      const { error: rpcError } = await supabase.rpc('update_user_setting', {
+        setting_key: 'rubric_strictness',
+        setting_value: level
+      });
 
-      if (directError) {
-        console.error('❌ Direct update error:', directError);
-        console.log('🔄 Falling back to RPC function...');
-        
-        // Fallback to RPC function
-        const { error: rpcError } = await supabase.rpc('update_setting', {
-          setting_key: 'rubric_strictness',
-          setting_value: level
-        });
-
-        if (rpcError) {
-          console.error('❌ RPC update error:', rpcError);
-          return false;
-        } else {
-          console.log('✅ RPC update success');
-        }
+      if (rpcError) {
+        console.error('❌ RPC update error:', rpcError);
+        return false;
       } else {
-        console.log('✅ Direct update success');
+        console.log('✅ RPC update success');
       }
 
       // Update local state on success
