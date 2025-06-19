@@ -32,13 +32,23 @@ const AutonomousAIMode: React.FC = () => {
   useEffect(() => {
     // Save autonomous mode state
     localStorage.setItem('evai-autonomous-mode', isAutonomous.toString());
+    console.log('🤖 Autonome modus:', isAutonomous ? 'ACTIEF' : 'UITGESCHAKELD');
   }, [isAutonomous]);
+
+  const handleToggle = (checked: boolean) => {
+    setIsAutonomous(checked);
+    if (checked) {
+      console.log('🚀 Autonome AI modus geactiveerd');
+    } else {
+      console.log('⏸️ Autonome AI modus gedeactiveerd');
+    }
+  };
 
   return (
     <Card className="bg-white/60 backdrop-blur-sm border-white/20 shadow-lg">
       <AutonomousAIModeHeader 
         isAutonomous={isAutonomous} 
-        onToggle={setIsAutonomous} 
+        onToggle={handleToggle} 
       />
       <CardContent className="space-y-4">
         <AutonomousAIModeStatus isAutonomous={isAutonomous} />
@@ -58,6 +68,9 @@ const AutonomousAIMode: React.FC = () => {
           </>
         ) : (
           <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-xs text-gray-600 mb-2">
+              <strong>Autonome modus uitgeschakeld</strong>
+            </p>
             <p className="text-xs text-gray-600">
               Schakel de autonome modus in om de AI zelfstandig te laten leren van gesprekken en de kennisbank automatisch te verbeteren.
             </p>
