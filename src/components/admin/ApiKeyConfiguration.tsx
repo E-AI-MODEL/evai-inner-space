@@ -29,7 +29,7 @@ const ApiKeyConfiguration: React.FC<ApiKeyConfigurationProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <h3 className="font-medium text-gray-800">API Key Configuratie</h3>
+      <h3 className="font-medium text-gray-800">API Configuration</h3>
       <ApiKeyInput
         value={apiKey}
         onChange={onApiKeyChange}

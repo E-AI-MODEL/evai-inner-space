@@ -32,7 +32,7 @@ const VectorApiKeyInput: React.FC<VectorApiKeyInputProps> = ({
             type={showKey ? "text" : "password"}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            placeholder="sk-... (OpenAI API Key voor embeddings)"
+            placeholder="sk-..."
             className="pr-10 bg-white"
           />
           <Button
@@ -46,21 +46,15 @@ const VectorApiKeyInput: React.FC<VectorApiKeyInputProps> = ({
           </Button>
         </div>
         <Button onClick={onSave} size="default" className="bg-blue-600 hover:bg-blue-700">
-          Opslaan
+          Save
         </Button>
       </div>
       
-      <div className="bg-white/60 rounded-md p-3 text-xs text-blue-700 space-y-2">
+      <div className="bg-white/60 rounded-md p-2 text-xs text-blue-700">
         <p className="font-medium flex items-center gap-1">
           <span className="text-blue-600">🧠</span>
-          Text-embedding-3-small model voor vector embeddings
+          Text-embedding-3-small for vector operations
         </p>
-        <div className="grid grid-cols-1 gap-1 text-blue-600">
-          <span>• Converteert tekst naar numerieke vectoren</span>
-          <span>• Essentieel voor hybride neurosymbolische beslissingen</span>
-          <span>• Kan dezelfde zijn als API Key 1</span>
-          <span>• Alleen nodig voor embedding operaties</span>
-        </div>
       </div>
     </div>
   );

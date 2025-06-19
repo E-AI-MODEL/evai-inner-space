@@ -59,9 +59,9 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className="font-inter overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>API Configuratie</SheetTitle>
+          <SheetTitle>API Configuration</SheetTitle>
           <SheetDescription>
-            Configureer hier je API keys. De gegevens worden lokaal opgeslagen.
+            Configure your API keys. Data is stored locally.
           </SheetDescription>
         </SheetHeader>
 
