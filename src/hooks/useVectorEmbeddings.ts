@@ -1,111 +1,14 @@
 
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { AdvancedSeed } from '../types/seed';
+import { generateEmbedding } from '../lib/embeddingUtils';
+import { storeEmbedding, findSimilar, VectorEmbedding, SimilarityResult } from '../services/embeddingService';
+import { useSeedBatchProcessor } from './useSeedBatchProcessor';
 
-export interface VectorEmbedding {
-  id: string;
-  content_id: string;
-  content_type: 'seed' | 'message' | 'conversation';
-  content_text: string;
-  embedding?: number[];
-  metadata: Record<string, any>;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface SimilarityResult {
-  content_id: string;
-  content_type: string;
-  content_text: string;
-  similarity_score: number;
-  metadata: Record<string, any>;
-}
+export { VectorEmbedding, SimilarityResult };
 
 export function useVectorEmbeddings() {
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const generateEmbedding = async (text: string, apiKey: string): Promise<number[]> => {
-    console.log('🧠 Generating embedding with text-embedding-3-small model...');
-    
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small', // Always use text-embedding-3-small for vector embeddings
-        input: text.substring(0, 8000), // Limit input length
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI Embedding API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ Embedding generated successfully with text-embedding-3-small');
-    return data.data[0].embedding;
-  };
-
-  const storeEmbedding = async (
-    content_id: string,
-    content_type: 'seed' | 'message' | 'conversation',
-    content_text: string,
-    embedding: number[],
-    metadata: Record<string, any> = {}
-  ): Promise<void> => {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const { error } = await supabase
-      .from('vector_embeddings')
-      .insert({
-        user_id: user?.id,
-        content_id,
-        content_type,
-        content_text: content_text.substring(0, 2000), // Limit text length for storage
-        embedding: `[${embedding.join(',')}]`, // Store as text representation
-        metadata: {
-          ...metadata,
-          embeddingModel: 'text-embedding-3-small', // Track which model was used
-        },
-      });
-
-    if (error) {
-      console.error('Error storing embedding:', error);
-      throw error;
-    }
-  };
-
-  const findSimilar = async (
-    queryEmbedding: number[],
-    threshold: number = 0.7,
-    maxResults: number = 10
-  ): Promise<SimilarityResult[]> => {
-    try {
-      const { data, error } = await supabase.rpc('find_similar_embeddings', {
-        query_embedding: `[${queryEmbedding.join(',')}]`,
-        similarity_threshold: threshold,
-        max_results: maxResults,
-      });
-
-      if (error) {
-        console.error('Error finding similar embeddings:', error);
-        return [];
-      }
-
-      // Cast the metadata from Json to Record<string, any>
-      return (data || []).map(item => ({
-        ...item,
-        metadata: (item.metadata as Record<string, any>) || {},
-      }));
-    } catch (error) {
-      console.error('Vector similarity search failed:', error);
-      return [];
-    }
-  };
+  const { processSeedBatch, isProcessing: isBatchProcessing } = useSeedBatchProcessor();
 
   const processAndStore = async (
     content_id: string,
@@ -149,60 +52,12 @@ export function useVectorEmbeddings() {
     }
   };
 
-  const processSeedBatch = async (
-    seeds: AdvancedSeed[],
-    apiKey: string
-  ): Promise<{ success: number; failed: number }> => {
-    if (!apiKey) {
-      console.error('API key is required for batch processing.');
-      return { success: 0, failed: seeds.length };
-    }
-
-    setIsProcessing(true);
-    let successCount = 0;
-    let failedCount = 0;
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    for (const seed of seeds) {
-      try {
-        // Gebruik een combinatie van velden voor een rijkere embedding
-        const textToEmbed = `Emotie: ${seed.emotion}. Triggers: ${seed.triggers.join(', ')}. Response: ${seed.response.nl}`;
-        
-        const embedding = await generateEmbedding(textToEmbed, apiKey);
-        
-        await supabase.from('vector_embeddings').insert({
-          content_id: seed.id,
-          content_type: 'seed',
-          content_text: textToEmbed.substring(0, 2000),
-          embedding: `[${embedding.join(',')}]`,
-          metadata: { 
-            emotion: seed.emotion,
-            type: seed.type,
-            severity: seed.context.severity,
-          },
-          user_id: user?.id, // Voeg de user_id toe!
-        });
-        
-        successCount++;
-        console.log(`✅ Processed seed embedding: ${seed.emotion} (${seed.id})`);
-      } catch (error) {
-        console.error(`Failed to process seed ${seed.id} (${seed.emotion}):`, error);
-        failedCount++;
-      }
-    }
-
-    setIsProcessing(false);
-    console.log(`🎯 Batch processing complete: ${successCount} success, ${failedCount} failed`);
-    return { success: successCount, failed: failedCount };
-  };
-
   return {
     processAndStore,
     searchSimilar,
     generateEmbedding,
     findSimilar,
-    isProcessing,
+    isProcessing: isProcessing || isBatchProcessing,
     processSeedBatch,
   };
 }
