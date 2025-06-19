@@ -39,11 +39,19 @@ export function useNeurosymbolicWorkflow() {
     
     console.log('🚀 NEUROSYMBOLIC WORKFLOW ACTIVATED');
     console.log('📝 Input:', input.substring(0, 100));
+    console.log('🔑 API Keys:', { 
+      hasApiKey: !!apiKey, 
+      hasVectorKey: !!vectorApiKey,
+      apiKeyLength: apiKey?.length || 0,
+      vectorKeyLength: vectorApiKey?.length || 0
+    });
+    console.log('🌱 Available seeds:', seeds?.length || 0);
 
     try {
       // Step 1: Store input embedding for future learning (with better error handling)
-      const inputId = crypto.randomUUID(); // Use proper UUID
+      const inputId = crypto.randomUUID();
       try {
+        console.log('💾 Storing input embedding...');
         await processAndStore(
           inputId,
           'message',
@@ -56,26 +64,42 @@ export function useNeurosymbolicWorkflow() {
             timestamp: new Date().toISOString(),
           }
         );
-        console.log('✅ Input embedding stored');
+        console.log('✅ Input embedding stored successfully');
       } catch (embeddingError) {
         console.error('⚠️ Failed to store input embedding:', embeddingError);
-        // Continue without vector storage
+        console.error('Vector API Key valid?', vectorApiKey?.startsWith('sk-'));
       }
 
       // Step 2: Neural similarity search (with better error handling)
       console.log('🧠 Performing neural similarity search...');
       let similarities = [];
       try {
-        similarities = await searchSimilar(input, vectorApiKey, 0.6, 8);
-        console.log(`🎯 Found ${similarities.length} neural similarities`);
+        if (!vectorApiKey || !vectorApiKey.trim()) {
+          console.log('⚠️ No vector API key provided for neural search');
+        } else {
+          similarities = await searchSimilar(input, vectorApiKey, 0.6, 8);
+          console.log(`🎯 Found ${similarities.length} neural similarities`);
+          if (similarities.length > 0) {
+            console.log('🔍 Top similarity:', similarities[0]);
+          }
+        }
       } catch (neuralError) {
         console.error('⚠️ Neural search failed:', neuralError);
-        // Continue with symbolic-only approach
+        console.error('Vector API error details:', neuralError.message);
       }
 
-      // Step 3: Hybrid decision making (with randomization to prevent loops)
+      // Step 3: Hybrid decision making (with better debugging)
       console.log('⚖️ Making hybrid decision...');
       const activeSeeds = seeds?.filter(s => s.isActive) || [];
+      console.log(`🌱 Active seeds available: ${activeSeeds.length}`);
+      
+      if (activeSeeds.length > 0) {
+        console.log('🔍 Sample active seeds:', activeSeeds.slice(0, 3).map(s => ({
+          emotion: s.emotion,
+          triggers: s.triggers?.slice(0, 2),
+          isActive: s.isActive
+        })));
+      }
       
       // Add timestamp and randomization to context to prevent identical responses
       const enhancedContext = {
@@ -93,6 +117,11 @@ export function useNeurosymbolicWorkflow() {
       );
 
       console.log(`✅ Decision: ${hybridDecision.responseType} (${(hybridDecision.confidence * 100).toFixed(1)}%)`);
+      console.log('🔧 Decision details:', {
+        symbolicContribution: hybridDecision.symbolicContribution,
+        neuralContribution: hybridDecision.neuralContribution,
+        reasoning: hybridDecision.reasoning
+      });
 
       // Step 4: Self-reflection trigger check (background with error handling)
       if (context.messages && context.messages.length > 0) {
@@ -130,6 +159,12 @@ export function useNeurosymbolicWorkflow() {
           symbolicsMatches: activeSeeds.length,
           processingTime,
           sessionTimestamp: startTime,
+          debugInfo: {
+            hasApiKey: !!apiKey,
+            hasVectorKey: !!vectorApiKey,
+            seedsAvailable: activeSeeds.length,
+            similaritiesFound: similarities.length
+          }
         },
         seed: hybridDecision.seed,
         processingTime,
@@ -137,6 +172,10 @@ export function useNeurosymbolicWorkflow() {
 
     } catch (error) {
       console.error('❌ Neurosymbolic workflow failed:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack?.substring(0, 200)
+      });
       
       // Fallback to varied basic responses to prevent loops
       const timestamp = Date.now();
@@ -146,19 +185,25 @@ export function useNeurosymbolicWorkflow() {
         'Dank je voor het delen. Wat speelt er het meest voor je op dit moment?',
         'Ik hoor je. Kun je me wat meer context geven over je situatie?',
         'Het klinkt alsof er iets belangrijks speelt. Vertel me er meer over.',
-        'Ik ben hier om te luisteren. Wat zou het meest helpend zijn om te bespreken?'
+        'Ik ben hier om te luisteren. Wat zou het meest helpend zijn om nu te bespreken?'
       ];
       
       return {
         response: fallbackResponses[randomIndex],
         confidence: 0.3,
         responseType: 'generated',
-        reasoning: `Fallback due to workflow error (variant ${randomIndex})`,
+        reasoning: `Fallback due to workflow error: ${error.message} (variant ${randomIndex})`,
         metadata: { 
           error: error.message, 
           fallback: true, 
           fallbackIndex: randomIndex,
           timestamp,
+          debugInfo: {
+            hasApiKey: !!apiKey,
+            hasVectorKey: !!vectorApiKey,
+            seedsAvailable: seeds?.length || 0,
+            errorType: error.constructor.name
+          }
         },
         processingTime: Date.now() - startTime,
       };

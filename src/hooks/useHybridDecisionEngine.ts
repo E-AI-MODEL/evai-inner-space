@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { AdvancedSeed } from '../types/seed';
 import { SimilarityResult } from './useVectorEmbeddings';
@@ -38,37 +37,68 @@ export function useHybridDecisionEngine() {
     const normalizedInput = input.toLowerCase();
     const matches: SymbolicMatch[] = [];
 
+    console.log('🔍 Evaluating symbolic matches...');
+    console.log('📝 Normalized input:', normalizedInput);
+    console.log('🌱 Seeds to check:', seeds.length);
+
     for (const seed of seeds) {
-      if (!seed.isActive) continue;
+      if (!seed.isActive) {
+        console.log(`⏭️ Skipping inactive seed: ${seed.emotion}`);
+        continue;
+      }
 
       let score = 0;
       const matchedTriggers: string[] = [];
 
+      console.log(`🔎 Checking seed: ${seed.emotion}`);
+      console.log(`🎯 Triggers to check:`, seed.triggers);
+
       // Check trigger matches
-      for (const trigger of seed.triggers) {
-        if (normalizedInput.includes(trigger.toLowerCase())) {
+      for (const trigger of seed.triggers || []) {
+        const normalizedTrigger = trigger.toLowerCase();
+        if (normalizedInput.includes(normalizedTrigger)) {
           matchedTriggers.push(trigger);
-          score += 10 * seed.meta.weight;
+          score += 10 * (seed.meta?.weight || 1);
+          console.log(`✅ Trigger matched: "${trigger}" (score +${10 * (seed.meta?.weight || 1)})`);
+        } else {
+          console.log(`❌ Trigger not matched: "${trigger}"`);
         }
       }
 
-      if (matchedTriggers.length === 0) continue;
+      if (matchedTriggers.length === 0) {
+        console.log(`⏭️ No triggers matched for seed: ${seed.emotion}`);
+        continue;
+      }
 
       // Context bonuses
-      if (seed.context.severity === 'high' && normalizedInput.includes('help')) score += 5;
-      if (seed.context.severity === 'critical' && 
-          (normalizedInput.includes('crisis') || normalizedInput.includes('emergency'))) score += 10;
+      if (seed.context?.severity === 'high' && normalizedInput.includes('help')) {
+        score += 5;
+        console.log('🆙 High severity + help bonus: +5');
+      }
+      if (seed.context?.severity === 'critical' && 
+          (normalizedInput.includes('crisis') || normalizedInput.includes('emergency'))) {
+        score += 10;
+        console.log('🆙 Critical severity + crisis bonus: +10');
+      }
 
       // Usage penalties
-      if (seed.meta.usageCount > 3) score *= 0.8;
-      if (seed.meta.lastUsed) {
+      if ((seed.meta?.usageCount || 0) > 3) {
+        score *= 0.8;
+        console.log('⬇️ Usage penalty applied: 0.8x');
+      }
+      if (seed.meta?.lastUsed) {
         const hoursSince = (Date.now() - new Date(seed.meta.lastUsed).getTime()) / (1000 * 60 * 60);
-        if (hoursSince < 1) score *= 0.5; // Recent usage penalty
+        if (hoursSince < 1) {
+          score *= 0.5;
+          console.log('⬇️ Recent usage penalty: 0.5x');
+        }
       }
 
       const confidence = Math.min(0.95, Math.max(0.1, 
-        (matchedTriggers.length * 0.3) + (seed.meta.confidence || 0.5)
+        (matchedTriggers.length * 0.3) + (seed.meta?.confidence || 0.5)
       ));
+
+      console.log(`📊 Seed ${seed.emotion} final score: ${score}, confidence: ${confidence}`);
 
       matches.push({
         seed,
@@ -78,13 +108,23 @@ export function useHybridDecisionEngine() {
       });
     }
 
-    return matches.sort((a, b) => b.score - a.score).slice(0, 5);
+    const sortedMatches = matches.sort((a, b) => b.score - a.score).slice(0, 5);
+    console.log(`🏆 Top symbolic matches:`, sortedMatches.map(m => ({
+      emotion: m.seed.emotion,
+      score: m.score,
+      triggers: m.triggers
+    })));
+
+    return sortedMatches;
   };
 
   const evaluateNeuralMatches = (
     similarities: SimilarityResult[]
   ): NeuralMatch[] => {
-    return similarities.map(similarity => {
+    console.log('🧠 Evaluating neural matches...');
+    console.log('🔍 Similarities to process:', similarities.length);
+
+    const matches = similarities.map(similarity => {
       // Calculate relevance based on content type and metadata
       let relevanceScore = similarity.similarity_score;
       
@@ -92,14 +132,26 @@ export function useHybridDecisionEngine() {
       if (similarity.content_type === 'conversation') relevanceScore *= 0.9;
       
       // Context fit based on metadata
-      const contextualFit = similarity.metadata.emotional_context ? 1.1 : 1.0;
+      const contextualFit = similarity.metadata?.emotional_context ? 1.1 : 1.0;
+      
+      const finalScore = contextualFit * relevanceScore;
+      
+      console.log(`🧠 Neural match: ${similarity.content_type}, score: ${similarity.similarity_score} → ${finalScore}`);
       
       return {
         similarity,
         relevanceScore,
-        contextualFit: contextualFit * relevanceScore,
+        contextualFit: finalScore,
       };
     }).sort((a, b) => b.contextualFit - a.contextualFit);
+
+    console.log('🏆 Top neural matches:', matches.slice(0, 3).map(m => ({
+      type: m.similarity.content_type,
+      score: m.similarity.similarity_score,
+      finalScore: m.contextualFit
+    })));
+
+    return matches;
   };
 
   const makeHybridDecision = async (
@@ -307,8 +359,23 @@ export function useHybridDecisionEngine() {
   ): Promise<HybridDecision> => {
     setIsProcessing(true);
     try {
+      console.log('🚀 Starting hybrid decision process...');
+      console.log('📊 Input stats:', {
+        inputLength: input.length,
+        seedsCount: seeds.length,
+        similaritiesCount: similarities.length
+      });
+
       const symbolicMatches = evaluateSymbolicMatches(input, seeds);
       const neuralMatches = evaluateNeuralMatches(similarities);
+      
+      console.log('📈 Match summary:', {
+        symbolicMatches: symbolicMatches.length,
+        neuralMatches: neuralMatches.length,
+        topSymbolic: symbolicMatches[0]?.score || 0,
+        topNeural: neuralMatches[0]?.contextualFit || 0
+      });
+
       return await makeHybridDecision(input, symbolicMatches, neuralMatches, context);
     } finally {
       setIsProcessing(false);
