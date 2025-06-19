@@ -8,11 +8,10 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, AlertCircle, Zap, Brain, Database } from 'lucide-react';
+import { CheckCircle, AlertCircle, Database } from 'lucide-react';
 import ApiKeyInput from './ApiKeyInput';
 import OpenAIApiKey2Input from './OpenAIApiKey2Input';
 import VectorApiKeyInput from './VectorApiKeyInput';
-import RubricStrictnessControl from './RubricStrictnessControl';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 
@@ -66,140 +65,103 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent className="font-inter overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Instellingen</SheetTitle>
+          <SheetTitle>API Configuratie</SheetTitle>
           <SheetDescription>
-            Beheer hier de instellingen voor EvAI. De gegevens worden lokaal opgeslagen.
+            Configureer hier je API keys. De gegevens worden lokaal opgeslagen.
           </SheetDescription>
         </SheetHeader>
 
-        {/* Neurosymbolic System Status */}
-        <div className="py-4">
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4 mb-6">
+        <div className="py-4 space-y-6">
+          {/* System Status Overview */}
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Brain size={16} className="text-purple-600" />
-              <span className="font-medium text-gray-800">Neurosymbolic System Status</span>
+              <Database size={16} className="text-purple-600" />
+              <span className="font-medium text-gray-800">Systeem Status</span>
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Symbolic Engine (Offline Rules)</span>
-                <div className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-green-600" />
-                  <Badge variant="default">Always Active</Badge>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Neural Engine (OpenAI Key 1)</span>
+                <span className="text-gray-700">Neural Engine (OpenAI Key 1)</span>
                 <div className="flex items-center gap-2">
                   {openAiActive ? (
-                    <CheckCircle size={16} className="text-green-600" />
+                    <CheckCircle size={14} className="text-green-600" />
                   ) : (
-                    <AlertCircle size={16} className="text-orange-500" />
+                    <AlertCircle size={14} className="text-orange-500" />
                   )}
-                  <Badge variant={openAiActive ? "default" : "secondary"}>
-                    {openAiActive ? "Active" : "Inactive"}
+                  <Badge variant={openAiActive ? "default" : "secondary"} className="text-xs">
+                    {openAiActive ? "Actief" : "Inactief"}
                   </Badge>
                 </div>
               </div>
               
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Vector Engine (Embeddings API)</span>
-                <div className="flex items-center gap-2">
-                  {vectorActive ? (
-                    <CheckCircle size={16} className="text-green-600" />
-                  ) : (
-                    <AlertCircle size={16} className="text-orange-500" />
-                  )}
-                  <Badge variant={vectorActive ? "default" : "secondary"}>
-                    {vectorActive ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Enhanced Analysis (OpenAI Key 2)</span>
+                <span className="text-gray-700">Enhanced Analysis (OpenAI Key 2)</span>
                 <div className="flex items-center gap-2">
                   {openAi2Active ? (
-                    <CheckCircle size={16} className="text-green-600" />
+                    <CheckCircle size={14} className="text-green-600" />
                   ) : (
-                    <AlertCircle size={16} className="text-orange-500" />
+                    <AlertCircle size={14} className="text-orange-500" />
                   )}
-                  <Badge variant={openAi2Active ? "default" : "secondary"}>
-                    {openAi2Active ? "Active" : "Inactive"}
+                  <Badge variant={openAi2Active ? "default" : "secondary"} className="text-xs">
+                    {openAi2Active ? "Actief" : "Inactief"}
                   </Badge>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700">Vector Database (Supabase)</span>
+                <span className="text-gray-700">Vector Engine (Embeddings)</span>
+                <div className="flex items-center gap-2">
+                  {vectorActive ? (
+                    <CheckCircle size={14} className="text-green-600" />
+                  ) : (
+                    <AlertCircle size={14} className="text-orange-500" />
+                  )}
+                  <Badge variant={vectorActive ? "default" : "secondary"} className="text-xs">
+                    {vectorActive ? "Actief" : "Inactief"}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700">Database (Supabase)</span>
                 <div className="flex items-center gap-2">
                   {supabaseUrl ? (
-                    <CheckCircle size={16} className="text-green-600" />
+                    <CheckCircle size={14} className="text-green-600" />
                   ) : (
-                    <AlertCircle size={16} className="text-orange-500" />
+                    <AlertCircle size={14} className="text-orange-500" />
                   )}
-                  <Badge variant={supabaseUrl ? "default" : "secondary"}>
-                    {supabaseUrl ? "Connected" : "Disconnected"}
+                  <Badge variant={supabaseUrl ? "default" : "secondary"} className="text-xs">
+                    {supabaseUrl ? "Verbonden" : "Niet verbonden"}
                   </Badge>
                 </div>
               </div>
               
-              <div className="pt-3 border-t border-purple-200">
+              <div className="pt-2 border-t border-purple-200">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-800 flex items-center gap-2">
-                    <Database size={16} className="text-purple-600" />
-                    Complete Neurosymbolic Workflow
-                  </span>
+                  <span className="font-medium text-gray-800">Complete Workflow</span>
                   <div className="flex items-center gap-2">
                     {allThreeActive ? (
-                      <CheckCircle size={16} className="text-green-600" />
+                      <CheckCircle size={14} className="text-green-600" />
                     ) : (
-                      <AlertCircle size={16} className="text-orange-500" />
+                      <AlertCircle size={14} className="text-orange-500" />
                     )}
-                    <Badge variant={allThreeActive ? "default" : "destructive"}>
-                      {allThreeActive ? "FULLY OPERATIONAL" : "PARTIAL"}
+                    <Badge variant={allThreeActive ? "default" : "destructive"} className="text-xs">
+                      {allThreeActive ? "VOLLEDIG OPERATIONEEL" : "GEDEELTELIJK"}
                     </Badge>
                   </div>
                 </div>
                 {allThreeActive && (
-                  <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
-                    <p className="text-xs text-green-800 font-medium">
-                      🚀 COMPLETE NEUROSYMBOLIC WORKFLOW ACTIVE
-                    </p>
-                    <p className="text-xs text-green-700 mt-1">
-                      • Symbolic reasoning (offline rules & patterns)<br/>
-                      • Neural processing (OpenAI language understanding)<br/>
-                      • Vector similarity search (contextual memory)<br/>
-                      • Hybrid decision engine (optimal response selection)<br/>
-                      • Self-reflection system (continuous learning)
-                    </p>
-                  </div>
-                )}
-                {!allThreeActive && (
-                  <div className="mt-2 p-2 bg-orange-50 rounded border border-orange-200">
-                    <p className="text-xs text-orange-800 font-medium">
-                      ⚠️ PARTIAL OPERATION
-                    </p>
-                    <p className="text-xs text-orange-700 mt-1">
-                      Voor het complete neurosymbolic workflow zijn alle drie API keys vereist:<br/>
-                      {!openAiActive && "• OpenAI Key 1 (Neural processing) MISSING\n"}
-                      {!vectorActive && "• Vector API Key (Embeddings) MISSING\n"}
-                      {!openAi2Active && "• OpenAI Key 2 (Enhanced analysis) MISSING\n"}
-                      Huidige modus: Enhanced symbolic + {openAiActive ? "neural" : "pattern"} matching
-                    </p>
-                  </div>
+                  <p className="text-xs text-green-700 mt-1">
+                    🚀 Alle systemen actief: Neural + Symbolic + Vector processing
+                  </p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Rubric Settings */}
-          <div className="mb-6">
-            <RubricStrictnessControl />
-          </div>
-
+          {/* API Key Configuration */}
           <div className="space-y-4">
+            <h3 className="font-medium text-gray-800">API Key Configuratie</h3>
             <ApiKeyInput
               value={apiKey}
               onChange={onApiKeyChange}

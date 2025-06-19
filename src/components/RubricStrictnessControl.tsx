@@ -59,22 +59,18 @@ const RubricStrictnessControl: React.FC = () => {
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <Gauge className="w-4 h-4 flex-shrink-0" />
-          <span className="truncate">Rubric Gevoeligheid</span>
+          <span className="truncate">Snelle Gevoeligheidscontrole</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         <div className="flex items-center gap-2">
           <Badge className={`${currentInfo.color} text-xs flex items-center gap-1`} variant="outline">
             {currentInfo.icon}
             <span className="truncate">{currentInfo.shortLabel}</span>
           </Badge>
         </div>
-        
-        <p className="text-xs text-gray-600 leading-relaxed break-words">
-          {currentInfo.description}
-        </p>
 
-        <div className="space-y-2">
+        <div className="grid grid-cols-3 gap-1">
           {availableLevels.map((level) => {
             const info = getStrictnessInfo(level);
             const isActive = level === config.level;
@@ -84,31 +80,19 @@ const RubricStrictnessControl: React.FC = () => {
                 key={level}
                 size="sm"
                 variant={isActive ? "default" : "outline"}
-                className={`w-full text-xs h-8 justify-start gap-2 ${isActive ? '' : 'text-gray-600'}`}
+                className={`text-xs h-7 px-2 ${isActive ? '' : 'text-gray-600'}`}
                 onClick={() => handleStrictnessChange(level)}
                 disabled={isActive}
               >
                 <span className="flex-shrink-0">{info.icon}</span>
-                <span className="truncate">{info.shortLabel}</span>
               </Button>
             );
           })}
         </div>
 
-        <div className="border-t pt-3 space-y-1 text-xs text-gray-500">
-          <div className="flex justify-between items-center">
-            <span className="truncate">Risico drempel:</span>
-            <span className="flex-shrink-0 ml-2">{config.thresholds.riskAlert}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="truncate">Hoog risico:</span>
-            <span className="flex-shrink-0 ml-2">{config.thresholds.overallRiskHigh}%</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="truncate">Beschermend min:</span>
-            <span className="flex-shrink-0 ml-2">{config.thresholds.protectiveFactorsMin}+</span>
-          </div>
-        </div>
+        <p className="text-xs text-gray-500 leading-relaxed">
+          {currentInfo.description}
+        </p>
       </CardContent>
     </Card>
   );

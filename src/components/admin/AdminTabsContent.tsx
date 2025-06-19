@@ -7,7 +7,6 @@ import AdminAnalytics from './AdminAnalytics';
 import ConnectionStatusDashboard from './ConnectionStatusDashboard';
 import AutonomousAIMode from './AutonomousAIMode';
 import NeurosymbolicArchitectureDiagram from './NeurosymbolicArchitectureDiagram';
-import RubricStrictnessControl from '../RubricStrictnessControl';
 import RubricSettings from '../RubricSettings';
 import SeedLearningLog from './SeedLearningLog';
 import { Message } from '../../types';
@@ -26,10 +25,7 @@ const AdminTabsContent: React.FC<AdminTabsContentProps> = ({ hasRubricActivity, 
           <p className="text-sm text-gray-600 break-words">Hoe presteert de AI en wat weet hij over gesprekken?</p>
         </div>
         <div className="overflow-hidden space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <RubricStrictnessControl />
-            <RubricSettings />
-          </div>
+          <RubricSettings />
           <AdminRubricsOverview messages={messages} />
         </div>
       </TabsContent>
