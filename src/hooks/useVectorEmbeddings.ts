@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -52,9 +51,13 @@ export function useVectorEmbeddings() {
     embedding: number[],
     metadata: Record<string, any> = {}
   ): Promise<void> => {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { error } = await supabase
       .from('vector_embeddings')
       .insert({
+        user_id: user?.id,
         content_id,
         content_type,
         content_text: content_text.substring(0, 2000), // Limit text length for storage

@@ -233,6 +233,7 @@ export type Database = {
           id: string
           metadata: Json | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           content_id: string
@@ -243,6 +244,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           content_id?: string
@@ -253,6 +255,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
