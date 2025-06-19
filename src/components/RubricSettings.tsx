@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -114,7 +113,7 @@ const RubricSettings: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Tabs value={strictness} onValueChange={handleValueChange} disabled={isSaving}>
+        <Tabs value={strictness} onValueChange={handleValueChange}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="strict" className="flex items-center gap-2" disabled={isSaving}>
               {getLevelIcon('strict')}
