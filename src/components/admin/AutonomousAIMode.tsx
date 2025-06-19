@@ -1,22 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Brain, Zap, Database, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { useSelfReflection } from '../../hooks/useSelfReflection';
 import { useChatHistory } from '../../hooks/useChatHistory';
 import { useOpenAISeedGenerator } from '../../hooks/useOpenAISeedGenerator';
-
-interface LearningActivity {
-  id: string;
-  timestamp: Date;
-  type: 'analysis' | 'gap_detection' | 'seed_generation' | 'injection';
-  description: string;
-  status: 'running' | 'completed' | 'failed';
-}
+import AutonomousAIModeHeader from './AutonomousAIModeHeader';
+import AutonomousAIModeStatus from './AutonomousAIModeStatus';
+import AutonomousAIModeDescription from './AutonomousAIModeDescription';
+import LearningProgress from './LearningProgress';
+import ActivityList from './ActivityList';
+import { LearningActivity } from './ActivityItem';
 
 const AutonomousAIMode: React.FC = () => {
   const [isAutonomous, setIsAutonomous] = useState(false);
@@ -137,7 +131,7 @@ const AutonomousAIMode: React.FC = () => {
 
           // Step 4: Injection status
           if (generatedCount > 0) {
-            const injectId = addActivity({
+            addActivity({
               type: 'injection',
               description: 'Seeds succesvol geïntegreerd in kennisbank',
               status: 'completed'
@@ -165,59 +159,18 @@ const AutonomousAIMode: React.FC = () => {
     }
   };
 
-  const getActivityIcon = (type: LearningActivity['type']) => {
-    switch (type) {
-      case 'analysis': return <Brain className="w-4 h-4" />;
-      case 'gap_detection': return <AlertCircle className="w-4 h-4" />;
-      case 'seed_generation': return <Zap className="w-4 h-4" />;
-      case 'injection': return <Database className="w-4 h-4" />;
-    }
-  };
-
-  const getStatusIcon = (status: LearningActivity['status']) => {
-    switch (status) {
-      case 'running': return <Clock className="w-3 h-3 animate-spin text-blue-600" />;
-      case 'completed': return <CheckCircle2 className="w-3 h-3 text-green-600" />;
-      case 'failed': return <AlertCircle className="w-3 h-3 text-red-600" />;
-    }
-  };
-
   return (
     <Card className="bg-white/60 backdrop-blur-sm border-white/20 shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-600" />
-            <span>Autonome AI Modus</span>
-          </div>
-          <Switch
-            checked={isAutonomous}
-            onCheckedChange={setIsAutonomous}
-            className="data-[state=checked]:bg-purple-600"
-          />
-        </CardTitle>
-      </CardHeader>
+      <AutonomousAIModeHeader 
+        isAutonomous={isAutonomous} 
+        onToggle={setIsAutonomous} 
+      />
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-700">Status:</span>
-          <Badge variant={isAutonomous ? "default" : "secondary"}>
-            {isAutonomous ? "ACTIEF" : "UITGESCHAKELD"}
-          </Badge>
-        </div>
+        <AutonomousAIModeStatus isAutonomous={isAutonomous} />
 
-        {isAutonomous && (
+        {isAutonomous ? (
           <>
-            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-              <p className="text-xs text-purple-800 font-medium mb-2">
-                🚀 AUTONOME MODUS ACTIEF
-              </p>
-              <p className="text-xs text-purple-700">
-                • Gesprekken automatisch analyseren<br/>
-                • Kennisgaten detecteren<br/>
-                • Nieuwe seeds genereren<br/>
-                • Kennisbank bijwerken
-              </p>
-            </div>
+            <AutonomousAIModeDescription />
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -232,44 +185,11 @@ const AutonomousAIMode: React.FC = () => {
                 </Button>
               </div>
 
-              {learningProgress > 0 && (
-                <div className="space-y-2">
-                  <Progress value={learningProgress} className="h-2" />
-                  <p className="text-xs text-gray-600 text-center">
-                    {learningProgress}% voltooid
-                  </p>
-                </div>
-              )}
-
-              {activities.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Recente Activiteiten</h4>
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {activities.map((activity) => (
-                      <div key={activity.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded text-xs">
-                        <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
-                          {getActivityIcon(activity.type)}
-                          {getStatusIcon(activity.status)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-gray-800 break-words">{activity.description}</p>
-                          <p className="text-gray-500 text-xs">
-                            {activity.timestamp.toLocaleTimeString('nl-NL', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <LearningProgress progress={learningProgress} />
+              <ActivityList activities={activities} />
             </div>
           </>
-        )}
-
-        {!isAutonomous && (
+        ) : (
           <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
             <p className="text-xs text-gray-600">
               Schakel de autonome modus in om de AI zelfstandig te laten leren van gesprekken en de kennisbank automatisch te verbeteren.
