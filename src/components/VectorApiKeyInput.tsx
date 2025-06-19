@@ -22,8 +22,9 @@ const VectorApiKeyInput: React.FC<VectorApiKeyInputProps> = ({
     <div className="space-y-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
       <Label htmlFor="vector-api-key" className="flex items-center gap-2 text-blue-800 font-medium">
         <Zap size={16} className="text-blue-600" />
-        API Key 3 - Vector Embeddings (text-embedding-3-small)
+        API Key 3 - Vector Embeddings
       </Label>
+      
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Input
@@ -48,16 +49,18 @@ const VectorApiKeyInput: React.FC<VectorApiKeyInputProps> = ({
           Opslaan
         </Button>
       </div>
-      <div className="space-y-2 text-xs text-blue-700">
-        <p className="font-medium">
-          🧠 Deze API key wordt exclusief gebruikt voor vector embeddings met het text-embedding-3-small model.
+      
+      <div className="bg-white/60 rounded-md p-3 text-xs text-blue-700 space-y-2">
+        <p className="font-medium flex items-center gap-1">
+          <span className="text-blue-600">🧠</span>
+          Text-embedding-3-small model voor vector embeddings
         </p>
-        <ul className="space-y-1 ml-4 list-disc">
-          <li>Converteert tekst naar numerieke vectoren voor similarity matching</li>
-          <li>Essentieel voor hybride neurosymbolische beslissingen</li>
-          <li>Kan dezelfde zijn als API Key 1, maar apart configureren helpt met kostenbeheer</li>
-          <li>Alleen nodig voor embedding operaties, niet voor chat/completions</li>
-        </ul>
+        <div className="grid grid-cols-1 gap-1 text-blue-600">
+          <span>• Converteert tekst naar numerieke vectoren</span>
+          <span>• Essentieel voor hybride neurosymbolische beslissingen</span>
+          <span>• Kan dezelfde zijn als API Key 1</span>
+          <span>• Alleen nodig voor embedding operaties</span>
+        </div>
       </div>
     </div>
   );
