@@ -94,6 +94,7 @@ export type Database = {
           learning_impact: number | null
           new_seeds_generated: number | null
           trigger_type: string
+          user_id: string | null
         }
         Insert: {
           actions_taken?: Json | null
@@ -104,6 +105,7 @@ export type Database = {
           learning_impact?: number | null
           new_seeds_generated?: number | null
           trigger_type: string
+          user_id?: string | null
         }
         Update: {
           actions_taken?: Json | null
@@ -114,6 +116,7 @@ export type Database = {
           learning_impact?: number | null
           new_seeds_generated?: number | null
           trigger_type?: string
+          user_id?: string | null
         }
         Relationships: []
       }

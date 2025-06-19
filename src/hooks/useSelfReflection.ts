@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Message } from '../types';
@@ -248,9 +247,13 @@ export function useSelfReflection() {
 
       console.log(`💡 Generated ${insights.length} insights, ${actions.length} actions`);
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+
       // Log reflection
       try {
         await supabase.from('reflection_logs').insert({
+          user_id: user?.id,
           trigger_type: primaryTrigger.type,
           context: primaryTrigger.context,
           insights: insights.map(i => ({
