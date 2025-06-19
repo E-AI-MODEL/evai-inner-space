@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -24,6 +25,8 @@ export function useVectorEmbeddings() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const generateEmbedding = async (text: string, apiKey: string): Promise<number[]> => {
+    console.log('🧠 Generating embedding with text-embedding-3-small model...');
+    
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
@@ -31,7 +34,7 @@ export function useVectorEmbeddings() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'text-embedding-ada-002',
+        model: 'text-embedding-3-small', // Always use text-embedding-3-small for vector embeddings
         input: text.substring(0, 8000), // Limit input length
       }),
     });
@@ -41,6 +44,7 @@ export function useVectorEmbeddings() {
     }
 
     const data = await response.json();
+    console.log('✅ Embedding generated successfully with text-embedding-3-small');
     return data.data[0].embedding;
   };
 
@@ -62,7 +66,10 @@ export function useVectorEmbeddings() {
         content_type,
         content_text: content_text.substring(0, 2000), // Limit text length for storage
         embedding: `[${embedding.join(',')}]`, // Store as text representation
-        metadata,
+        metadata: {
+          ...metadata,
+          embeddingModel: 'text-embedding-3-small', // Track which model was used
+        },
       });
 
     if (error) {
@@ -108,7 +115,7 @@ export function useVectorEmbeddings() {
   ): Promise<void> => {
     setIsProcessing(true);
     try {
-      console.log(`🧠 Generating embedding for ${content_type}:`, content_text.substring(0, 100));
+      console.log(`🧠 Generating embedding for ${content_type} using text-embedding-3-small:`, content_text.substring(0, 100));
       const embedding = await generateEmbedding(content_text, apiKey);
       await storeEmbedding(content_id, content_type, content_text, embedding, metadata);
       console.log(`✅ Embedding stored for ${content_type}: ${content_id}`);
@@ -128,10 +135,10 @@ export function useVectorEmbeddings() {
   ): Promise<SimilarityResult[]> => {
     setIsProcessing(true);
     try {
-      console.log('🔍 Searching for similar content:', queryText.substring(0, 100));
+      console.log('🔍 Searching for similar content using text-embedding-3-small:', queryText.substring(0, 100));
       const queryEmbedding = await generateEmbedding(queryText, apiKey);
       const results = await findSimilar(queryEmbedding, threshold, maxResults);
-      console.log(`✅ Found ${results.length} similar items`);
+      console.log(`✅ Found ${results.length} similar items using vector search`);
       return results;
     } catch (error) {
       console.error('❌ Similarity search failed:', error);

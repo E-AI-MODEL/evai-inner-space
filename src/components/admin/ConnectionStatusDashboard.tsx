@@ -3,16 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, AlertCircle, Wifi, Database, Brain, RefreshCw } from 'lucide-react';
+import { CheckCircle, AlertCircle, Wifi, Database, Brain, RefreshCw, Zap } from 'lucide-react';
 import { useSeeds } from '../../hooks/useSeeds';
-import { useOpenAI } from '../../hooks/useOpenAI';
-import { useOpenAISecondary } from '../../hooks/useOpenAISecondary';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ConnectionStatus {
   supabase: 'connected' | 'error' | 'checking';
   openaiApi1: 'configured' | 'missing' | 'checking';
   openaiApi2: 'configured' | 'missing' | 'checking';
+  vectorApi: 'configured' | 'missing' | 'checking';
   seeds: 'loaded' | 'error' | 'loading';
 }
 
@@ -21,12 +20,14 @@ const ConnectionStatusDashboard: React.FC = () => {
     supabase: 'checking',
     openaiApi1: 'checking',
     openaiApi2: 'checking',
+    vectorApi: 'checking',
     seeds: 'loading'
   });
   
   const { data: seeds, error: seedsError, isLoading: seedsLoading, refetch } = useSeeds();
   const [apiKey1] = useState(() => localStorage.getItem('openai-api-key') || '');
   const [apiKey2] = useState(() => localStorage.getItem('openai-api-key-2') || '');
+  const [vectorApiKey] = useState(() => localStorage.getItem('vector-api-key') || '');
 
   const checkConnections = async () => {
     console.log('🔍 Starting connection status check...');
@@ -35,7 +36,8 @@ const ConnectionStatusDashboard: React.FC = () => {
       ...prev,
       supabase: 'checking',
       openaiApi1: 'checking',
-      openaiApi2: 'checking'
+      openaiApi2: 'checking',
+      vectorApi: 'checking'
     }));
 
     // Check Supabase connection
@@ -58,7 +60,7 @@ const ConnectionStatusDashboard: React.FC = () => {
 
     // Check OpenAI API 1
     if (apiKey1.trim()) {
-      console.log('🔑 Checking OpenAI API 1...');
+      console.log('🔑 OpenAI API 1 configured');
       setStatus(prev => ({ ...prev, openaiApi1: 'configured' }));
     } else {
       console.log('🔴 OpenAI API 1 key missing');
@@ -67,17 +69,26 @@ const ConnectionStatusDashboard: React.FC = () => {
 
     // Check OpenAI API 2
     if (apiKey2.trim()) {
-      console.log('🔑 Checking OpenAI API 2...');
+      console.log('🔑 OpenAI API 2 configured');
       setStatus(prev => ({ ...prev, openaiApi2: 'configured' }));
     } else {
       console.log('🔴 OpenAI API 2 key missing');
       setStatus(prev => ({ ...prev, openaiApi2: 'missing' }));
     }
+
+    // Check Vector API (API Key 3)
+    if (vectorApiKey.trim()) {
+      console.log('🔑 Vector API Key 3 configured');
+      setStatus(prev => ({ ...prev, vectorApi: 'configured' }));
+    } else {
+      console.log('🔴 Vector API Key 3 missing');
+      setStatus(prev => ({ ...prev, vectorApi: 'missing' }));
+    }
   };
 
   useEffect(() => {
     checkConnections();
-  }, [apiKey1, apiKey2]);
+  }, [apiKey1, apiKey2, vectorApiKey]);
 
   useEffect(() => {
     if (seedsLoading) {
@@ -105,7 +116,7 @@ const ConnectionStatusDashboard: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string, type: string) => {
+  const getStatusBadge = (status: string) => {
     const configs = {
       connected: { variant: 'default' as const, text: 'Verbonden' },
       configured: { variant: 'default' as const, text: 'Geconfigureerd' },
@@ -123,7 +134,13 @@ const ConnectionStatusDashboard: React.FC = () => {
   const overallHealth = 
     status.supabase === 'connected' && 
     status.openaiApi1 === 'configured' && 
+    status.vectorApi === 'configured' &&
     status.seeds === 'loaded';
+
+  const neurosymbolicReady = 
+    status.openaiApi1 === 'configured' && 
+    status.openaiApi2 === 'configured' && 
+    status.vectorApi === 'configured';
 
   return (
     <Card className="w-full">
@@ -137,7 +154,7 @@ const ConnectionStatusDashboard: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Supabase Status */}
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex items-center gap-2">
@@ -146,7 +163,7 @@ const ConnectionStatusDashboard: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               {getStatusIcon(status.supabase)}
-              {getStatusBadge(status.supabase, 'database')}
+              {getStatusBadge(status.supabase)}
             </div>
           </div>
 
@@ -154,11 +171,11 @@ const ConnectionStatusDashboard: React.FC = () => {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex items-center gap-2">
               <Brain className="w-4 h-4" />
-              <span className="text-sm font-medium">OpenAI API 1</span>
+              <span className="text-sm font-medium">API 1</span>
             </div>
             <div className="flex items-center gap-2">
               {getStatusIcon(status.openaiApi1)}
-              {getStatusBadge(status.openaiApi1, 'api')}
+              {getStatusBadge(status.openaiApi1)}
             </div>
           </div>
 
@@ -166,11 +183,23 @@ const ConnectionStatusDashboard: React.FC = () => {
           <div className="flex items-center justify-between p-3 border rounded-lg">
             <div className="flex items-center gap-2">
               <Brain className="w-4 h-4" />
-              <span className="text-sm font-medium">OpenAI API 2</span>
+              <span className="text-sm font-medium">API 2</span>
             </div>
             <div className="flex items-center gap-2">
               {getStatusIcon(status.openaiApi2)}
-              {getStatusBadge(status.openaiApi2, 'api')}
+              {getStatusBadge(status.openaiApi2)}
+            </div>
+          </div>
+
+          {/* Vector API Status */}
+          <div className="flex items-center justify-between p-3 border rounded-lg bg-blue-50">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">API 3 (Vector)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {getStatusIcon(status.vectorApi)}
+              {getStatusBadge(status.vectorApi)}
             </div>
           </div>
 
@@ -182,7 +211,7 @@ const ConnectionStatusDashboard: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               {getStatusIcon(status.seeds)}
-              {getStatusBadge(status.seeds, 'seeds')}
+              {getStatusBadge(status.seeds)}
             </div>
           </div>
         </div>
@@ -194,9 +223,15 @@ const ConnectionStatusDashboard: React.FC = () => {
             <span className="font-medium">{seeds?.filter(s => s.isActive).length || 0}</span>
           </div>
           <div className="flex justify-between">
-            <span>API 1 + API 2 samenwerking:</span>
-            <Badge variant={status.openaiApi1 === 'configured' && status.openaiApi2 === 'configured' ? "default" : "secondary"}>
-              {status.openaiApi1 === 'configured' && status.openaiApi2 === 'configured' ? "Volledig" : "Gedeeltelijk"}
+            <span>Vector embeddings model:</span>
+            <Badge variant={status.vectorApi === 'configured' ? "default" : "secondary"}>
+              {status.vectorApi === 'configured' ? "text-embedding-3-small" : "Niet geconfigureerd"}
+            </Badge>
+          </div>
+          <div className="flex justify-between">
+            <span>Volledige neurosymbolische workflow:</span>
+            <Badge variant={neurosymbolicReady ? "default" : "secondary"}>
+              {neurosymbolicReady ? "Volledig operationeel" : "Gedeeltelijk"}
             </Badge>
           </div>
           <div className="flex justify-between">
@@ -229,7 +264,7 @@ const ConnectionStatusDashboard: React.FC = () => {
         </div>
 
         {/* Error Details */}
-        {(status.supabase === 'error' || status.seeds === 'error') && (
+        {(status.supabase === 'error' || status.seeds === 'error' || status.vectorApi === 'missing') && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-800 font-medium">Gedetecteerde problemen:</p>
             <ul className="text-sm text-red-700 mt-1 space-y-1">
@@ -237,6 +272,7 @@ const ConnectionStatusDashboard: React.FC = () => {
               {status.seeds === 'error' && <li>• Seeds kunnen niet geladen worden</li>}
               {status.openaiApi1 === 'missing' && <li>• OpenAI API Key 1 ontbreekt</li>}
               {status.openaiApi2 === 'missing' && <li>• OpenAI API Key 2 ontbreekt</li>}
+              {status.vectorApi === 'missing' && <li>• Vector API Key 3 ontbreekt (nodig voor embeddings)</li>}
             </ul>
           </div>
         )}
@@ -245,7 +281,22 @@ const ConnectionStatusDashboard: React.FC = () => {
         {overallHealth && (
           <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
             <p className="text-sm text-green-800 font-medium">
-              ✅ Alle systemen operationeel! API 1, API 2 en Supabase werken samen.
+              ✅ Alle systemen operationeel! Neural + Symbolic + Vector embeddings werken samen.
+            </p>
+            <p className="text-xs text-green-700 mt-1">
+              Vector embeddings gebruiken text-embedding-3-small model via API Key 3
+            </p>
+          </div>
+        )}
+
+        {/* Vector API specific notice */}
+        {status.vectorApi === 'configured' && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800 font-medium">
+              🧠 Vector embeddings actief met text-embedding-3-small
+            </p>
+            <p className="text-xs text-blue-700 mt-1">
+              Hybride neurosymbolische beslissingen kunnen nu neural similarity matching gebruiken
             </p>
           </div>
         )}

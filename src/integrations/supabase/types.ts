@@ -299,15 +299,26 @@ export type Database = {
         Returns: undefined
       }
       log_hybrid_decision: {
-        Args: {
-          p_user_input: string
-          p_symbolic_matches: Json
-          p_neural_similarities: Json
-          p_hybrid_decision: Json
-          p_final_response: string
-          p_confidence_score: number
-          p_processing_time_ms?: number
-        }
+        Args:
+          | {
+              p_user_id: string
+              p_user_input: string
+              p_symbolic_matches: Json
+              p_neural_similarities: Json
+              p_hybrid_decision: Json
+              p_final_response: string
+              p_confidence_score: number
+              p_processing_time_ms?: number
+            }
+          | {
+              p_user_input: string
+              p_symbolic_matches: Json
+              p_neural_similarities: Json
+              p_hybrid_decision: Json
+              p_final_response: string
+              p_confidence_score: number
+              p_processing_time_ms?: number
+            }
         Returns: string
       }
       update_setting: {

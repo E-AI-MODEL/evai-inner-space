@@ -55,7 +55,7 @@ const SystemStatusOverview: React.FC<SystemStatusOverviewProps> = ({
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-gray-700">Vector Engine (Embeddings)</span>
+          <span className="text-gray-700">Vector Engine (API Key 3 - Embeddings)</span>
           <div className="flex items-center gap-2">
             {vectorActive ? (
               <CheckCircle size={14} className="text-green-600" />
@@ -84,7 +84,7 @@ const SystemStatusOverview: React.FC<SystemStatusOverviewProps> = ({
         
         <div className="pt-2 border-t border-purple-200">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-gray-800">Complete Workflow</span>
+            <span className="font-medium text-gray-800">Complete Neurosymbolische Workflow</span>
             <div className="flex items-center gap-2">
               {allThreeActive ? (
                 <CheckCircle size={14} className="text-green-600" />
@@ -98,7 +98,12 @@ const SystemStatusOverview: React.FC<SystemStatusOverviewProps> = ({
           </div>
           {allThreeActive && (
             <p className="text-xs text-green-700 mt-1">
-              🚀 Alle systemen actief: Neural + Symbolic + Vector processing
+              🚀 Alle systemen actief: Neural + Symbolic + Vector (text-embedding-3-small)
+            </p>
+          )}
+          {!vectorActive && (
+            <p className="text-xs text-orange-700 mt-1">
+              ⚠️ Vector embeddings ontbreken - hybride beslissingen beperkt tot symbolische matching
             </p>
           )}
         </div>
