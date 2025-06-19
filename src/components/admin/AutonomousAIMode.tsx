@@ -27,6 +27,7 @@ const AutonomousAIMode: React.FC = () => {
     if (savedState === 'true') {
       setIsAutonomous(true);
     }
+    console.log('🔄 Loaded autonomous state from localStorage:', savedState);
   }, []);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ const AutonomousAIMode: React.FC = () => {
   }, [isAutonomous]);
 
   const handleToggle = (checked: boolean) => {
+    console.log('🔄 Toggle triggered:', checked);
     setIsAutonomous(checked);
     if (checked) {
       console.log('🚀 Autonome AI modus geactiveerd');
@@ -43,6 +45,8 @@ const AutonomousAIMode: React.FC = () => {
       console.log('⏸️ Autonome AI modus gedeactiveerd');
     }
   };
+
+  console.log('🎯 AutonomousAIMode render:', { isAutonomous, messagesCount: messages.length });
 
   return (
     <Card className="bg-white/60 backdrop-blur-sm border-white/20 shadow-lg">

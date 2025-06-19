@@ -13,6 +13,8 @@ const AutonomousAIModeHeader: React.FC<AutonomousAIModeHeaderProps> = ({
   isAutonomous,
   onToggle
 }) => {
+  console.log('🔧 AutonomousAIModeHeader render:', { isAutonomous });
+  
   return (
     <CardHeader className="pb-3">
       <CardTitle className="flex items-center justify-between">
