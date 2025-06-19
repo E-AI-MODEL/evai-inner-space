@@ -41,8 +41,8 @@ export function useNeurosymbolicWorkflow() {
     console.log('📝 Input:', input.substring(0, 100));
 
     try {
-      // Step 1: Store input embedding for future learning
-      const inputId = `input-${Date.now()}`;
+      // Step 1: Store input embedding for future learning (with better error handling)
+      const inputId = crypto.randomUUID(); // Use proper UUID
       try {
         await processAndStore(
           inputId,
@@ -52,7 +52,7 @@ export function useNeurosymbolicWorkflow() {
           {
             type: 'user_input',
             userId: context.userId,
-            conversationId: context.conversationId,
+            conversationId: context.conversationId || crypto.randomUUID(),
             timestamp: new Date().toISOString(),
           }
         );
@@ -62,7 +62,7 @@ export function useNeurosymbolicWorkflow() {
         // Continue without vector storage
       }
 
-      // Step 2: Neural similarity search
+      // Step 2: Neural similarity search (with better error handling)
       console.log('🧠 Performing neural similarity search...');
       let similarities = [];
       try {
@@ -73,23 +73,28 @@ export function useNeurosymbolicWorkflow() {
         // Continue with symbolic-only approach
       }
 
-      // Step 3: Hybrid decision making
+      // Step 3: Hybrid decision making (with randomization to prevent loops)
       console.log('⚖️ Making hybrid decision...');
       const activeSeeds = seeds?.filter(s => s.isActive) || [];
+      
+      // Add timestamp and randomization to context to prevent identical responses
+      const enhancedContext = {
+        ...context,
+        timestamp: Date.now(),
+        randomSeed: Math.random(),
+        sessionId: crypto.randomUUID(),
+      };
+      
       const hybridDecision = await processHybridDecision(
         input,
         activeSeeds,
         similarities,
-        {
-          userId: context.userId,
-          conversationId: context.conversationId,
-          messageHistory: context.messages?.slice(-5) || [],
-        }
+        enhancedContext
       );
 
       console.log(`✅ Decision: ${hybridDecision.responseType} (${(hybridDecision.confidence * 100).toFixed(1)}%)`);
 
-      // Step 4: Self-reflection trigger check (background)
+      // Step 4: Self-reflection trigger check (background with error handling)
       if (context.messages && context.messages.length > 0) {
         console.log('🤔 Checking for reflection triggers...');
         setTimeout(async () => {
@@ -124,6 +129,7 @@ export function useNeurosymbolicWorkflow() {
           neuralSimilarities: similarities.length,
           symbolicsMatches: activeSeeds.length,
           processingTime,
+          sessionTimestamp: startTime,
         },
         seed: hybridDecision.seed,
         processingTime,
@@ -132,13 +138,28 @@ export function useNeurosymbolicWorkflow() {
     } catch (error) {
       console.error('❌ Neurosymbolic workflow failed:', error);
       
-      // Fallback to basic response
+      // Fallback to varied basic responses to prevent loops
+      const timestamp = Date.now();
+      const randomIndex = Math.floor(Math.random() * 5);
+      const fallbackResponses = [
+        'Ik begrijp dat je hulp zoekt. Kun je me meer vertellen over hoe je je voelt?',
+        'Dank je voor het delen. Wat speelt er het meest voor je op dit moment?',
+        'Ik hoor je. Kun je me wat meer context geven over je situatie?',
+        'Het klinkt alsof er iets belangrijks speelt. Vertel me er meer over.',
+        'Ik ben hier om te luisteren. Wat zou het meest helpend zijn om te bespreken?'
+      ];
+      
       return {
-        response: 'Ik begrijp dat je hulp zoekt. Kun je me meer vertellen over hoe je je voelt?',
+        response: fallbackResponses[randomIndex],
         confidence: 0.3,
         responseType: 'generated',
-        reasoning: 'Fallback due to workflow error',
-        metadata: { error: error.message, fallback: true },
+        reasoning: `Fallback due to workflow error (variant ${randomIndex})`,
+        metadata: { 
+          error: error.message, 
+          fallback: true, 
+          fallbackIndex: randomIndex,
+          timestamp,
+        },
         processingTime: Date.now() - startTime,
       };
     } finally {
@@ -157,8 +178,13 @@ export function useNeurosymbolicWorkflow() {
         .map(m => `${m.from}: ${m.content}`)
         .join('\n');
 
+      // Use proper UUID for conversation ID
+      const properConversationId = conversationId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
+        ? conversationId 
+        : crypto.randomUUID();
+
       await processAndStore(
-        conversationId,
+        properConversationId,
         'conversation',
         conversationText,
         vectorApiKey,

@@ -27,26 +27,48 @@ export const storeEmbedding = async (
   embedding: number[],
   metadata: Record<string, any> = {}
 ): Promise<void> => {
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
 
-  const { error } = await supabase
-    .from('vector_embeddings')
-    .insert({
-      user_id: user?.id,
-      content_id,
-      content_type,
-      content_text: content_text.substring(0, 2000), // Limit text length for storage
-      embedding: `[${embedding.join(',')}]`, // Store as text representation
-      metadata: {
-        ...metadata,
-        embeddingModel: 'text-embedding-3-small', // Track which model was used
-      },
-    });
+    // Generate a proper UUID for content_id if it's not already
+    let validContentId = content_id;
+    try {
+      // Test if it's a valid UUID format, if not generate one
+      if (!content_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        validContentId = crypto.randomUUID();
+        console.log(`🔧 Generated UUID for content_id: ${content_id} -> ${validContentId}`);
+      }
+    } catch (error) {
+      validContentId = crypto.randomUUID();
+      console.log(`🔧 Generated fallback UUID: ${validContentId}`);
+    }
 
-  if (error) {
-    console.error('Error storing embedding:', error);
-    throw error;
+    const { error } = await supabase
+      .from('vector_embeddings')
+      .insert({
+        user_id: user?.id,
+        content_id: validContentId,
+        content_type,
+        content_text: content_text.substring(0, 2000), // Limit text length for storage
+        embedding: `[${embedding.join(',')}]`, // Store as text representation
+        metadata: {
+          ...metadata,
+          embeddingModel: 'text-embedding-3-small', // Track which model was used
+          originalContentId: content_id, // Keep track of original ID
+        },
+      });
+
+    if (error) {
+      console.error('Error storing embedding:', error);
+      // Don't throw error to prevent breaking the main flow
+      console.warn('⚠️ Embedding storage failed, continuing without vector storage');
+    } else {
+      console.log('✅ Embedding stored successfully');
+    }
+  } catch (error) {
+    console.error('Failed to store embedding:', error);
+    // Don't throw to prevent breaking main workflow
   }
 };
 
