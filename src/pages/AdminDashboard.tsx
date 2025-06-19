@@ -53,7 +53,7 @@ const AdminDashboard = () => {
       />
 
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <Tabs defaultValue={hasRubricActivity ? "analyse" : "seeds"} className="w-full" orientation="horizontal">
+        <Tabs defaultValue={hasRubricActivity ? "analyse" : "kennisbank"} className="w-full" orientation="horizontal">
           <div className="mb-4 sm:mb-6">
             <AdminTabsList hasRubricActivity={hasRubricActivity} />
           </div>

@@ -19,7 +19,7 @@ const AdminTabsList: React.FC<AdminTabsListProps> = ({ hasRubricActivity }) => {
       </TabsTrigger>
       
       <TabsTrigger 
-        value="seeds" 
+        value="kennisbank" 
         className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-1.5 sm:px-3 py-2 sm:py-2.5"
       >
         <Database size={14} className="flex-shrink-0" />
@@ -27,7 +27,7 @@ const AdminTabsList: React.FC<AdminTabsListProps> = ({ hasRubricActivity }) => {
       </TabsTrigger>
       
       <TabsTrigger 
-        value="analytics" 
+        value="data" 
         className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-1.5 sm:px-3 py-2 sm:py-2.5"
       >
         <BarChart size={14} className="flex-shrink-0" />
@@ -35,11 +35,11 @@ const AdminTabsList: React.FC<AdminTabsListProps> = ({ hasRubricActivity }) => {
       </TabsTrigger>
       
       <TabsTrigger 
-        value="system" 
+        value="systeem" 
         className="flex items-center justify-center gap-1 sm:gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white transition-all duration-200 text-xs sm:text-sm px-1.5 sm:px-3 py-2 sm:py-2.5"
       >
         <Monitor size={14} className="flex-shrink-0" />
-        <span className="hidden xs:inline sm:inline truncate">Instellingen</span>
+        <span className="hidden xs:inline sm:inline truncate">Systeem</span>
       </TabsTrigger>
     </TabsList>
   );
