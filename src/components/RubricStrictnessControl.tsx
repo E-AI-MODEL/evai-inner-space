@@ -1,13 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Gauge, AlertTriangle, Shield, Settings } from 'lucide-react';
+import { Gauge, AlertTriangle, Shield, Settings, Loader2, CheckCircle } from 'lucide-react';
 import { useRubricSettings, RubricStrictnessLevel } from '../hooks/useRubricSettings';
+import { useToast } from '@/hooks/use-toast';
 
 const RubricStrictnessControl: React.FC = () => {
   const { config, isLoading, updateStrictness, availableLevels } = useRubricSettings();
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
   const getStrictnessInfo = (level: RubricStrictnessLevel) => {
     switch (level) {
@@ -36,7 +39,39 @@ const RubricStrictnessControl: React.FC = () => {
   };
 
   const handleStrictnessChange = async (level: RubricStrictnessLevel) => {
-    await updateStrictness(level);
+    console.log('🔧 Quick control: changing to', level);
+    setIsSaving(true);
+    
+    try {
+      const success = await updateStrictness(level);
+      
+      if (success) {
+        console.log('✅ Quick control: saved successfully');
+        toast({ 
+          title: "✅ Instelling bijgewerkt", 
+          description: `Rubric niveau: ${getStrictnessInfo(level).shortLabel}`,
+          duration: 2000
+        });
+      } else {
+        console.error('❌ Quick control: failed to save');
+        toast({ 
+          title: "❌ Fout", 
+          description: "Kon instelling niet opslaan",
+          variant: "destructive",
+          duration: 3000
+        });
+      }
+    } catch (error) {
+      console.error('❌ Quick control error:', error);
+      toast({ 
+        title: "❌ Fout", 
+        description: "Onverwachte fout opgetreden",
+        variant: "destructive",
+        duration: 3000
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -60,6 +95,8 @@ const RubricStrictnessControl: React.FC = () => {
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <Gauge className="w-4 h-4 flex-shrink-0" />
           <span className="truncate">Snelle Gevoeligheidscontrole</span>
+          {isSaving && <Loader2 className="w-3 h-3 animate-spin" />}
+          {!isSaving && <CheckCircle className="w-3 h-3 text-green-600" />}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -82,7 +119,7 @@ const RubricStrictnessControl: React.FC = () => {
                 variant={isActive ? "default" : "outline"}
                 className={`text-xs h-7 px-2 ${isActive ? '' : 'text-gray-600'}`}
                 onClick={() => handleStrictnessChange(level)}
-                disabled={isActive}
+                disabled={isActive || isSaving}
               >
                 <span className="flex-shrink-0">{info.icon}</span>
               </Button>
@@ -93,6 +130,12 @@ const RubricStrictnessControl: React.FC = () => {
         <p className="text-xs text-gray-500 leading-relaxed">
           {currentInfo.description}
         </p>
+
+        {isSaving && (
+          <p className="text-xs text-blue-600">
+            Instelling wordt opgeslagen...
+          </p>
+        )}
       </CardContent>
     </Card>
   );

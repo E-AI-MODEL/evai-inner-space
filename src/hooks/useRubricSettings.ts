@@ -73,42 +73,97 @@ export function useRubricSettings() {
   }, []);
 
   const loadSettings = async () => {
+    console.log('🔧 Loading rubric settings...');
     try {
-      const { data, error } = await supabase.rpc('get_setting', {
-        setting_key: 'rubric_strictness',
-        default_value: 'flexible'
-      });
-
-      if (error) {
-        console.error('Error loading rubric settings:', error);
-        return;
+      // First try to get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('❌ Auth error:', userError);
+      } else {
+        console.log('👤 Current user:', user?.id ? 'Authenticated' : 'Anonymous');
       }
 
-      const level = (data as RubricStrictnessLevel) || 'flexible';
-      setConfig(STRICTNESS_CONFIGS[level] || STRICTNESS_CONFIGS.flexible);
+      // Try direct query first
+      console.log('🔍 Attempting direct settings query...');
+      const { data: directData, error: directError } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'rubric_strictness')
+        .maybeSingle();
+
+      if (directError) {
+        console.error('❌ Direct query error:', directError);
+        console.log('🔄 Falling back to RPC function...');
+        
+        // Fallback to RPC function
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_setting', {
+          setting_key: 'rubric_strictness',
+          default_value: 'flexible'
+        });
+
+        if (rpcError) {
+          console.error('❌ RPC function error:', rpcError);
+          console.log('⚠️ Using default configuration');
+        } else {
+          console.log('✅ RPC function success:', rpcData);
+          const level = (rpcData as RubricStrictnessLevel) || 'flexible';
+          setConfig(STRICTNESS_CONFIGS[level] || STRICTNESS_CONFIGS.flexible);
+        }
+      } else {
+        console.log('✅ Direct query success:', directData);
+        const level = (directData?.value as RubricStrictnessLevel) || 'flexible';
+        setConfig(STRICTNESS_CONFIGS[level] || STRICTNESS_CONFIGS.flexible);
+      }
     } catch (error) {
-      console.error('Failed to load rubric settings:', error);
+      console.error('❌ Failed to load rubric settings:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const updateStrictness = async (level: RubricStrictnessLevel) => {
+    console.log('💾 Updating rubric strictness to:', level);
+    
     try {
-      const { error } = await supabase.rpc('update_setting', {
-        setting_key: 'rubric_strictness',
-        setting_value: level
-      });
+      // First try direct update
+      console.log('🔄 Attempting direct settings update...');
+      const { error: directError } = await supabase
+        .from('settings')
+        .upsert({
+          key: 'rubric_strictness',
+          value: level,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'key'
+        });
 
-      if (error) {
-        console.error('Error updating rubric settings:', error);
-        return false;
+      if (directError) {
+        console.error('❌ Direct update error:', directError);
+        console.log('🔄 Falling back to RPC function...');
+        
+        // Fallback to RPC function
+        const { error: rpcError } = await supabase.rpc('update_setting', {
+          setting_key: 'rubric_strictness',
+          setting_value: level
+        });
+
+        if (rpcError) {
+          console.error('❌ RPC update error:', rpcError);
+          return false;
+        } else {
+          console.log('✅ RPC update success');
+        }
+      } else {
+        console.log('✅ Direct update success');
       }
 
+      // Update local state on success
       setConfig(STRICTNESS_CONFIGS[level]);
+      console.log('✅ Local state updated to:', level);
       return true;
     } catch (error) {
-      console.error('Failed to update rubric settings:', error);
+      console.error('❌ Failed to update rubric settings:', error);
       return false;
     }
   };
