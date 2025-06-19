@@ -26,7 +26,7 @@ const ConnectionStatusDashboard: React.FC = () => {
   const [vectorApiKey] = useState(() => localStorage.getItem('vector-api-key') || '');
 
   const checkConnections = async () => {
-    console.log('🔍 Starting connection status check...');
+    console.log('🔍 Starting comprehensive connection status check...');
     
     setStatus(prev => ({
       ...prev,
@@ -36,17 +36,23 @@ const ConnectionStatusDashboard: React.FC = () => {
       vectorApi: 'checking'
     }));
 
-    // Check Supabase connection
+    // Check Supabase connection with detailed logging
+    console.log('🔍 Testing Supabase database connection...');
     const supabaseConnected = await checkSupabaseConnection();
+    console.log(`📊 Supabase connection result: ${supabaseConnected ? 'SUCCESS' : 'FAILED'}`);
+    
     setStatus(prev => ({ 
       ...prev, 
       supabase: supabaseConnected ? 'connected' : 'error' 
     }));
 
-    // Check API Keys
+    // Check API Keys with detailed logging
+    console.log('🔍 Checking API key configurations...');
     const api1Status = checkApiKeyStatus(apiKey1, 'OpenAI API 1');
     const api2Status = checkApiKeyStatus(apiKey2, 'OpenAI API 2');
     const vectorStatus = checkApiKeyStatus(vectorApiKey, 'Vector API Key 3');
+
+    console.log(`📊 API Status Summary: API1=${api1Status}, API2=${api2Status}, Vector=${vectorStatus}`);
 
     setStatus(prev => ({
       ...prev,
@@ -54,20 +60,24 @@ const ConnectionStatusDashboard: React.FC = () => {
       openaiApi2: api2Status,
       vectorApi: vectorStatus
     }));
+
+    console.log('✅ Connection check completed');
   };
 
   useEffect(() => {
+    console.log('🚀 ConnectionStatusDashboard mounted, starting initial connection check');
     checkConnections();
   }, [apiKey1, apiKey2, vectorApiKey]);
 
   useEffect(() => {
     if (seedsLoading) {
+      console.log('🔄 Seeds are loading...');
       setStatus(prev => ({ ...prev, seeds: 'loading' }));
     } else if (seedsError) {
       console.error('🔴 Seeds loading error:', seedsError);
       setStatus(prev => ({ ...prev, seeds: 'error' }));
     } else {
-      console.log(`✅ Seeds loaded: ${seeds?.length || 0} seeds`);
+      console.log(`✅ Seeds loaded successfully: ${seeds?.length || 0} total seeds`);
       setStatus(prev => ({ ...prev, seeds: 'loaded' }));
     }
   }, [seeds, seedsError, seedsLoading]);
@@ -79,6 +89,8 @@ const ConnectionStatusDashboard: React.FC = () => {
     status.seeds === 'loaded';
 
   const activeSeedsCount = seeds?.filter(s => s.isActive).length || 0;
+
+  console.log(`📊 Overall system health: ${overallHealth ? 'HEALTHY' : 'ISSUES DETECTED'}`);
 
   return (
     <Card className="w-full">
