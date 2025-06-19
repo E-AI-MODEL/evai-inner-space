@@ -1,5 +1,5 @@
 
-import { Settings, BarChart, Shield, LogOut, User } from "lucide-react";
+import { Settings, BarChart, Shield, LogOut, User, Loader2 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
 
 interface TopBarProps {
   onSettingsClick: () => void;
@@ -28,21 +29,37 @@ const TopBar = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const isOnAdminPage = location.pathname === '/admin';
 
   const handleSignOut = async () => {
+    setIsSigningOut(true);
+    
     try {
-      await signOut();
       toast({ 
-        title: "Uitgelogd", 
-        description: "Je bent succesvol uitgelogd.",
+        title: "Uitloggen...", 
+        description: "Je wordt uitgelogd uit EvAI.",
       });
-    } catch (error) {
+      
+      await signOut();
+      
       toast({ 
-        title: "Fout", 
-        description: "Er ging iets mis bij het uitloggen.",
+        title: "Succesvol uitgelogd", 
+        description: "Je bent veilig uitgelogd uit EvAI. Tot ziens!",
+      });
+      
+      // Navigate to home page after successful logout
+      navigate('/');
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({ 
+        title: "Uitloggen mislukt", 
+        description: "Er ging iets mis bij het uitloggen. Probeer het opnieuw.",
         variant: "destructive"
       });
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -85,8 +102,12 @@ const TopBar = ({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="p-2">
-              <User size={20} />
+            <Button variant="ghost" size="sm" className="p-2" disabled={isSigningOut}>
+              {isSigningOut ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <User size={20} />
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -94,9 +115,22 @@ const TopBar = ({
               {user?.email}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Uitloggen
+            <DropdownMenuItem 
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              className="focus:bg-red-50 focus:text-red-600"
+            >
+              {isSigningOut ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uitloggen...
+                </>
+              ) : (
+                <>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Uitloggen
+                </>
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
