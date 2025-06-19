@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { AdvancedSeed } from '../types/seed';
 import { SimilarityResult } from './useVectorEmbeddings';
@@ -209,31 +208,37 @@ export function useHybridDecisionEngine() {
     // Log the decision
     try {
       const processingTime = Date.now() - startTime;
-      await supabase.rpc('log_hybrid_decision', {
-        p_user_input: input,
-        p_symbolic_matches: symbolicMatches.map(m => ({
+      
+      // Get the current user to include user_id in the log
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Insert the log with user_id included
+      await supabase.from('decision_logs').insert({
+        user_id: user?.id,
+        user_input: input,
+        symbolic_matches: symbolicMatches.map(m => ({
           seedId: m.seed.id,
           emotion: m.seed.emotion,
           score: m.score,
           triggers: m.triggers,
           confidence: m.confidence,
         })),
-        p_neural_similarities: neuralMatches.map(m => ({
+        neural_similarities: neuralMatches.map(m => ({
           contentId: m.similarity.content_id,
           contentType: m.similarity.content_type,
           similarityScore: m.similarity.similarity_score,
           relevanceScore: m.relevanceScore,
         })),
-        p_hybrid_decision: {
+        hybrid_decision: {
           responseType: decision.responseType,
           confidence: decision.confidence,
           reasoning: decision.reasoning,
           symbolicContribution: decision.symbolicContribution,
           neuralContribution: decision.neuralContribution,
         },
-        p_final_response: decision.selectedResponse,
-        p_confidence_score: decision.confidence,
-        p_processing_time_ms: processingTime,
+        final_response: decision.selectedResponse,
+        confidence_score: decision.confidence,
+        processing_time_ms: processingTime,
       });
     } catch (error) {
       console.error('Failed to log hybrid decision:', error);
