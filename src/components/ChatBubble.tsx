@@ -85,7 +85,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
         )}
 
         <div
-          className={`px-4 py-3 rounded-xl font-inter shadow-card relative text-base leading-snug transition-all duration-300
+          className={`px-4 py-3 rounded-xl font-inter shadow-card relative text-sm leading-relaxed transition-all duration-300
             ${from === "ai"
               ? accentColor
                 ? ""
