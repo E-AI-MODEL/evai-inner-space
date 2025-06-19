@@ -26,7 +26,7 @@ const AutonomousAIMode: React.FC = () => {
   
   const { messages } = useChatHistory();
   const { executeReflection, isReflecting } = useSelfReflection();
-  const { generateSeeds, isGenerating } = useOpenAISeedGenerator();
+  const { generateSeed, analyzeConversationForSeeds, injectSeedToDatabase, isGenerating } = useOpenAISeedGenerator();
 
   useEffect(() => {
     // Load saved autonomous mode state
@@ -86,54 +86,67 @@ const AutonomousAIMode: React.FC = () => {
         status: 'running'
       });
 
-      // Simulate gap detection logic
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const detectedGaps = reflectionResult.insights.filter(i => i.actionable).length;
+      const apiKey = localStorage.getItem('openai-api-key-2');
+      if (!apiKey) {
+        updateActivity(gapId, { 
+          status: 'failed',
+          description: 'OpenAI API Key 2 vereist voor gapdetectie'
+        });
+        return;
+      }
+
+      // Analyze conversation for missing seeds
+      const missingEmotions = await analyzeConversationForSeeds(messages, apiKey);
       updateActivity(gapId, { 
         status: 'completed',
-        description: `${detectedGaps} kennisgaten gedetecteerd voor verbetering`
+        description: `${missingEmotions.length} potentiële kennisgaten gedetecteerd`
       });
 
       // Step 3: Generate new seeds
       setLearningProgress(75);
-      if (detectedGaps > 0) {
+      if (missingEmotions.length > 0) {
         const seedId = addActivity({
           type: 'seed_generation',
           description: 'Nieuwe emotionele seeds genereren...',
           status: 'running'
         });
 
-        const apiKey = localStorage.getItem('openai-api-key-2');
-        if (apiKey) {
-          try {
-            await generateSeeds(3, 'Nieuwe seeds gebaseerd op gedetecteerde kennisgaten', apiKey);
-            updateActivity(seedId, { 
-              status: 'completed',
-              description: '3 nieuwe seeds succesvol gegenereerd'
-            });
+        try {
+          let generatedCount = 0;
+          // Generate seeds for up to 3 missing emotions
+          const emotionsToProcess = missingEmotions.slice(0, 3);
+          
+          for (const emotion of emotionsToProcess) {
+            const newSeed = await generateSeed({
+              emotion,
+              context: 'Gedetecteerde kennisgap uit gesprekanalyse',
+              conversationHistory: messages.slice(-5).map(m => m.content),
+              severity: 'medium'
+            }, apiKey);
 
-            // Step 4: Inject into knowledge base
+            if (newSeed) {
+              await injectSeedToDatabase(newSeed);
+              generatedCount++;
+            }
+          }
+
+          updateActivity(seedId, { 
+            status: 'completed',
+            description: `${generatedCount} nieuwe seeds succesvol gegenereerd en geïnjecteerd`
+          });
+
+          // Step 4: Injection status
+          if (generatedCount > 0) {
             const injectId = addActivity({
               type: 'injection',
-              description: 'Seeds injecteren in kennisbank...',
-              status: 'running'
-            });
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            updateActivity(injectId, { 
-              status: 'completed',
-              description: 'Seeds succesvol geïntegreerd in kennisbank'
-            });
-          } catch (error) {
-            updateActivity(seedId, { 
-              status: 'failed',
-              description: 'Seed generatie mislukt - controleer API key'
+              description: 'Seeds succesvol geïntegreerd in kennisbank',
+              status: 'completed'
             });
           }
-        } else {
+        } catch (error) {
           updateActivity(seedId, { 
             status: 'failed',
-            description: 'OpenAI API Key 2 vereist voor autonome seed generatie'
+            description: 'Seed generatie mislukt - controleer API key'
           });
         }
       }
