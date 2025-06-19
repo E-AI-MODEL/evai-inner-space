@@ -269,11 +269,17 @@ export type Database = {
         Returns: unknown
       }
       find_similar_embeddings: {
-        Args: {
-          query_embedding: string
-          similarity_threshold?: number
-          max_results?: number
-        }
+        Args:
+          | {
+              query_embedding: string
+              similarity_threshold?: number
+              max_results?: number
+            }
+          | {
+              query_embedding: string
+              similarity_threshold?: number
+              max_results?: number
+            }
         Returns: {
           content_id: string
           content_type: string
