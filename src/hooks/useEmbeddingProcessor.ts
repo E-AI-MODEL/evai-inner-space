@@ -1,8 +1,8 @@
 
-import { useVectorEmbeddings } from './useVectorEmbeddings';
+import { useOptimizedEmbeddings } from './useOptimizedEmbeddings';
 
 export function useEmbeddingProcessor() {
-  const { searchSimilar, processAndStore } = useVectorEmbeddings();
+  const { storeOptimizedEmbedding, storeConversationEmbeddingOptimized, searchSimilar } = useOptimizedEmbeddings();
 
   const storeInputEmbedding = async (
     input: string,
@@ -13,24 +13,17 @@ export function useEmbeddingProcessor() {
     }
   ): Promise<void> => {
     try {
-      console.log('💾 Storing input embedding...');
-      const inputId = crypto.randomUUID();
+      console.log('💾 Attempting to store optimized input embedding...');
       
-      await processAndStore(
-        inputId,
-        'message',
-        input,
-        vectorApiKey,
-        {
-          type: 'user_input',
-          userId: context.userId,
-          conversationId: context.conversationId || crypto.randomUUID(),
-          timestamp: new Date().toISOString(),
-        }
-      );
-      console.log('✅ Input embedding stored successfully');
+      const wasStored = await storeOptimizedEmbedding(input, vectorApiKey, context);
+      
+      if (wasStored) {
+        console.log('✅ Optimized input embedding stored successfully');
+      } else {
+        console.log('⏭️ Input embedding skipped due to optimization rules');
+      }
     } catch (embeddingError) {
-      console.error('⚠️ Failed to store input embedding:', embeddingError);
+      console.error('⚠️ Failed to store optimized input embedding:', embeddingError);
     }
   };
 
@@ -59,34 +52,21 @@ export function useEmbeddingProcessor() {
     conversationId: string
   ): Promise<void> => {
     try {
-      const conversationText = messages
-        .slice(-6) // Last 6 messages for context
-        .map(m => `${m.from}: ${m.content}`)
-        .join('\n');
-
-      // Use proper UUID for conversation ID
-      const properConversationId = conversationId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
-        ? conversationId 
-        : crypto.randomUUID();
-
-      await processAndStore(
-        properConversationId,
-        'conversation',
-        conversationText,
+      console.log('💾 Attempting to store optimized conversation embedding...');
+      
+      const wasStored = await storeConversationEmbeddingOptimized(
+        messages,
         vectorApiKey,
-        {
-          messageCount: messages.length,
-          lastTimestamp: messages[messages.length - 1]?.timestamp,
-          dominantEmotions: messages
-            .filter(m => m.emotionSeed)
-            .map(m => m.emotionSeed)
-            .slice(-3),
-        }
+        conversationId
       );
       
-      console.log('✅ Conversation embedding stored');
+      if (wasStored) {
+        console.log('✅ Optimized conversation embedding stored successfully');
+      } else {
+        console.log('⏭️ Conversation embedding skipped due to optimization rules');
+      }
     } catch (error) {
-      console.error('⚠️ Failed to store conversation embedding:', error);
+      console.error('⚠️ Failed to store optimized conversation embedding:', error);
     }
   };
 
