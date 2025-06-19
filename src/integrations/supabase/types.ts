@@ -19,6 +19,7 @@ export type Database = {
           neural_similarities: Json | null
           processing_time_ms: number | null
           symbolic_matches: Json | null
+          user_id: string | null
           user_input: string
         }
         Insert: {
@@ -30,6 +31,7 @@ export type Database = {
           neural_similarities?: Json | null
           processing_time_ms?: number | null
           symbolic_matches?: Json | null
+          user_id?: string | null
           user_input: string
         }
         Update: {
@@ -41,6 +43,7 @@ export type Database = {
           neural_similarities?: Json | null
           processing_time_ms?: number | null
           symbolic_matches?: Json | null
+          user_id?: string | null
           user_input?: string
         }
         Relationships: []
@@ -145,6 +148,7 @@ export type Database = {
           notes: string | null
           rating: string | null
           seed_id: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -152,6 +156,7 @@ export type Database = {
           notes?: string | null
           rating?: string | null
           seed_id?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -159,6 +164,7 @@ export type Database = {
           notes?: string | null
           rating?: string | null
           seed_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -264,10 +270,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      binary_quantize: {
-        Args: { "": string } | { "": unknown }
-        Returns: unknown
-      }
       find_similar_embeddings: {
         Args:
           | {
@@ -292,61 +294,9 @@ export type Database = {
         Args: { setting_key: string; default_value?: string }
         Returns: string
       }
-      halfvec_avg: {
-        Args: { "": number[] }
-        Returns: unknown
-      }
-      halfvec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      halfvec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      halfvec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
-      hnsw_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnsw_sparsevec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      hnswhandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
       increment_seed_usage: {
         Args: Record<PropertyKey, never> | { seed_id: string }
         Returns: undefined
-      }
-      ivfflat_bit_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflat_halfvec_support: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      ivfflathandler: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      l2_norm: {
-        Args: { "": unknown } | { "": unknown }
-        Returns: number
-      }
-      l2_normalize: {
-        Args: { "": string } | { "": unknown } | { "": unknown }
-        Returns: unknown
       }
       log_hybrid_decision: {
         Args: {
@@ -360,47 +310,11 @@ export type Database = {
         }
         Returns: string
       }
-      sparsevec_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      sparsevec_send: {
-        Args: { "": unknown }
-        Returns: string
-      }
-      sparsevec_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
-      }
       update_setting: {
         Args:
           | Record<PropertyKey, never>
           | { setting_key: string; setting_value: string }
         Returns: undefined
-      }
-      vector_avg: {
-        Args: { "": number[] }
-        Returns: string
-      }
-      vector_dims: {
-        Args: { "": string } | { "": unknown }
-        Returns: number
-      }
-      vector_norm: {
-        Args: { "": string }
-        Returns: number
-      }
-      vector_out: {
-        Args: { "": string }
-        Returns: unknown
-      }
-      vector_send: {
-        Args: { "": string }
-        Returns: string
-      }
-      vector_typmod_in: {
-        Args: { "": unknown[] }
-        Returns: number
       }
     }
     Enums: {
