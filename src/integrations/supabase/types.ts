@@ -9,42 +9,105 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_collaboration_logs: {
+        Row: {
+          api1_used: boolean | null
+          api2_used: boolean | null
+          created_at: string
+          error_details: Json | null
+          id: string
+          metadata: Json | null
+          processing_time_ms: number | null
+          secondary_analysis: boolean | null
+          seed_generated: boolean | null
+          session_id: string | null
+          success: boolean | null
+          user_id: string | null
+          vector_api_used: boolean | null
+          workflow_type: string
+        }
+        Insert: {
+          api1_used?: boolean | null
+          api2_used?: boolean | null
+          created_at?: string
+          error_details?: Json | null
+          id?: string
+          metadata?: Json | null
+          processing_time_ms?: number | null
+          secondary_analysis?: boolean | null
+          seed_generated?: boolean | null
+          session_id?: string | null
+          success?: boolean | null
+          user_id?: string | null
+          vector_api_used?: boolean | null
+          workflow_type: string
+        }
+        Update: {
+          api1_used?: boolean | null
+          api2_used?: boolean | null
+          created_at?: string
+          error_details?: Json | null
+          id?: string
+          metadata?: Json | null
+          processing_time_ms?: number | null
+          secondary_analysis?: boolean | null
+          seed_generated?: boolean | null
+          session_id?: string | null
+          success?: boolean | null
+          user_id?: string | null
+          vector_api_used?: boolean | null
+          workflow_type?: string
+        }
+        Relationships: []
+      }
       decision_logs: {
         Row: {
+          api_collaboration: Json | null
           confidence_score: number
+          conversation_id: string | null
           created_at: string
           final_response: string
           hybrid_decision: Json
           id: string
           neural_similarities: Json | null
           processing_time_ms: number | null
+          rubrics_analysis: Json | null
           symbolic_matches: Json | null
           user_id: string | null
           user_input: string
+          workflow_version: string | null
         }
         Insert: {
+          api_collaboration?: Json | null
           confidence_score: number
+          conversation_id?: string | null
           created_at?: string
           final_response: string
           hybrid_decision: Json
           id?: string
           neural_similarities?: Json | null
           processing_time_ms?: number | null
+          rubrics_analysis?: Json | null
           symbolic_matches?: Json | null
           user_id?: string | null
           user_input: string
+          workflow_version?: string | null
         }
         Update: {
+          api_collaboration?: Json | null
           confidence_score?: number
+          conversation_id?: string | null
           created_at?: string
           final_response?: string
           hybrid_decision?: Json
           id?: string
           neural_similarities?: Json | null
           processing_time_ms?: number | null
+          rubrics_analysis?: Json | null
           symbolic_matches?: Json | null
           user_id?: string | null
           user_input?: string
+          workflow_version?: string | null
         }
         Relationships: []
       }
@@ -165,6 +228,54 @@ export type Database = {
           code?: string | null
           id?: string
           rubric_json?: Json | null
+        }
+        Relationships: []
+      }
+      rubrics_assessments: {
+        Row: {
+          confidence_level: string | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          message_content: string
+          overall_score: number | null
+          processing_mode: string | null
+          protective_score: number | null
+          risk_score: number | null
+          rubric_id: string
+          triggers: Json | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence_level?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_content: string
+          overall_score?: number | null
+          processing_mode?: string | null
+          protective_score?: number | null
+          risk_score?: number | null
+          rubric_id: string
+          triggers?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence_level?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_content?: string
+          overall_score?: number | null
+          processing_mode?: string | null
+          protective_score?: number | null
+          risk_score?: number | null
+          rubric_id?: string
+          triggers?: Json | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -331,6 +442,19 @@ export type Database = {
       increment_seed_usage: {
         Args: Record<PropertyKey, never> | { seed_id: string }
         Returns: undefined
+      }
+      log_evai_workflow: {
+        Args: {
+          p_user_id: string
+          p_conversation_id: string
+          p_workflow_type: string
+          p_api_collaboration: Json
+          p_rubrics_data?: Json
+          p_processing_time?: number
+          p_success?: boolean
+          p_error_details?: Json
+        }
+        Returns: string
       }
       log_hybrid_decision: {
         Args:
