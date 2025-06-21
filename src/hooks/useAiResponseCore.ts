@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Message, ChatHistoryItem } from "../types";
 import { AdvancedSeed } from "../types/seed";
@@ -25,7 +24,10 @@ export function useAiResponseCore() {
     secondaryInsights: string[],
     overallRisk: number
   ): Message => {
-    const confidence = Math.round(matchedResult.confidence * 100);
+    // Get confidence from the correct property based on the type
+    const confidence = 'id' in matchedResult && typeof matchedResult.id === 'string' 
+      ? Math.round((matchedResult as AdvancedSeed).meta.confidence * 100)
+      : Math.round((matchedResult as EmotionDetection).confidence * 100);
     
     // Use 'id' property check to determine if it's an AdvancedSeed or EmotionDetection
     // AdvancedSeed has required 'id' field, EmotionDetection does not
@@ -71,7 +73,17 @@ export function useAiResponseCore() {
         `🤝 API 1 (OpenAI): ${collaborationStatus.api1 ? '✅ Actief' : '❌ ONTBREEKT - Voeg toe voor betere responses'}`,
         `🤝 API 2 (Secondary): ${collaborationStatus.api2 ? '✅ Actief voor analyse' : '❌ ONTBREEKT - Voeg toe voor diepere analyse'}`,
         `🧬 Vector API: ${collaborationStatus.vector ? '✅ Actief voor embeddings' : '❌ ONTBREEKT - Voeg toe voor neural search functionaliteit'}`,
-        `📊 Match Confidence: ${confidence}% (${matchedResult.confidence > 0.8 ? 'Hoog' : matchedResult.confidence > 0.6 ? 'Gemiddeld' : 'Laag'})`,
+        `📊 Match Confidence: ${confidence}% (${
+          ('id' in matchedResult && typeof matchedResult.id === 'string' 
+            ? (matchedResult as AdvancedSeed).meta.confidence 
+            : (matchedResult as EmotionDetection).confidence) > 0.8 
+              ? 'Hoog' 
+              : ('id' in matchedResult && typeof matchedResult.id === 'string' 
+                  ? (matchedResult as AdvancedSeed).meta.confidence 
+                  : (matchedResult as EmotionDetection).confidence) > 0.6 
+                    ? 'Gemiddeld' 
+                    : 'Laag'
+        })`,
         secondaryInsights.length > 0 ? `💡 Secondary insights: ${secondaryInsights.slice(0, 2).join(', ')}` : '',
         `📈 Available APIs: ${availableApis}/3 | Risk Level: ${overallRisk.toFixed(1)}%`
       ].filter(Boolean)
