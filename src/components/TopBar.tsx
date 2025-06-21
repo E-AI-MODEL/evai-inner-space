@@ -1,123 +1,109 @@
-
-import { Settings, BarChart, Shield, LogOut, User } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/hooks/use-toast';
+import React, { useState } from 'react';
+import { Brain, Settings, User, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import RubricsEngineStatusIndicator from './rubrics/RubricsEngineStatusIndicator';
 import RubricsToggleControl from './rubrics/RubricsToggleControl';
 import { Message } from '../types';
 
 interface TopBarProps {
   onSettingsClick: () => void;
-  onRubricsToggle?: () => void;
-  showRubrics?: boolean;
-  showRubricsButton?: boolean;
-  messages?: Message[];
+  onRubricsToggle: () => void;
+  showRubrics: boolean;
+  showRubricsButton: boolean;
+  messages: Message[];
 }
 
-const TopBar = ({ 
-  onSettingsClick, 
-  onRubricsToggle, 
-  showRubrics = false, 
-  showRubricsButton = false,
-  messages = []
-}: TopBarProps) => {
+const TopBar: React.FC<TopBarProps> = ({
+  onSettingsClick,
+  onRubricsToggle,
+  showRubrics,
+  showRubricsButton,
+  messages
+}) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, signOut } = useAuth();
-  const isOnAdminPage = location.pathname === '/admin';
+  const isMobile = useIsMobile();
+  const [analyticsMode, setAnalyticsMode] = useState<'compact' | 'full'>('compact');
 
   const handleSignOut = async () => {
     try {
-      toast({ 
-        title: "Uitloggen...", 
-        description: "Je wordt uitgelogd uit EvAI.",
-      });
-      
       await signOut();
-      
-      toast({ 
-        title: "Succesvol uitgelogd", 
-        description: "Je bent veilig uitgelogd uit EvAI. Tot ziens!",
-      });
-      
-      // Navigate to home page after successful logout
-      navigate('/');
-      
+      navigate('/auth');
     } catch (error) {
-      console.error('Logout error:', error);
-      toast({ 
-        title: "Uitloggen mislukt", 
+      toast({
+        title: "Fout bij uitloggen",
         description: "Er ging iets mis bij het uitloggen. Probeer het opnieuw.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   return (
-    <header className="flex items-center justify-between h-14 px-6 bg-white/90 shadow-sm border-b border-zinc-100 sticky top-0 z-30 font-inter">
-      <div className="flex items-center gap-2">
-        <span aria-label="EvAI logo" className="text-2xl select-none">💙</span>
-        <span className="font-semibold text-lg tracking-wide text-zinc-800">EvAI Bèta Chat</span>
-      </div>
-      
+    <div className="bg-white border-b border-zinc-200 px-3 sm:px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        {showRubricsButton && onRubricsToggle && (
+        <div className="flex items-center gap-2">
+          <Brain className="text-blue-600" size={24} />
+          <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
+            EvAI
+          </h1>
+        </div>
+        
+        {/* Enhanced Rubrics Toggle */}
+        {showRubricsButton && (
           <RubricsToggleControl
             isActive={showRubrics}
             onToggle={onRubricsToggle}
             messages={messages}
+            mode={analyticsMode}
+            onModeChange={setAnalyticsMode}
           />
         )}
-        
-        {!isOnAdminPage && (
-          <button
-            onClick={() => navigate('/admin')}
-            className="p-2 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg transition-colors"
-            aria-label="Admin Dashboard"
-          >
-            <Shield size={20} />
-          </button>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        {/* Status indicator for mobile */}
+        {isMobile && showRubricsButton && (
+          <div className="block sm:hidden">
+            <RubricsEngineStatusIndicator messages={messages} isActive={showRubrics} />
+          </div>
         )}
 
-        <button
-          type="button"
+        <Button
           onClick={onSettingsClick}
-          className="p-2 rounded-lg hover:bg-zinc-100 transition-colors"
+          variant="ghost"
+          size="sm"
+          className="p-2"
           aria-label="Instellingen openen"
         >
-          <Settings size={22} />
-        </button>
+          <Settings size={18} />
+        </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="p-2">
-              <User size={20} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem disabled className="text-xs text-gray-500">
-              {user?.email}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={handleSignOut}
-              className="focus:bg-red-50 focus:text-red-600"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Uitloggen
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="p-2">
+                <User size={18} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
+              <DropdownMenuItem onClick={() => navigate('/admin')}>
+                <Shield className="mr-2 h-4 w-4" />
+                Admin Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Uitloggen
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
-    </header>
+    </div>
   );
 };
 

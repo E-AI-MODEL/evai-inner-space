@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { BarChart } from 'lucide-react';
+import { BarChart, Minimize2, Maximize2 } from 'lucide-react';
 import RubricsEngineStatusIndicator from './RubricsEngineStatusIndicator';
 import { Message } from '../../types';
 
@@ -10,13 +10,17 @@ interface RubricsToggleControlProps {
   onToggle: () => void;
   messages: Message[];
   disabled?: boolean;
+  mode?: 'compact' | 'full';
+  onModeChange?: (mode: 'compact' | 'full') => void;
 }
 
 const RubricsToggleControl: React.FC<RubricsToggleControlProps> = ({
   isActive,
   onToggle,
   messages,
-  disabled = false
+  disabled = false,
+  mode = 'compact',
+  onModeChange
 }) => {
   return (
     <div className="flex items-center gap-2">
@@ -39,6 +43,19 @@ const RubricsToggleControl: React.FC<RubricsToggleControlProps> = ({
           {isActive ? 'Analyse Aan' : 'Analyse Uit'}
         </span>
       </Button>
+      
+      {/* Mode toggle button - only show when analytics is active and we have mode control */}
+      {isActive && onModeChange && messages.length > 3 && (
+        <Button
+          onClick={() => onModeChange(mode === 'compact' ? 'full' : 'compact')}
+          variant="ghost"
+          size="sm"
+          className="p-2"
+          title={mode === 'compact' ? 'Uitgebreid weergeven' : 'Compact weergeven'}
+        >
+          {mode === 'compact' ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+        </Button>
+      )}
       
       <div className="hidden md:block">
         <RubricsEngineStatusIndicator messages={messages} isActive={isActive} />
