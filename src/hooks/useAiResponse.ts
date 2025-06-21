@@ -101,9 +101,13 @@ export function useAiResponse(
     const hasVectorAPI = vectorApiKey && vectorApiKey.trim().length > 0;
     const isAutonomousEnabled = localStorage.getItem('evai-autonomous-mode') === 'true';
     
-    console.log('🔥 EvAI-ENHANCED NEUROSYMBOLIC MODE ACTIVATED 🔥');
-    console.log('🔑 API Keys:', { hasOpenAI, hasOpenAi2, hasVectorAPI });
-    console.log('🤖 Autonomous Mode:', isAutonomousEnabled ? 'ACTIVE' : 'DISABLED');
+    console.log('🚀 EvAI ENHANCED NEUROSYMBOLIC MODE - IMPROVED VERSION');
+    console.log('🔑 API Configuration:', { 
+      hasOpenAI, 
+      hasOpenAi2, 
+      hasVectorAPI,
+      autonomous: isAutonomousEnabled 
+    });
 
     try {
       const messageIndex = messages.findIndex(m => m.id === userMessage.id);
@@ -116,8 +120,7 @@ export function useAiResponse(
 
       // ENHANCED: Use complete neurosymbolic workflow if all keys available
       if (hasOpenAI && hasVectorAPI) {
-        console.log('🧠 FULL NEUROSYMBOLIC WORKFLOW ACTIVATED');
-        console.log('🎯 Processing with API 1 + Vector API + Optional API 2');
+        console.log('🧠 FULL NEUROSYMBOLIC WORKFLOW ACTIVATED - ENHANCED VERSION');
         
         try {
           const neurosymbolicResult = await processNeurosymbolic(
@@ -132,8 +135,11 @@ export function useAiResponse(
             }
           );
 
-          console.log(`✅ NEUROSYMBOLIC SUCCESS: ${neurosymbolicResult.responseType} (${(neurosymbolicResult.confidence * 100).toFixed(1)}%)`);
-          console.log('🤝 API Collaboration:', neurosymbolicResult.apiCollaboration);
+          console.log('✅ ENHANCED NEUROSYMBOLIC SUCCESS:');
+          console.log(`  🎯 Response Type: ${neurosymbolicResult.responseType}`);
+          console.log(`  📊 Confidence: ${(neurosymbolicResult.confidence * 100).toFixed(1)}%`);
+          console.log(`  🤝 API Collaboration:`, neurosymbolicResult.apiCollaboration);
+          console.log(`  ⚡ Processing Time: ${neurosymbolicResult.processingTime}ms`);
 
           // Store conversation embedding for future learning
           setTimeout(() => {
@@ -141,12 +147,12 @@ export function useAiResponse(
               [...messages, userMessage],
               vectorApiKey,
               `conv-${Date.now()}`
-            );
-          }, 2000);
+            ).catch(err => console.warn('⚠️ Background embedding storage failed:', err));
+          }, 1000);
 
           setSeedConfetti(true);
 
-          // Map response type to label
+          // Map response type to label with better logic
           let label: "Valideren" | "Reflectievraag" | "Suggestie";
           if (neurosymbolicResult.seed?.label === "Reflectievraag") {
             label = "Reflectievraag";
@@ -156,59 +162,67 @@ export function useAiResponse(
             label = "Valideren";
           }
 
-          // Enhanced result display showing API collaboration
-          const apiCollabNote = neurosymbolicResult.apiCollaboration ? 
-            `\n\n*[🚀 API SAMENWERKING: API-1 ${neurosymbolicResult.apiCollaboration.api1Used ? '✅' : '❌'} | API-2 ${neurosymbolicResult.apiCollaboration.api2Used ? '✅' : '❌'} | Vector ✅ | Seeds: ${neurosymbolicResult.apiCollaboration.seedGenerated ? '+Nieuw' : 'Bestaand'}${neurosymbolicResult.seedInjectionUsed ? ' + Injectie' : ''}]*` :
-            `\n\n*[🧠 NEUROSYMBOLIC: ${neurosymbolicResult.responseType} response actief]*`;
+          // Enhanced result display with better formatting
+          const confidence = Math.round(neurosymbolicResult.confidence * 100);
+          const apiStatus = neurosymbolicResult.apiCollaboration;
+          
+          const apiStatusText = [
+            `API-1: ${apiStatus?.api1Used ? '✅' : '❌'}`,
+            `API-2: ${apiStatus?.api2Used ? '✅' : '❌'}`,
+            `Vector: ${hasVectorAPI ? '✅' : '❌'}`,
+            apiStatus?.seedGenerated ? 'Nieuwe seed' : 'Bestaande seed'
+          ].join(' | ');
+
+          const collaborationNote = `\n\n*[🚀 API SAMENWERKING: ${apiStatusText} | ${confidence}% confidence${neurosymbolicResult.seedInjectionUsed ? ' + Seed injectie' : ''}]*`;
 
           const aiResp: Message = {
-            id: `ai-neurosymbolic-${Date.now()}`,
+            id: `ai-enhanced-${Date.now()}`,
             from: "ai",
             label: label,
             accentColor: getLabelVisuals(label).accentColor,
-            content: `${neurosymbolicResult.response}${apiCollabNote}`,
-            explainText: `${neurosymbolicResult.reasoning} | APIs: ${Object.entries(neurosymbolicResult.apiCollaboration || {}).map(([k,v]) => `${k}:${v}`).join(', ')}`,
+            content: `${neurosymbolicResult.response}${collaborationNote}`,
+            explainText: `${neurosymbolicResult.reasoning} | Enhanced workflow met ${confidence}% confidence`,
             emotionSeed: neurosymbolicResult.seed?.emotion || null,
             animate: true,
-            meta: `🤝 API Samenwerking: ${(neurosymbolicResult.confidence * 100).toFixed(1)}% confidence`,
+            meta: `Enhanced API Collaboration: ${confidence}% confidence`,
             brilliant: true,
             timestamp: new Date(),
             replyTo: userMessage.id,
             feedback: null,
             symbolicInferences: [
-              `🧠 Neurosymbolic Engine: ${neurosymbolicResult.responseType}`,
-              `🤝 API 1 (Neural): ${neurosymbolicResult.apiCollaboration?.api1Used ? '✅ Gebruikt' : '❌ Niet gebruikt'}`,
-              `🤝 API 2 (Secondary): ${neurosymbolicResult.apiCollaboration?.api2Used ? '✅ Gebruikt voor analyse' : '❌ Niet beschikbaar'}`,
-              `🧬 Vector API: ✅ Gebruikt voor embeddings`,
-              `🌱 Seed Status: ${neurosymbolicResult.apiCollaboration?.seedGenerated ? '✅ Nieuwe seed gegenereerd' : '⚡ Bestaande seed gebruikt'}`,
-              `${neurosymbolicResult.seedInjectionUsed ? '💉 Seed injectie toegepast' : ''}`,
-              `⚖️ Confidence: ${(neurosymbolicResult.confidence * 100).toFixed(1)}%`,
-              `⚡ Processing: ${neurosymbolicResult.processingTime}ms`,
-              neurosymbolicResult.reasoning
+              `🧠 Enhanced Neurosymbolic Engine: ${neurosymbolicResult.responseType}`,
+              `🤝 API 1 (Neural): ${apiStatus?.api1Used ? '✅ Actief' : '❌ Niet gebruikt'}`,
+              `🤝 API 2 (Secondary): ${apiStatus?.api2Used ? '✅ Gebruikt voor analyse' : '❌ Niet beschikbaar'}`,
+              `🧬 Vector API: ✅ Actief voor embeddings`,
+              `🌱 Seed Status: ${apiStatus?.seedGenerated ? '✅ Nieuwe seed gegenereerd' : '⚡ Bestaande seed gebruikt'}`,
+              neurosymbolicResult.seedInjectionUsed ? '💉 Seed injectie toegepast' : '',
+              `⚖️ Confidence: ${confidence}% (${neurosymbolicResult.confidence > 0.8 ? 'Hoog' : neurosymbolicResult.confidence > 0.6 ? 'Gemiddeld' : 'Laag'})`,
+              `⚡ Verwerking: ${neurosymbolicResult.processingTime}ms`,
+              `🎯 Redenering: ${neurosymbolicResult.reasoning}`
             ].filter(Boolean)
           };
 
           setMessages((prev) => [...prev, aiResp]);
           
           toast({
-            title: "🚀 VOLLEDIGE API SAMENWERKING",
-            description: `API 1${neurosymbolicResult.apiCollaboration?.api1Used ? '✅' : '❌'} + API 2${neurosymbolicResult.apiCollaboration?.api2Used ? '✅' : '❌'} + Vector✅ = ${(neurosymbolicResult.confidence * 100).toFixed(1)}% succes`,
+            title: `🚀 ENHANCED API SAMENWERKING (${confidence}%)`,
+            description: `${apiStatusText} - Verwerkt in ${neurosymbolicResult.processingTime}ms`,
           });
 
           return;
         } catch (neurosymbolicError) {
-          console.error('🔴 Neurosymbolic workflow failed, falling back:', neurosymbolicError);
+          console.error('🔴 Enhanced neurosymbolic workflow failed:', neurosymbolicError);
           
           toast({
-            title: "⚠️ Neurosymbolic Fallback",
-            description: "API samenwerking deels beschikbaar, schakel over naar enhanced mode",
+            title: "⚠️ Enhanced Neurosymbolic Fallback",
+            description: "Schakel over naar verbeterde fallback mode",
             variant: "destructive"
           });
         }
       }
 
-      // FALLBACK: Show partial API collaboration
-      console.log('🔄 PARTIAL API COLLABORATION...');
+      // ENHANCED FALLBACK: Better partial API collaboration
+      console.log('🔄 ENHANCED PARTIAL API COLLABORATION...');
       
       let collaborationStatus: CollaborationStatus = {
         api1: hasOpenAI,
@@ -216,11 +230,14 @@ export function useAiResponse(
         vector: hasVectorAPI
       };
 
-      // Continue with existing enhanced workflow but show collaboration status
-      
+      const availableApis = Object.entries(collaborationStatus).filter(([_, available]) => available).length;
+      console.log(`📊 Available APIs: ${availableApis}/3`);
+
+      // Enhanced secondary insights
       let secondaryInsights: string[] = [];
       if (hasOpenAi2) {
         try {
+          console.log('🧠 Running enhanced secondary analysis...');
           const contextString = history.map(h => `${h.role}: ${h.content}`).join('\n');
           const preAnalysis = await analyzeNeurosymbolic(
             userMessage.content,
@@ -229,15 +246,15 @@ export function useAiResponse(
           );
           if (preAnalysis) {
             secondaryInsights = preAnalysis.insights;
-            console.log('🧠 Secondary insights:', secondaryInsights);
+            console.log(`✅ Secondary insights generated: ${secondaryInsights.length} insights`);
           }
         } catch (preErr) {
-          console.error('🔴 Secondary analysis failed:', preErr);
+          console.error('🔴 Enhanced secondary analysis failed:', preErr);
         }
       }
 
-      // EvAI 5.6 Rubrics Analysis
-      console.log('📊 EvAI 5.6 Rubrics analysis...');
+      // Enhanced EvAI 5.6 Rubrics Analysis
+      console.log('📊 Enhanced EvAI 5.6 Rubrics analysis...');
       const rubricsAssessments = assessMessage(userMessage.content);
       const overallRisk = calculateOverallRisk(rubricsAssessments);
       
@@ -256,16 +273,17 @@ export function useAiResponse(
           return `${assessment.rubricId}: Risk ${assessment.riskScore.toFixed(1)}, Protective ${assessment.protectiveScore.toFixed(1)}`;
         });
         
-        console.log(`🎯 EvAI detected ${rubricsAssessments.length} areas, overall risk: ${overallRisk.toFixed(1)}%`);
+        console.log(`🎯 Enhanced EvAI detected ${rubricsAssessments.length} areas, overall risk: ${overallRisk.toFixed(1)}%`);
       }
 
-      // Enhanced seed matching with collaboration status
+      // Enhanced seed matching with improved context
       const extendedContext: ExtendedContext = { 
         ...context, 
         secondaryInsights, 
         collaborationStatus 
       };
 
+      console.log('🔍 Running enhanced seed matching...');
       const matchedResult = await checkInput(
         userMessage.content,
         apiKey,
@@ -278,57 +296,67 @@ export function useAiResponse(
       if (matchedResult && "confidence" in matchedResult) {
         setSeedConfetti(true);
         
-        const collaborationNote = `\n\n*[🤝 API STATUS: API-1 ${collaborationStatus.api1 ? '✅' : '❌'} | API-2 ${collaborationStatus.api2 ? '✅' : '❌'} | Vector ${collaborationStatus.vector ? '✅' : '❌'}]*`;
+        const confidence = Math.round(matchedResult.confidence * 100);
+        const apiStatusText = `API-1:${collaborationStatus.api1 ? '✅' : '❌'} | API-2:${collaborationStatus.api2 ? '✅' : '❌'} | Vector:${collaborationStatus.vector ? '✅' : '❌'}`;
+        const collaborationNote = `\n\n*[🤝 ENHANCED API STATUS: ${apiStatusText} | ${availableApis}/3 APIs active]*`;
         
         const label = matchedResult.label || "Valideren";
         aiResp = {
-          id: `ai-collaboration-${Date.now()}`,
+          id: `ai-enhanced-collab-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
           content: `${matchedResult.response}${collaborationNote}`,
-          explainText: `${matchedResult.reasoning} | API Collaboration: ${Object.entries(collaborationStatus).filter(([k,v]) => v).map(([k]) => k.toUpperCase()).join('+')}`,
+          explainText: `${matchedResult.reasoning} | Enhanced API Collaboration: ${confidence}%`,
           emotionSeed: matchedResult.emotion,
           animate: true,
-          meta: `API Collaboration: ${Math.round(matchedResult.confidence * 100)}%`,
+          meta: `Enhanced API Collaboration: ${confidence}% | ${availableApis}/3 APIs`,
           brilliant: true,
           timestamp: new Date(),
           replyTo: userMessage.id,
           feedback: null,
           symbolicInferences: [
-            ...rubricInsights,
-            ...cotRubricGuidance.map(guidance => `🧠 EvAI: ${guidance}`),
-            `🤝 API 1 (OpenAI): ${collaborationStatus.api1 ? '✅ Actief' : '❌ Ontbreekt'}`,
-            `🤝 API 2 (Secondary): ${collaborationStatus.api2 ? '✅ Actief voor analyse' : '❌ Ontbreekt'}`,
-            `🧬 Vector API: ${collaborationStatus.vector ? '✅ Actief voor embeddings' : '❌ Ontbreekt'}`,
-            `🧠 OpenAI confidence: ${Math.round(matchedResult.confidence * 100)}%`,
-            secondaryInsights.length > 0 ? `💡 Secondary insights: ${secondaryInsights.join(', ')}` : ''
+            ...rubricInsights.map(insight => `📊 EvAI Rubric: ${insight}`),
+            ...cotRubricGuidance.map(guidance => `🧠 EvAI Guidance: ${guidance}`),
+            `🤝 API 1 (OpenAI): ${collaborationStatus.api1 ? '✅ Actief' : '❌ ONTBREEKT - Voeg toe voor betere responses'}`,
+            `🤝 API 2 (Secondary): ${collaborationStatus.api2 ? '✅ Actief voor analyse' : '❌ ONTBREEKT - Voeg toe voor diepere analyse'}`,
+            `🧬 Vector API: ${collaborationStatus.vector ? '✅ Actief voor embeddings' : '❌ ONTBREEKT - Voeg toe voor neural matching'}`,
+            `📊 Match Confidence: ${confidence}% (${matchedResult.confidence > 0.8 ? 'Hoog' : matchedResult.confidence > 0.6 ? 'Gemiddeld' : 'Laag'})`,
+            secondaryInsights.length > 0 ? `💡 Secondary insights: ${secondaryInsights.slice(0, 2).join(', ')}` : '',
+            `📈 Available APIs: ${availableApis}/3 | Risk Level: ${overallRisk.toFixed(1)}%`
           ].filter(Boolean)
         };
 
       } else {
-        // Fallback with collaboration status
-        const collaborationNote = `\n\n*[⚠️ BEPERKTE API STATUS: Ontbrekende keys beperken de functionaliteit. API-1 ${collaborationStatus.api1 ? '✅' : '❌'} | API-2 ${collaborationStatus.api2 ? '✅' : '❌'} | Vector ${collaborationStatus.vector ? '✅' : '❌'}]*`;
+        // Enhanced fallback with better messaging
+        const missingApis = Object.entries(collaborationStatus)
+          .filter(([_, available]) => !available)
+          .map(([api]) => api.toUpperCase())
+          .join(', ');
+        
+        const collaborationNote = `\n\n*[⚠️ BEPERKTE FUNCTIONALITEIT: Ontbrekende APIs (${missingApis}) beperken de response kwaliteit. Voeg API keys toe voor volledige functionaliteit.]*`;
         
         aiResp = {
-          id: `ai-limited-collaboration-${Date.now()}`,
+          id: `ai-limited-enhanced-${Date.now()}`,
           from: "ai",
           label: "Valideren",
           accentColor: getLabelVisuals("Valideren").accentColor,
-          content: `Ik begrijp je vraag en probeer je te helpen met de beschikbare API's.${collaborationNote}`,
-          explainText: `Limited API collaboration - some features unavailable`,
+          content: `Ik begrijp je vraag en probeer je te helpen met de beschikbare APIs. Voor betere responses voeg je de ontbrekende API keys toe in de instellingen.${collaborationNote}`,
+          explainText: `Limited enhanced API collaboration - ${availableApis}/3 APIs available`,
           emotionSeed: null,
           animate: true,
-          meta: `Beperkte API samenwerking`,
+          meta: `Beperkte Enhanced API samenwerking: ${availableApis}/3`,
           brilliant: false,
           timestamp: new Date(),
           replyTo: userMessage.id,
           feedback: null,
           symbolicInferences: [
-            `⚠️ API 1 (OpenAI): ${collaborationStatus.api1 ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor betere responses'}`,
-            `⚠️ API 2 (Secondary): ${collaborationStatus.api2 ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor diepe analyse'}`,
-            `⚠️ Vector API: ${collaborationStatus.vector ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor embedding functies'}`,
-            `💡 Tip: Voeg ontbrekende API keys toe in instellingen voor volledige functionaliteit`
+            `⚠️ API 1 (OpenAI): ${collaborationStatus.api1 ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor betere neural responses'}`,
+            `⚠️ API 2 (Secondary): ${collaborationStatus.api2 ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor enhanced analyse'}`,
+            `⚠️ Vector API: ${collaborationStatus.vector ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor neural search functionaliteit'}`,
+            `📊 Functionaliteit: ${Math.round((availableApis / 3) * 100)}% van volledige capaciteit beschikbaar`,
+            `💡 Verbetering: Voeg ${3 - availableApis} ontbrekende API key${3 - availableApis > 1 ? 's' : ''} toe voor volledige functionaliteit`,
+            `🎯 Current Performance: Basis response generation mogelijk`
           ]
         };
       }
@@ -336,13 +364,13 @@ export function useAiResponse(
       setMessages((prev) => [...prev, aiResp]);
       
     } catch (err) {
-      console.error("Error in EvAI API collaboration:", err);
-      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de API samenwerking.";
+      console.error("Enhanced EvAI API collaboration error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de enhanced API samenwerking.";
       const errorResponse: Message = {
-        id: `ai-collaboration-error-${Date.now()}`,
+        id: `ai-enhanced-error-${Date.now()}`,
         from: "ai",
         label: "Fout",
-        content: `${errorMessage}\n\n*[❌ API COLLABORATION ERROR: Controleer je API keys in instellingen]*`,
+        content: `${errorMessage}\n\n*[❌ ENHANCED API COLLABORATION ERROR: Controleer je API keys en netwerkverbinding]*`,
         emotionSeed: "error",
         animate: true,
         timestamp: new Date(),
@@ -351,15 +379,16 @@ export function useAiResponse(
         replyTo: userMessage.id,
         feedback: null,
         symbolicInferences: [
-          `❌ Error: ${errorMessage}`,
-          `🔧 Check API keys in settings`,
-          `🔄 Try again after fixing configuration`
+          `❌ Enhanced Error: ${errorMessage}`,
+          `🔧 Troubleshooting: Check alle API keys in instellingen`,
+          `🌐 Network: Controleer internetverbinding`,
+          `🔄 Retry: Probeer opnieuw na het oplossen van de configuratie`
         ]
       };
       setMessages((prev) => [...prev, errorResponse]);
       toast({
-        title: "❌ API Collaboration Error",
-        description: "Controleer je API keys in de instellingen",
+        title: "❌ Enhanced API Collaboration Error",
+        description: "Controleer je API keys en netwerkverbinding",
         variant: "destructive",
       });
     } finally {

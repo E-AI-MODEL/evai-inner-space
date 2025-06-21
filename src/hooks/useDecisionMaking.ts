@@ -23,197 +23,251 @@ export function useDecisionMaking() {
     context: Record<string, any> = {}
   ): Promise<HybridDecision> => {
     console.log('🧠 Making hybrid decision...');
-    console.log(`Symbolic matches: ${symbolicMatches.length}, Neural matches: ${neuralMatches.length}`);
+    console.log(`📊 Decision inputs: ${symbolicMatches.length} symbolic, ${neuralMatches.length} neural matches`);
+
+    // Enhanced input validation
+    if (!input || typeof input !== 'string') {
+      console.warn('⚠️ Invalid input provided to decision maker');
+      return createFallbackDecision('Invalid input provided');
+    }
 
     let decision: HybridDecision;
     const startTime = Date.now();
-
-    // Decision algorithm with better randomization to prevent same responses
-    const topSymbolic = symbolicMatches[0];
-    const topNeural = neuralMatches[0];
     const timestamp = Date.now();
-    const randomFactor = Math.random(); // Add randomization
+    const randomFactor = Math.random();
+
+    // Get best matches with proper validation
+    const topSymbolic = symbolicMatches && symbolicMatches.length > 0 ? symbolicMatches[0] : null;
+    const topNeural = neuralMatches && neuralMatches.length > 0 ? neuralMatches[0] : null;
+
+    console.log('🎯 Top matches:', {
+      symbolic: topSymbolic ? {
+        emotion: topSymbolic.seed?.emotion,
+        score: topSymbolic.score,
+        confidence: topSymbolic.confidence
+      } : null,
+      neural: topNeural ? {
+        similarity: topNeural.similarity?.similarity_score,
+        contextualFit: topNeural.contextualFit
+      } : null
+    });
 
     if (!topSymbolic && !topNeural) {
-      // Generate varied fallback responses
-      const fallbackResponses = [
-        'Ik begrijp je en wil graag helpen. Kun je me meer vertellen over hoe je je voelt?',
-        'Ik merk dat je iets deelt dat belangrijk voor je is. Wat speelt er precies?',
-        'Het klinkt alsof er iets is waar je mee bezig bent. Kun je daar meer over vertellen?',
-        'Ik hoor je. Wat zou het meest helpend zijn om nu te bespreken?',
-        'Dank je voor het delen. Wat voel je het sterkst op dit moment?'
-      ];
-      
-      const selectedResponse = fallbackResponses[Math.floor(randomFactor * fallbackResponses.length)];
-      
-      decision = {
-        selectedResponse,
-        responseType: 'generated',
-        confidence: 0.3 + (randomFactor * 0.2), // Vary confidence slightly
-        reasoning: `No matches found - using varied fallback response ${Math.floor(randomFactor * 5) + 1}`,
-        symbolicContribution: 0,
-        neuralContribution: 0,
-        metadata: { fallback: true, responseIndex: Math.floor(randomFactor * 5), timestamp },
-      };
-    } else if (topSymbolic && (!topNeural || topSymbolic.confidence > 0.8)) {
-      // Strong symbolic match but add slight variation
-      let response = topSymbolic.seed.response.nl;
-      if (randomFactor > 0.7) {
-        // Occasionally add a slight variation
-        const variations = [
-          `${response}`,
-          `${response} Wat denk jij hierover?`,
-          `${response} Hoe voel je je daarbij?`,
-        ];
-        response = variations[Math.floor(randomFactor * variations.length)];
-      }
-      
-      decision = {
-        selectedResponse: response,
-        responseType: 'symbolic',
-        confidence: topSymbolic.confidence,
-        reasoning: `Strong symbolic match: ${topSymbolic.triggers.join(', ')} (variation: ${randomFactor > 0.7})`,
-        symbolicContribution: 1.0,
-        neuralContribution: 0,
-        seed: topSymbolic.seed,
-        metadata: { 
-          matchedTriggers: topSymbolic.triggers,
-          seedId: topSymbolic.seed.id,
-          variation: randomFactor > 0.7,
-          timestamp,
-        },
-      };
-    } else if (topNeural && topNeural.contextualFit > 0.8) {
-      // Strong neural match
-      decision = {
-        selectedResponse: topNeural.similarity.content_text,
-        responseType: 'neural',
-        confidence: topNeural.contextualFit,
-        reasoning: `Strong neural similarity: ${topNeural.similarity.similarity_score.toFixed(2)}`,
-        symbolicContribution: 0,
-        neuralContribution: 1.0,
-        metadata: {
-          similarityScore: topNeural.similarity.similarity_score,
-          sourceType: topNeural.similarity.content_type,
-          timestamp,
-        },
-      };
+      decision = createFallbackDecision('No matches found', randomFactor, timestamp);
+    } else if (topSymbolic && (!topNeural || (topSymbolic.confidence > 0.8 && topSymbolic.score > 0))) {
+      decision = createSymbolicDecision(topSymbolic, randomFactor, timestamp);
+    } else if (topNeural && isValidNeuralMatch(topNeural)) {
+      decision = createNeuralDecision(topNeural, timestamp);
     } else if (topSymbolic && topNeural) {
-      // Hybrid decision with randomization
-      const symbolicWeight = topSymbolic.confidence * (0.6 + randomFactor * 0.2);
-      const neuralWeight = topNeural.contextualFit * (0.4 + randomFactor * 0.2);
-      
-      if (symbolicWeight > neuralWeight) {
-        decision = {
-          selectedResponse: topSymbolic.seed.response.nl,
-          responseType: 'hybrid',
-          confidence: (symbolicWeight + neuralWeight) / 2,
-          reasoning: `Hybrid decision favoring symbolic (${symbolicWeight.toFixed(2)} vs ${neuralWeight.toFixed(2)})`,
-          symbolicContribution: symbolicWeight / (symbolicWeight + neuralWeight),
-          neuralContribution: neuralWeight / (symbolicWeight + neuralWeight),
-          seed: topSymbolic.seed,
-          metadata: {
-            hybridWeights: { symbolic: symbolicWeight, neural: neuralWeight },
-            secondarySource: topNeural.similarity.content_type,
-            timestamp,
-          },
-        };
-      } else {
-        decision = {
-          selectedResponse: topNeural.similarity.content_text,
-          responseType: 'hybrid',
-          confidence: (symbolicWeight + neuralWeight) / 2,
-          reasoning: `Hybrid decision favoring neural (${neuralWeight.toFixed(2)} vs ${symbolicWeight.toFixed(2)})`,
-          symbolicContribution: symbolicWeight / (symbolicWeight + neuralWeight),
-          neuralContribution: neuralWeight / (symbolicWeight + neuralWeight),
-          metadata: {
-            hybridWeights: { symbolic: symbolicWeight, neural: neuralWeight },
-            fallbackSeed: topSymbolic.seed.id,
-            timestamp,
-          },
-        };
-      }
+      decision = createHybridDecision(topSymbolic, topNeural, randomFactor, timestamp);
     } else {
-      // Fallback to best available with variation
-      const bestMatch = topSymbolic || { seed: null, confidence: 0.2 };
-      const fallbackResponses = [
-        bestMatch.seed?.response.nl || 'Ik hoor je en begrijp dat dit moeilijk voor je is.',
-        'Dank je voor het delen. Dat klinkt als iets belangrijks voor je.',
-        'Ik begrijp dat dit complex is. Kun je me helpen het beter te begrijpen?',
-        'Het lijkt alsof er veel speelt. Waar wil je mee beginnen?'
-      ];
-      
-      const selectedResponse = fallbackResponses[Math.floor(randomFactor * fallbackResponses.length)];
-      
-      decision = {
-        selectedResponse,
-        responseType: topSymbolic ? 'symbolic' : 'generated',
-        confidence: bestMatch.confidence + (randomFactor * 0.1),
-        reasoning: `Fallback to best available match with variation ${Math.floor(randomFactor * 4)}`,
-        symbolicContribution: topSymbolic ? 1.0 : 0,
-        neuralContribution: 0,
-        seed: bestMatch.seed || undefined,
-        metadata: { fallback: true, variationIndex: Math.floor(randomFactor * 4), timestamp },
-      };
+      decision = createFallbackDecision('Insufficient match quality', randomFactor, timestamp, topSymbolic);
     }
 
-    // Log the decision (with better error handling)
+    // Enhanced logging with error handling
+    await logDecisionSafely(input, symbolicMatches, neuralMatches, decision, startTime);
+
+    console.log(`✅ Decision completed: ${decision.responseType} (${Math.round(decision.confidence * 100)}%)`);
+    return decision;
+  };
+
+  const createFallbackDecision = (
+    reason: string, 
+    randomFactor = Math.random(), 
+    timestamp = Date.now(), 
+    fallbackSeed?: SymbolicMatch | null
+  ): HybridDecision => {
+    const fallbackResponses = [
+      'Ik begrijp je en wil graag helpen. Kun je me meer vertellen over hoe je je voelt?',
+      'Ik merk dat je iets deelt dat belangrijk voor je is. Wat speelt er precies?',
+      'Het klinkt alsof er iets is waar je mee bezig bent. Kun je daar meer over vertellen?',
+      'Ik hoor je. Wat zou het meest helpend zijn om nu te bespreken?',
+      'Dank je voor het delen. Wat voel je het sterkst op dit moment?'
+    ];
+    
+    const responseIndex = Math.floor(randomFactor * fallbackResponses.length);
+    const selectedResponse = fallbackResponses[responseIndex];
+    
+    return {
+      selectedResponse,
+      responseType: 'generated',
+      confidence: Math.max(0.3, 0.3 + (randomFactor * 0.2)),
+      reasoning: `${reason} - using varied fallback response ${responseIndex + 1}`,
+      symbolicContribution: 0,
+      neuralContribution: 0,
+      seed: fallbackSeed?.seed,
+      metadata: { 
+        fallback: true, 
+        responseIndex, 
+        timestamp,
+        reason
+      }
+    };
+  };
+
+  const createSymbolicDecision = (
+    topSymbolic: SymbolicMatch, 
+    randomFactor: number, 
+    timestamp: number
+  ): HybridDecision => {
+    let response = topSymbolic.seed?.response?.nl || 'Ik begrijp je situatie.';
+    
+    // Add slight variation occasionally
+    if (randomFactor > 0.7 && response) {
+      const variations = [
+        `${response}`,
+        `${response} Wat denk jij hierover?`,
+        `${response} Hoe voel je je daarbij?`,
+      ];
+      response = variations[Math.floor(randomFactor * variations.length)];
+    }
+    
+    return {
+      selectedResponse: response,
+      responseType: 'symbolic',
+      confidence: Math.min(0.95, Math.max(0.1, topSymbolic.confidence || 0.5)),
+      reasoning: `Strong symbolic match: ${topSymbolic.triggers?.join(', ') || 'emotion trigger'} (variation: ${randomFactor > 0.7})`,
+      symbolicContribution: 1.0,
+      neuralContribution: 0,
+      seed: topSymbolic.seed,
+      metadata: { 
+        matchedTriggers: topSymbolic.triggers || [],
+        seedId: topSymbolic.seed?.id,
+        variation: randomFactor > 0.7,
+        timestamp
+      }
+    };
+  };
+
+  const createNeuralDecision = (topNeural: NeuralMatch, timestamp: number): HybridDecision => {
+    const similarity = topNeural.similarity?.similarity_score || 0;
+    const contextualFit = topNeural.contextualFit || 0;
+    
+    return {
+      selectedResponse: topNeural.similarity?.content_text || 'Ik begrijp je bericht.',
+      responseType: 'neural',
+      confidence: Math.min(0.95, Math.max(0.1, contextualFit)),
+      reasoning: `Strong neural similarity: ${similarity.toFixed(2)} (contextual fit: ${contextualFit.toFixed(2)})`,
+      symbolicContribution: 0,
+      neuralContribution: 1.0,
+      metadata: {
+        similarityScore: similarity,
+        contextualFit: contextualFit,
+        sourceType: topNeural.similarity?.content_type || 'unknown',
+        timestamp
+      }
+    };
+  };
+
+  const createHybridDecision = (
+    topSymbolic: SymbolicMatch,
+    topNeural: NeuralMatch,
+    randomFactor: number,
+    timestamp: number
+  ): HybridDecision => {
+    const symbolicConfidence = Math.max(0, topSymbolic.confidence || 0);
+    const neuralFit = Math.max(0, topNeural.contextualFit || 0);
+    
+    const symbolicWeight = symbolicConfidence * (0.6 + randomFactor * 0.2);
+    const neuralWeight = neuralFit * (0.4 + randomFactor * 0.2);
+    
+    const totalWeight = symbolicWeight + neuralWeight;
+    const symbolicRatio = totalWeight > 0 ? symbolicWeight / totalWeight : 0.5;
+    const neuralRatio = totalWeight > 0 ? neuralWeight / totalWeight : 0.5;
+    
+    if (symbolicWeight > neuralWeight) {
+      return {
+        selectedResponse: topSymbolic.seed?.response?.nl || 'Ik begrijp je situatie.',
+        responseType: 'hybrid',
+        confidence: Math.min(0.95, Math.max(0.1, (symbolicWeight + neuralWeight) / 2)),
+        reasoning: `Hybrid decision favoring symbolic (${symbolicWeight.toFixed(2)} vs ${neuralWeight.toFixed(2)})`,
+        symbolicContribution: symbolicRatio,
+        neuralContribution: neuralRatio,
+        seed: topSymbolic.seed,
+        metadata: {
+          hybridWeights: { symbolic: symbolicWeight, neural: neuralWeight },
+          secondarySource: topNeural.similarity?.content_type || 'unknown',
+          timestamp
+        }
+      };
+    } else {
+      return {
+        selectedResponse: topNeural.similarity?.content_text || 'Ik begrijp je bericht.',
+        responseType: 'hybrid',
+        confidence: Math.min(0.95, Math.max(0.1, (symbolicWeight + neuralWeight) / 2)),
+        reasoning: `Hybrid decision favoring neural (${neuralWeight.toFixed(2)} vs ${symbolicWeight.toFixed(2)})`,
+        symbolicContribution: symbolicRatio,
+        neuralContribution: neuralRatio,
+        metadata: {
+          hybridWeights: { symbolic: symbolicWeight, neural: neuralWeight },
+          fallbackSeed: topSymbolic.seed?.id,
+          timestamp
+        }
+      };
+    }
+  };
+
+  const isValidNeuralMatch = (match: NeuralMatch): boolean => {
+    if (!match || !match.similarity) return false;
+    const score = match.similarity.similarity_score;
+    const fit = match.contextualFit;
+    return !isNaN(score) && !isNaN(fit) && score > 0.5 && fit > 0.5;
+  };
+
+  const logDecisionSafely = async (
+    input: string,
+    symbolicMatches: SymbolicMatch[],
+    neuralMatches: NeuralMatch[],
+    decision: HybridDecision,
+    startTime: number
+  ) => {
     try {
       const processingTime = Date.now() - startTime;
-      
-      // Get the current user to include user_id in the log
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Only try to log if we have a user
       if (user?.id) {
-        // Generate proper UUID for logging
         const conversationId = crypto.randomUUID();
         
-        // Insert the log with user_id included
         await supabase.from('decision_logs').insert({
           user_id: user.id,
           conversation_id: conversationId,
-          user_input: input,
-          symbolic_matches: symbolicMatches.map(m => ({
-            seedId: m.seed.id,
-            emotion: m.seed.emotion,
-            score: m.score,
-            triggers: m.triggers,
-            confidence: m.confidence,
+          user_input: input.substring(0, 1000), // Limit input length
+          symbolic_matches: symbolicMatches.slice(0, 5).map(m => ({
+            seedId: m.seed?.id || 'unknown',
+            emotion: m.seed?.emotion || 'unknown',
+            score: !isNaN(m.score) ? m.score : 0,
+            triggers: Array.isArray(m.triggers) ? m.triggers : [],
+            confidence: !isNaN(m.confidence) ? m.confidence : 0
           })),
-          neural_similarities: neuralMatches.map(m => ({
-            contentId: m.similarity.content_id,
-            contentType: m.similarity.content_type,
-            similarityScore: m.similarity.similarity_score,
-            relevanceScore: m.relevanceScore,
+          neural_similarities: neuralMatches.slice(0, 5).map(m => ({
+            contentId: m.similarity?.content_id || 'unknown',
+            contentType: m.similarity?.content_type || 'unknown',
+            similarityScore: !isNaN(m.similarity?.similarity_score || 0) ? m.similarity.similarity_score : 0,
+            relevanceScore: !isNaN(m.relevanceScore || 0) ? m.relevanceScore : 0
           })),
           hybrid_decision: {
             responseType: decision.responseType,
-            confidence: decision.confidence,
-            reasoning: decision.reasoning,
-            symbolicContribution: decision.symbolicContribution,
-            neuralContribution: decision.neuralContribution,
-            timestamp: decision.metadata.timestamp,
+            confidence: !isNaN(decision.confidence) ? decision.confidence : 0,
+            reasoning: decision.reasoning || 'No reasoning provided',
+            symbolicContribution: !isNaN(decision.symbolicContribution) ? decision.symbolicContribution : 0,
+            neuralContribution: !isNaN(decision.neuralContribution) ? decision.neuralContribution : 0,
+            timestamp: decision.metadata?.timestamp || Date.now()
           },
-          final_response: decision.selectedResponse,
-          confidence_score: decision.confidence,
-          processing_time_ms: processingTime,
+          final_response: decision.selectedResponse?.substring(0, 1000) || 'No response',
+          confidence_score: !isNaN(decision.confidence) ? decision.confidence : 0,
+          processing_time_ms: processingTime
         });
         
-        console.log('✅ Decision logged successfully');
+        console.log('✅ Enhanced decision logged successfully');
       } else {
         console.warn('⚠️ No user found, skipping decision log');
       }
     } catch (error) {
-      console.error('Failed to log hybrid decision:', error);
-      // Don't fail the main process
+      console.error('❌ Failed to log hybrid decision:', error);
     }
-
-    console.log('✅ Hybrid decision made:', decision.responseType, `${(decision.confidence * 100).toFixed(1)}%`);
-    return decision;
   };
 
   return {
-    makeHybridDecision,
+    makeHybridDecision
   };
 }
