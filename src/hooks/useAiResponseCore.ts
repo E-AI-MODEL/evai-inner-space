@@ -16,7 +16,6 @@ export function useAiResponseCore() {
   const createSuccessfulAiResponse = (
     matchedResult: AdvancedSeed | EmotionDetection,
     userMessage: Message,
-    collaborationNote: string,
     collaborationStatus: CollaborationStatus,
     availableApis: number,
     rubricInsights: string[],
@@ -58,7 +57,7 @@ export function useAiResponseCore() {
       from: "ai",
       label: label,
       accentColor: getLabelVisuals(label).accentColor,
-      content: `${responseContent}${collaborationNote}`,
+      content: responseContent,
       explainText: explainText,
       emotionSeed: emotionSeed,
       animate: true,
@@ -85,7 +84,8 @@ export function useAiResponseCore() {
                     : 'Laag'
         })`,
         secondaryInsights.length > 0 ? `💡 Secondary insights: ${secondaryInsights.slice(0, 2).join(', ')}` : '',
-        `📈 Available APIs: ${availableApis}/3 | Risk Level: ${overallRisk.toFixed(1)}%`
+        `📈 Available APIs: ${availableApis}/3 | Risk Level: ${overallRisk.toFixed(1)}%`,
+        `🤝 ${collaborationNote.replace(/^\n\n\*\[|\]\*$/g, '')}`
       ].filter(Boolean)
     };
   };
@@ -101,7 +101,7 @@ export function useAiResponseCore() {
       from: "ai",
       label: "Valideren",
       accentColor: getLabelVisuals("Valideren").accentColor,
-      content: `Ik begrijp je vraag en probeer je te helpen met de beschikbare APIs. Voor betere responses voeg je de ontbrekende API keys toe in de instellingen.${collaborationNote}`,
+      content: `Ik begrijp je vraag en probeer je te helpen met de beschikbare APIs. Voor betere responses voeg je de ontbrekende API keys toe in de instellingen.`,
       explainText: `Limited enhanced API collaboration - ${availableApis}/3 APIs available`,
       emotionSeed: null,
       animate: true,
@@ -116,7 +116,8 @@ export function useAiResponseCore() {
         `⚠️ Vector API: ${collaborationStatus.vector ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor neural search functionaliteit'}`,
         `📊 Functionaliteit: ${Math.round((availableApis / 3) * 100)}% van volledige capaciteit beschikbaar`,
         `💡 Verbetering: Voeg ${3 - availableApis} ontbrekende API key${3 - availableApis > 1 ? 's' : ''} toe voor volledige functionaliteit`,
-        `🎯 Current Performance: Basis response generation mogelijk`
+        `🎯 Current Performance: Basis response generation mogelijk`,
+        `⚠️ ${collaborationNote.replace(/^\n\n\*\[|\]\*$/g, '')}`
       ]
     };
   };
@@ -126,7 +127,7 @@ export function useAiResponseCore() {
       id: `ai-enhanced-error-${Date.now()}`,
       from: "ai",
       label: "Fout",
-      content: `${errorMessage}\n\n*[❌ ENHANCED API COLLABORATION ERROR: Controleer je API keys en netwerkverbinding]*`,
+      content: errorMessage,
       emotionSeed: "error",
       animate: true,
       timestamp: new Date(),
@@ -138,7 +139,8 @@ export function useAiResponseCore() {
         `❌ Enhanced Error: ${errorMessage}`,
         `🔧 Troubleshooting: Check alle API keys in instellingen`,
         `🌐 Network: Controleer internetverbinding`,
-        `🔄 Retry: Probeer opnieuw na het oplossen van de configuratie`
+        `🔄 Retry: Probeer opnieuw na het oplossen van de configuratie`,
+        `❌ ENHANCED API COLLABORATION ERROR: Controleer je API keys en netwerkverbinding`
       ]
     };
   };

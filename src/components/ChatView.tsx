@@ -1,7 +1,6 @@
 
 import React from 'react';
 import ChatBubble from "./ChatBubble";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Message } from '../types';
 import PersonalizedInsights from './PersonalizedInsights';
 import ReflectionStatusIndicator from './ReflectionStatusIndicator';
@@ -35,7 +34,6 @@ const ChatView: React.FC<ChatViewProps> = ({
         }, {} as Record<string, Message>),
     [messages]);
 
-    const [openInferences, setOpenInferences] = React.useState<Record<string, boolean>>({});
     const { getPriorityInsights } = useInsightGenerator(messages);
     
     // Show insights after every 5 messages or when priority insights are available
@@ -82,53 +80,11 @@ const ChatView: React.FC<ChatViewProps> = ({
                             brilliant={!!msg.brilliant}
                             repliedToContent={repliedToMessage?.content}
                             feedback={msg.feedback}
+                            symbolicInferences={msg.symbolicInferences}
                             onFeedback={msg.from === 'ai' && onFeedback ? (feedbackType) => onFeedback(msg.id, feedbackType) : undefined}
                         >
                             {msg.content}
                         </ChatBubble>
-                        
-                        {/* Enhanced symbolic inferences display with reflection context */}
-                        {msg.symbolicInferences && msg.symbolicInferences.length > 0 && (
-                            <div className="ml-4 md:ml-8 mt-2 mb-4">
-                                <Collapsible
-                                    open={!!openInferences[msg.id]}
-                                    onOpenChange={(open) =>
-                                        setOpenInferences((prev) => ({ ...prev, [msg.id]: open }))
-                                    }
-                                >
-                                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-indigo-800 hover:underline">
-                                        <span className="text-lg">
-                                            {msg.label === "Reflectievraag" ? "🤔" : "🧠"}
-                                        </span>
-                                        <span className="text-sm md:text-base">
-                                            {msg.label === "Reflectievraag" 
-                                                ? "Reflectie Observatie" 
-                                                : "Neurosymbolische Observatie"}
-                                        </span>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent>
-                                        <div className={`${
-                                            msg.label === "Reflectievraag" 
-                                                ? "bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-400" 
-                                                : "bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-indigo-400"
-                                        } rounded-r-lg shadow-sm mt-2`}>
-                                            <div className="px-3 md:px-4 py-3 space-y-1">
-                                                {msg.symbolicInferences.map((inf) => (
-                                                    <div key={inf} className={`text-sm ${
-                                                        msg.label === "Reflectievraag" ? "text-purple-700" : "text-indigo-700"
-                                                    } flex items-start gap-2`}>
-                                                        <span className={`${
-                                                            msg.label === "Reflectievraag" ? "text-purple-400" : "text-indigo-400"
-                                                        } mt-0.5`}>•</span>
-                                                        <span className="flex-1 text-sm md:text-base leading-relaxed">{inf}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </CollapsibleContent>
-                                </Collapsible>
-                            </div>
-                        )}
 
                         {/* Contextual Insights - Show after certain messages */}
                         {showInsightsAfter && (

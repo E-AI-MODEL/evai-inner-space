@@ -1,6 +1,7 @@
 
-import React, { forwardRef, useState } from "react";
-import { Gem, Info, CornerDownRight, ThumbsUp, ThumbsDown } from "lucide-react";
+import React, { forwardRef } from "react";
+import { Gem, CornerDownRight, ThumbsUp, ThumbsDown } from "lucide-react";
+import TechnicalDetailsCollapsible from "./TechnicalDetailsCollapsible";
 
 interface ChatBubbleProps {
   id: string;
@@ -16,6 +17,7 @@ interface ChatBubbleProps {
   isFocused?: boolean;
   repliedToContent?: string;
   feedback?: "like" | "dislike" | null;
+  symbolicInferences?: string[];
   onFeedback?: (feedback: "like" | "dislike") => void;
 }
 
@@ -40,17 +42,16 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
   isFocused,
   repliedToContent,
   feedback,
+  symbolicInferences,
   onFeedback,
 }, ref) => {
-  const [isExplainVisible, setIsExplainVisible] = useState(false);
-  const explainId = `explain-${id}`;
-
   const bubbleStyles =
     from === "user"
       ? "bg-white text-zinc-800 border border-zinc-200"
       : accentColor
       ? ""
       : "bg-zinc-100 text-zinc-800";
+
   return (
     <div
       ref={ref}
@@ -106,53 +107,41 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
         >
           {children}
           
-          {/* Uitleg & Feedback Toggles */}
-          {from === 'ai' && (explainText || onFeedback) && (
+          {/* Feedback Toggle */}
+          {from === 'ai' && onFeedback && (
             <div className="absolute -bottom-3 -right-2 flex items-center gap-2">
-              {explainText && (
+              <div className="flex items-center bg-white border border-zinc-200 rounded-full shadow-sm p-0.5">
                 <button
-                  onClick={() => setIsExplainVisible(v => !v)}
-                  className="bg-white border border-zinc-200 rounded-full p-1.5 shadow-sm hover:bg-zinc-100 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  aria-label={isExplainVisible ? "Verberg redenatie" : "Toon redenatie"}
-                  aria-expanded={isExplainVisible}
-                  aria-controls={explainId}
+                  onClick={() => onFeedback('like')}
+                  className={`p-1 rounded-full transition-colors ${feedback === 'like' ? 'bg-green-100 text-green-600' : 'text-zinc-500 hover:bg-green-50'}`}
+                  aria-label="Antwoord is nuttig"
                 >
-                  <Info size={14} className="text-zinc-500" />
+                  <ThumbsUp size={14} />
                 </button>
-              )}
-              {onFeedback && (
-                <div className="flex items-center bg-white border border-zinc-200 rounded-full shadow-sm p-0.5">
-                  <button
-                    onClick={() => onFeedback('like')}
-                    className={`p-1 rounded-full transition-colors ${feedback === 'like' ? 'bg-green-100 text-green-600' : 'text-zinc-500 hover:bg-green-50'}`}
-                    aria-label="Antwoord is nuttig"
-                  >
-                    <ThumbsUp size={14} />
-                  </button>
-                  <div className="w-px h-4 bg-zinc-200 mx-0.5" />
-                  <button
-                    onClick={() => onFeedback('dislike')}
-                    className={`p-1 rounded-full transition-colors ${feedback === 'dislike' ? 'bg-red-100 text-red-600' : 'text-zinc-500 hover:bg-red-50'}`}
-                    aria-label="Antwoord is niet nuttig"
-                  >
-                    <ThumbsDown size={14} />
-                  </button>
-                </div>
-              )}
+                <div className="w-px h-4 bg-zinc-200 mx-0.5" />
+                <button
+                  onClick={() => onFeedback('dislike')}
+                  className={`p-1 rounded-full transition-colors ${feedback === 'dislike' ? 'bg-red-100 text-red-600' : 'text-zinc-500 hover:bg-red-50'}`}
+                  aria-label="Antwoord is niet nuttig"
+                >
+                  <ThumbsDown size={14} />
+                </button>
+              </div>
             </div>
           )}
         </div>
-        {/* Uitleg-tekst */}
-        {isExplainVisible && explainText && (
-          <div
-            id={explainId}
-            className="mt-2 text-xs italic opacity-80 transition-all max-w-[70vw] p-3 bg-zinc-50 border rounded-lg ml-2"
-            style={{ fontFamily: "Inter, sans-serif" }}
-          >
-            {explainText}
-          </div>
-        )}
       </div>
+
+      {/* Technical Details Section - Only for AI messages with technical information */}
+      {from === 'ai' && (
+        <TechnicalDetailsCollapsible
+          messageId={id}
+          explainText={explainText}
+          meta={typeof meta === 'string' ? meta : undefined}
+          symbolicInferences={symbolicInferences}
+          label={label}
+        />
+      )}
     </div>
   );
 });

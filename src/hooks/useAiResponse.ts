@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary } from "./useOpenAISecondary";
@@ -190,14 +189,12 @@ export function useAiResponse(
             apiStatus?.seedGenerated ? 'Nieuwe seed' : 'Bestaande seed'
           ].join(' | ');
 
-          const collaborationNote = `\n\n*[🚀 API SAMENWERKING + REFLECTIE: ${apiStatusText} |${confidence}% confidence${neurosymbolicResult.seedInjectionUsed ? ' + Seed injectie' : ''}${pendingReflections.length > 0 ? ` | ${pendingReflections.length} reflectievragen gereed` : ''}]*`;
-
           let aiResp: Message = {
             id: `ai-enhanced-${Date.now()}`,
             from: "ai",
             label: label,
             accentColor: getLabelVisuals(label).accentColor,
-            content: `${neurosymbolicResult.response}${collaborationNote}`,
+            content: neurosymbolicResult.response, // REMOVED: inline collaboration note
             explainText: `${neurosymbolicResult.reasoning} | Enhanced workflow met reflectie-integratie (${confidence}% confidence)`,
             emotionSeed: neurosymbolicResult.seed?.emotion || null,
             animate: true,
@@ -216,7 +213,9 @@ export function useAiResponse(
               `🤔 Reflectie Systeem: ${pendingReflections.length} vraag${pendingReflections.length === 1 ? '' : 'en'} gereed`,
               `⚖️ Confidence: ${confidence}% (${neurosymbolicResult.confidence > 0.8 ? 'Hoog' : neurosymbolicResult.confidence > 0.6 ? 'Gemiddeld' : 'Laag'})`,
               `⚡ Verwerking: ${neurosymbolicResult.processingTime}ms`,
-              `🎯 Redenering: ${neurosymbolicResult.reasoning}`
+              `🎯 Redenering: ${neurosymbolicResult.reasoning}`,
+              // Add API status as technical detail instead of inline
+              `🤝 API SAMENWERKING + REFLECTIE: ${apiStatusText} |${confidence}% confidence${neurosymbolicResult.seedInjectionUsed ? ' + Seed injectie' : ''}${pendingReflections.length > 0 ? ` | ${pendingReflections.length} reflectievragen gereed` : ''}`
             ].filter(Boolean)
           };
 
