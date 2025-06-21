@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary } from "./useOpenAISecondary";
@@ -11,6 +10,8 @@ import { useApiStatusManager } from "./useApiStatusManager";
 import { useSecondaryAnalysisRunner } from "./useSecondaryAnalysisRunner";
 import { useEmotionDetector } from "./useEmotionDetector";
 import { useAiResponseCore } from "./useAiResponseCore";
+import { useBackgroundReflectionTrigger } from "./useBackgroundReflectionTrigger";
+import { useEnhancedApiCollaborationResponseGenerator } from "./useEnhancedApiCollaborationResponseGenerator";
 
 interface ExtendedContext {
   dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie";
@@ -46,6 +47,20 @@ export function useAiResponse(
     createErrorResponse 
   } = useAiResponseCore();
 
+  // ENHANCED: Background reflection system integration
+  const {
+    pendingReflections,
+    isProcessing: isReflectionProcessing,
+    consumePendingReflection,
+    getNextPendingReflection
+  } = useBackgroundReflectionTrigger(messages, apiKey);
+
+  const {
+    generateReflectionResponse,
+    enhanceRegularResponse,
+    shouldTriggerReflection
+  } = useEnhancedApiCollaborationResponseGenerator();
+
   const generateAiResponse = async (
     userMessage: Message,
     context?: { dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie" }
@@ -55,12 +70,13 @@ export function useAiResponse(
     const apiConfig = getApiConfiguration();
     const hasOpenAI = apiKey && apiKey.trim().length > 0;
     
-    console.log('🚀 EvAI ENHANCED NEUROSYMBOLIC MODE - IMPROVED VERSION');
+    console.log('🚀 EvAI ENHANCED NEUROSYMBOLIC MODE WITH REFLECTION SYSTEM');
     console.log('🔑 API Configuration:', { 
       hasOpenAI, 
       hasOpenAi2: apiConfig.hasOpenAi2, 
       hasVectorAPI: apiConfig.hasVectorAPI,
-      autonomous: apiConfig.isAutonomousEnabled 
+      autonomous: apiConfig.isAutonomousEnabled,
+      pendingReflections: pendingReflections.length 
     });
 
     try {
@@ -72,9 +88,47 @@ export function useAiResponse(
           content: msg.content
         }));
 
+      const collaborationStatus = createCollaborationStatus(hasOpenAI, apiConfig.hasOpenAi2, apiConfig.hasVectorAPI);
+      const availableApis = Object.entries(collaborationStatus).filter(([_, available]) => available).length;
+
+      // ENHANCED: Check if we should trigger a reflection question
+      const lastReflectionIndex = messages.findLastIndex(msg => msg.label === "Reflectievraag");
+      const shouldReflect = shouldTriggerReflection(
+        pendingReflections,
+        messages.length,
+        lastReflectionIndex
+      );
+
+      if (shouldReflect && hasOpenAI) {
+        console.log('🤔 TRIGGERING REFLECTION QUESTION VIA ENHANCED API COLLABORATION');
+        
+        const nextReflection = getNextPendingReflection();
+        if (nextReflection) {
+          const reflectionResponse = generateReflectionResponse(
+            nextReflection,
+            userMessage,
+            collaborationStatus,
+            availableApis
+          );
+          
+          // Consume the reflection question
+          consumePendingReflection(nextReflection.id);
+          
+          setMessages((prev) => [...prev, reflectionResponse]);
+          
+          toast({
+            title: `🤔 Reflectievraag: ${nextReflection.emotion}`,
+            description: `Automatisch gegenereerd na ${nextReflection.batchInfo.seedCount} verlopende seeds`,
+          });
+
+          setIsProcessing(false);
+          return;
+        }
+      }
+
       // ENHANCED: Use complete neurosymbolic workflow if all keys available
       if (hasOpenAI && apiConfig.hasVectorAPI) {
-        console.log('🧠 FULL NEUROSYMBOLIC WORKFLOW ACTIVATED - ENHANCED VERSION');
+        console.log('🧠 FULL NEUROSYMBOLIC WORKFLOW ACTIVATED WITH REFLECTION INTEGRATION');
         
         try {
           const neurosymbolicResult = await processNeurosymbolic(
@@ -89,11 +143,11 @@ export function useAiResponse(
             }
           );
 
-          console.log('✅ ENHANCED NEUROSYMBOLIC SUCCESS:');
+          console.log('✅ ENHANCED NEUROSYMBOLIC SUCCESS WITH REFLECTION CONTEXT:');
           console.log(`  🎯 Response Type: ${neurosymbolicResult.responseType}`);
           console.log(`  📊 Confidence: ${(neurosymbolicResult.confidence * 100).toFixed(1)}%`);
           console.log(`  🤝 API Collaboration:`, neurosymbolicResult.apiCollaboration);
-          console.log(`  ⚡ Processing Time: ${neurosymbolicResult.processingTime}ms`);
+          console.log(`  🤔 Pending Reflections: ${pendingReflections.length}`);
 
           // Store conversation embedding for future learning
           setTimeout(() => {
@@ -116,7 +170,7 @@ export function useAiResponse(
             label = "Valideren";
           }
 
-          // Enhanced result display with better formatting
+          // Enhanced result display with reflection context
           const confidence = Math.round(neurosymbolicResult.confidence * 100);
           const apiStatus = neurosymbolicResult.apiCollaboration;
           
@@ -127,40 +181,44 @@ export function useAiResponse(
             apiStatus?.seedGenerated ? 'Nieuwe seed' : 'Bestaande seed'
           ].join(' | ');
 
-          const collaborationNote = `\n\n*[🚀 API SAMENWERKING: ${apiStatusText} | ${confidence}% confidence${neurosymbolicResult.seedInjectionUsed ? ' + Seed injectie' : ''}]*`;
+          const collaborationNote = `\n\n*[🚀 API SAMENWERKING + REFLECTIE: ${apiStatusText} |${confidence}% confidence${neurosymbolicResult.seedInjectionUsed ? ' + Seed injectie' : ''}${pendingReflections.length > 0 ? ` | ${pendingReflections.length} reflectievragen gereed` : ''}]*`;
 
-          const aiResp: Message = {
+          let aiResp: Message = {
             id: `ai-enhanced-${Date.now()}`,
             from: "ai",
             label: label,
             accentColor: getLabelVisuals(label).accentColor,
             content: `${neurosymbolicResult.response}${collaborationNote}`,
-            explainText: `${neurosymbolicResult.reasoning} | Enhanced workflow met ${confidence}% confidence`,
+            explainText: `${neurosymbolicResult.reasoning} | Enhanced workflow met reflectie-integratie (${confidence}% confidence)`,
             emotionSeed: neurosymbolicResult.seed?.emotion || null,
             animate: true,
-            meta: `Enhanced API Collaboration: ${confidence}% confidence`,
+            meta: `Enhanced API + Reflectie: ${confidence}% confidence`,
             brilliant: true,
             timestamp: new Date(),
             replyTo: userMessage.id,
             feedback: null,
             symbolicInferences: [
-              `🧠 Enhanced Neurosymbolic Engine: ${neurosymbolicResult.responseType}`,
+              `🧠 Enhanced Neurosymbolic + Reflectie Engine: ${neurosymbolicResult.responseType}`,
               `🤝 API 1 (Neural): ${apiStatus?.api1Used ? '✅ Actief' : '❌ Niet gebruikt'}`,
               `🤝 API 2 (Secondary): ${apiStatus?.api2Used ? '✅ Gebruikt voor analyse' : '❌ Niet beschikbaar'}`,
               `🧬 Vector API: ✅ Actief voor embeddings`,
               `🌱 Seed Status: ${apiStatus?.seedGenerated ? '✅ Nieuwe seed gegenereerd' : '⚡ Bestaande seed gebruikt'}`,
               neurosymbolicResult.seedInjectionUsed ? '💉 Seed injectie toegepast' : '',
+              `🤔 Reflectie Systeem: ${pendingReflections.length} vraag${pendingReflections.length === 1 ? '' : 'en'} gereed`,
               `⚖️ Confidence: ${confidence}% (${neurosymbolicResult.confidence > 0.8 ? 'Hoog' : neurosymbolicResult.confidence > 0.6 ? 'Gemiddeld' : 'Laag'})`,
               `⚡ Verwerking: ${neurosymbolicResult.processingTime}ms`,
               `🎯 Redenering: ${neurosymbolicResult.reasoning}`
             ].filter(Boolean)
           };
 
+          // ENHANCED: Add pending reflection context to regular responses
+          aiResp = enhanceRegularResponse(aiResp, pendingReflections.length > 0, pendingReflections.length);
+
           setMessages((prev) => [...prev, aiResp]);
           
           toast({
-            title: `🚀 ENHANCED API SAMENWERKING (${confidence}%)`,
-            description: `${apiStatusText} - Verwerkt in ${neurosymbolicResult.processingTime}ms`,
+            title: `🚀 ENHANCED API + REFLECTIE (${confidence}%)`,
+            description: `${apiStatusText} - ${pendingReflections.length} reflectievragen gereed`,
           });
 
           return;
@@ -168,21 +226,17 @@ export function useAiResponse(
           console.error('🔴 Enhanced neurosymbolic workflow failed:', neurosymbolicError);
           
           toast({
-            title: "⚠️ Enhanced Neurosymbolic Fallback",
+            title: "⚠️ Enhanced Neurosymbolic + Reflectie Fallback",
             description: "Schakel over naar verbeterde fallback mode",
             variant: "destructive"
           });
         }
       }
 
-      // ENHANCED FALLBACK: Better partial API collaboration
-      console.log('🔄 ENHANCED PARTIAL API COLLABORATION...');
-      
-      const collaborationStatus = createCollaborationStatus(hasOpenAI, apiConfig.hasOpenAi2, apiConfig.hasVectorAPI);
-      const availableApis = Object.entries(collaborationStatus).filter(([_, available]) => available).length;
-      console.log(`📊 Available APIs: ${availableApis}/3`);
+      // ENHANCED FALLBACK: Better partial API collaboration with reflection context
+      console.log('🔄 ENHANCED PARTIAL API COLLABORATION WITH REFLECTION...');
 
-      // Enhanced secondary insights
+      // ... keep existing code (enhanced secondary insights)
       let secondaryInsights: string[] = [];
       if (apiConfig.hasOpenAi2) {
         try {
@@ -202,7 +256,7 @@ export function useAiResponse(
         }
       }
 
-      // Enhanced EvAI 5.6 Rubrics Analysis
+      // ... keep existing code (Enhanced EvAI 5.6 Rubrics Analysis)
       console.log('📊 Enhanced EvAI 5.6 Rubrics analysis...');
       const rubricsAssessments = assessMessage(userMessage.content);
       const overallRisk = calculateOverallRisk(rubricsAssessments);
@@ -225,14 +279,14 @@ export function useAiResponse(
         console.log(`🎯 Enhanced EvAI detected ${rubricsAssessments.length} areas, overall risk: ${overallRisk.toFixed(1)}%`);
       }
 
-      // Enhanced seed matching with improved context
+      // Enhanced seed matching with improved context including reflection state
       const extendedContext: ExtendedContext = { 
         ...context, 
         secondaryInsights, 
         collaborationStatus 
       };
 
-      console.log('🔍 Running enhanced seed matching...');
+      console.log('🔍 Running enhanced seed matching with reflection context...');
       const matchedResult = await checkInput(
         userMessage.content,
         apiKey,
@@ -272,15 +326,18 @@ export function useAiResponse(
         );
       }
 
+      // ENHANCED: Add reflection context to all responses
+      aiResp = enhanceRegularResponse(aiResp, pendingReflections.length > 0, pendingReflections.length);
+
       setMessages((prev) => [...prev, aiResp]);
       
     } catch (err) {
-      console.error("Enhanced EvAI API collaboration error:", err);
-      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de enhanced API samenwerking.";
+      console.error("Enhanced EvAI API collaboration with reflection error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de enhanced API samenwerking met reflectie.";
       const errorResponse = createErrorResponse(userMessage, errorMessage);
       setMessages((prev) => [...prev, errorResponse]);
       toast({
-        title: "❌ Enhanced API Collaboration Error",
+        title: "❌ Enhanced API + Reflectie Error",
         description: "Controleer je API keys en netwerkverbinding",
         variant: "destructive",
       });
@@ -291,6 +348,6 @@ export function useAiResponse(
 
   return { 
     generateAiResponse, 
-    isGenerating: isProcessing || isSeedEngineLoading || isAnalyzing
+    isGenerating: isProcessing || isSeedEngineLoading || isAnalyzing || isReflectionProcessing
   };
 }
