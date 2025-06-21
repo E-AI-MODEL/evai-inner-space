@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -158,15 +157,37 @@ export const useAuthActions = () => {
     }
   };
 
-  const handleSpecialLogin = (setEmail: (email: string) => void) => {
+  const handleSpecialLogin = async (setEmail: (email: string) => void) => {
     console.log('🎯 Special login triggered!');
     setError(null);
     setSuccess(null);
+    setIsSubmitting(true);
     
     const specialEmail = 'vis@emmauscollege.nl';
-    setEmail(specialEmail);
+    const specialPassword = import.meta.env.VITE_SPECIAL_LOGIN_PASSWORD || 'demo123';
     
-    setSuccess('🎯 Speciale login geactiveerd! Voer je wachtwoord in om verder te gaan.');
+    setEmail(specialEmail);
+    setSuccess('🎯 Speciale login geactiveerd! Automatisch inloggen...');
+    
+    try {
+      console.log('🔐 Attempting automatic special login...');
+      const { error } = await signIn(specialEmail, specialPassword);
+      
+      if (error) {
+        console.error('❌ Special login failed:', error);
+        setError('🎯 Automatische login mislukt. Voer handmatig je wachtwoord in.');
+        setSuccess('🎯 Speciale login geactiveerd! Voer je wachtwoord in om verder te gaan.');
+      } else {
+        console.log('✅ Special login successful!');
+        setSuccess('🎯 Automatische special login succesvol!');
+      }
+    } catch (loginError: any) {
+      console.error('❌ Special login exception:', loginError);
+      setError('🎯 Automatische login mislukt. Voer handmatig je wachtwoord in.');
+      setSuccess('🎯 Speciale login geactiveerd! Voer je wachtwoord in om verder te gaan.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {
