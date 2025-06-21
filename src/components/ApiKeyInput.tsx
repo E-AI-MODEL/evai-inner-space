@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Key, Eye, EyeOff } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 
 interface ApiKeyInputProps {
   value: string;
@@ -14,10 +13,6 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ value, onChange, onSave }) =>
 
   const handleSave = () => {
     onSave();
-    toast({
-      title: "API Key 1 saved",
-      description: "Neural Engine is now active.",
-    });
   };
 
   return (

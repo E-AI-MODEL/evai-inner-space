@@ -29,11 +29,6 @@ interface ExtendedContext {
   collaborationStatus?: CollaborationStatus;
 }
 
-// Type guard function to distinguish between EmotionDetection and AdvancedSeed
-function isEmotionDetection(result: EmotionDetection | AdvancedSeed): result is EmotionDetection {
-  return 'response' in result && typeof result.response === 'string';
-}
-
 export function useAiResponse(
   messages: Message[],
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
@@ -306,21 +301,26 @@ export function useAiResponse(
         const apiStatusText = `API-1:${collaborationStatus.api1 ? '✅' : '❌'} | API-2:${collaborationStatus.api2 ? '✅' : '❌'} | Vector:${collaborationStatus.vector ? '✅' : '❌'}`;
         const collaborationNote = `\n\n*[🤝 ENHANCED API STATUS: ${apiStatusText} | ${availableApis}/3 APIs active]*`;
         
-        // Use type guard to determine response content and label
+        // Use typeof check to determine response content and label
         let responseContent: string;
         let label: "Valideren" | "Reflectievraag" | "Suggestie";
         let emotionSeed: string | null;
+        let explainText: string;
         
-        if (isEmotionDetection(matchedResult)) {
-          // Handle EmotionDetection object
-          responseContent = matchedResult.response;
-          label = matchedResult.label || "Valideren";
-          emotionSeed = matchedResult.emotion;
+        if (typeof matchedResult.response === 'string') {
+          // This is an EmotionDetection object from OpenAI
+          const detection = matchedResult as EmotionDetection;
+          responseContent = detection.response;
+          label = detection.label || "Valideren";
+          emotionSeed = detection.emotion;
+          explainText = `${detection.reasoning || 'Enhanced API Collaboration'} | Enhanced API Collaboration: ${confidence}%`;
         } else {
-          // Handle AdvancedSeed object
-          responseContent = matchedResult.response.nl;
-          label = matchedResult.label;
-          emotionSeed = matchedResult.emotion;
+          // This is an AdvancedSeed object from database
+          const seed = matchedResult as AdvancedSeed;
+          responseContent = seed.response.nl;
+          label = seed.label;
+          emotionSeed = seed.emotion;
+          explainText = `Gevonden match op basis van triggers: ${seed.triggers.join(', ')}. Context: ${seed.context.severity}. Enhanced API Collaboration: ${confidence}%`;
         }
         
         aiResp = {
@@ -329,7 +329,7 @@ export function useAiResponse(
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
           content: `${responseContent}${collaborationNote}`,
-          explainText: `${matchedResult.reasoning || 'Enhanced API Collaboration'} | Enhanced API Collaboration: ${confidence}%`,
+          explainText: explainText,
           emotionSeed: emotionSeed,
           animate: true,
           meta: `Enhanced API Collaboration: ${confidence}% | ${availableApis}/3 APIs`,

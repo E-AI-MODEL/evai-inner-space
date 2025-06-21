@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Zap, Eye, EyeOff } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 
 interface VectorApiKeyInputProps {
   value: string;
@@ -14,10 +13,6 @@ const VectorApiKeyInput: React.FC<VectorApiKeyInputProps> = ({ value, onChange, 
 
   const handleSave = () => {
     onSave();
-    toast({
-      title: "Vector API Key opgeslagen",
-      description: "Enhanced neurosymbolische functionaliteit is nu actief voor embeddings en neural search.",
-    });
   };
 
   return (

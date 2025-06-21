@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { Key, Eye, EyeOff } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 
 interface OpenAIApiKey2InputProps {
   value: string;
@@ -14,10 +13,6 @@ const OpenAIApiKey2Input: React.FC<OpenAIApiKey2InputProps> = ({ value, onChange
 
   const handleSave = () => {
     onSave();
-    toast({
-      title: "API Key 2 saved",
-      description: "Enhanced functionality is now active.",
-    });
   };
 
   return (
