@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Brain, AlertTriangle, Shield, TrendingUp, BarChart, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronUp, Brain, AlertTriangle, Shield, TrendingUp, BarChart, Eye, EyeOff, Minimize2 } from 'lucide-react';
 import { useEvAI56Rubrics } from '../hooks/useEvAI56Rubrics';
 import PersonalizedInsights from './PersonalizedInsights';
 
@@ -20,6 +20,7 @@ const CompactAnalyticsDashboard: React.FC<CompactAnalyticsDashboardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showInsights, setShowInsights] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { assessMessage, calculateOverallRisk } = useEvAI56Rubrics();
 
   // Simplified analysis for compact view
@@ -74,6 +75,46 @@ const CompactAnalyticsDashboard: React.FC<CompactAnalyticsDashboardProps> = ({
     );
   }
 
+  // Collapsed state - only show minimal header
+  if (isCollapsed) {
+    return (
+      <Card className="bg-gray-50 border-gray-200 transition-all duration-200">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Brain className="text-blue-600" size={18} />
+              <span className="text-sm font-medium text-gray-700">EvAI 5.6 Analyse</span>
+              <Badge variant="outline" className="text-xs bg-white">Ingeklapt</Badge>
+              <div className="flex items-center gap-1 text-xs text-gray-600">
+                <span className={`font-semibold ${getRiskColor(analysisData.overallRisk)}`}>
+                  {Math.round(analysisData.overallRisk)}%
+                </span>
+                <span>•</span>
+                <span>{analysisData.activePatterns} patronen</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCollapsed(false)}
+                className="p-1"
+                title="Uitklappen"
+              >
+                <ChevronDown size={16} />
+              </Button>
+              {onClose && (
+                <Button variant="ghost" size="sm" onClick={onClose} className="p-1">
+                  <EyeOff size={14} />
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {/* Compact Summary Card */}
@@ -86,6 +127,15 @@ const CompactAnalyticsDashboard: React.FC<CompactAnalyticsDashboardProps> = ({
               <Badge variant="outline" className="text-xs">Live</Badge>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsCollapsed(true)}
+                className="p-1"
+                title="Inklappen"
+              >
+                <Minimize2 size={14} />
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
