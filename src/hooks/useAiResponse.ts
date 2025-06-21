@@ -1,31 +1,21 @@
+
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
-import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
-import { useOpenAISeedGenerator } from "./useOpenAISeedGenerator";
+import { useOpenAISecondary } from "./useOpenAISecondary";
 import { useNeurosymbolicWorkflow } from "./useNeurosymbolicWorkflow";
-import { useAutonomousLearning } from "./useAutonomousLearning";
-import { v4 as uuidv4 } from "uuid";
-import { AdvancedSeed } from "../types/seed";
-import { useEvAI56Rubrics, RubricAssessment } from "./useEvAI56Rubrics";
-import { useCoTFeedbackAnalyzer } from "./useCoTFeedbackAnalyzer";
+import { useEvAI56Rubrics } from "./useEvAI56Rubrics";
 import { toast } from "@/hooks/use-toast";
 import { getLabelVisuals } from "../lib/emotion-visuals";
 import { Message, ChatHistoryItem } from "../types";
-import { useSymbolicEngine } from "./useSymbolicEngine";
-import { loadAdvancedSeeds } from "../lib/advancedSeedStorage";
-import { useSeeds } from "./useSeeds";
-import { EmotionDetection } from "./useOpenAI";
-
-interface CollaborationStatus {
-  api1: boolean;
-  api2: boolean;
-  vector: boolean;
-}
+import { useApiStatusManager } from "./useApiStatusManager";
+import { useSecondaryAnalysisRunner } from "./useSecondaryAnalysisRunner";
+import { useEmotionDetector } from "./useEmotionDetector";
+import { useAiResponseCore } from "./useAiResponseCore";
 
 interface ExtendedContext {
   dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie";
   secondaryInsights?: string[];
-  collaborationStatus?: CollaborationStatus;
+  collaborationStatus?: any;
 }
 
 export function useAiResponse(
@@ -36,57 +26,25 @@ export function useAiResponse(
 ) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { checkInput, isLoading: isSeedEngineLoading } = useSeedEngine();
-  const { analyzeNeurosymbolic, generateSeed, isAnalyzing } = useOpenAISecondary();
-  const { 
-    generateSeed: generateOpenAISeed, 
-    analyzeConversationForSeeds, 
-    injectSeedToDatabase,
-    isGenerating: isOpenAIGenerating 
-  } = useOpenAISeedGenerator();
+  const { analyzeNeurosymbolic, isAnalyzing } = useOpenAISecondary();
   const { assessMessage, calculateOverallRisk, evai56Rubrics } = useEvAI56Rubrics();
-  const { evaluate: evaluateSymbolic } = useSymbolicEngine();
-  const { analyzeCoTFeedback, generateCoTImprovements, isAnalyzing: isCoTAnalyzing } = useCoTFeedbackAnalyzer();
-  const { refetch: refetchSeeds } = useSeeds();
   const { processInput: processNeurosymbolic, storeConversationEmbedding } = useNeurosymbolicWorkflow();
-  const { executeAutonomousLearning } = useAutonomousLearning();
-
-  const runSecondaryAnalysis = async (history: Message[], key: string) => {
-    if (!key || !key.trim()) return;
-    try {
-      const contextString = history.map(h => `${h.from}: ${h.content}`).join('\n');
-      const analysis = await analyzeNeurosymbolic(
-        history[history.length - 1].content,
-        contextString,
-        key
-      );
-      if (analysis?.seedSuggestion) {
-        const secondarySeed: AdvancedSeed = {
-          id: uuidv4(),
-          emotion: analysis.seedSuggestion,
-          type: 'validation',
-          label: 'Valideren',
-          triggers: [analysis.seedSuggestion],
-          response: { nl: analysis.insights.join(' ') },
-          context: { severity: 'medium', situation: 'therapy' },
-          meta: { priority: 1, weight: 1.0, confidence: analysis.confidence || 0.7, usageCount: 0 },
-          tags: ['secondary-analysis', 'auto-generated'],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          createdBy: 'ai',
-          isActive: true,
-          version: '1.0.0'
-        };
-        
-        const injected = await injectSeedToDatabase(secondarySeed);
-        if (injected) {
-          console.log('✅ Secondary analysis seed injected:', analysis.seedSuggestion);
-          await refetchSeeds();
-        }
-      }
-    } catch (err) {
-      console.error('Secondary analysis failed', err);
-    }
-  };
+  
+  const { 
+    getApiConfiguration, 
+    createCollaborationStatus, 
+    generateApiStatusText, 
+    generateCollaborationNote, 
+    generateMissingApisNote 
+  } = useApiStatusManager();
+  
+  const { runSecondaryAnalysis } = useSecondaryAnalysisRunner();
+  const { detectAllEmotions } = useEmotionDetector();
+  const { 
+    createSuccessfulAiResponse, 
+    createLimitedFunctionalityResponse, 
+    createErrorResponse 
+  } = useAiResponseCore();
 
   const generateAiResponse = async (
     userMessage: Message,
@@ -94,19 +52,15 @@ export function useAiResponse(
   ) => {
     setIsProcessing(true);
     
-    const openAiKey2 = localStorage.getItem('openai-api-key-2');
-    const vectorApiKey = localStorage.getItem('vector-api-key');
+    const apiConfig = getApiConfiguration();
     const hasOpenAI = apiKey && apiKey.trim().length > 0;
-    const hasOpenAi2 = openAiKey2 && openAiKey2.trim().length > 0;
-    const hasVectorAPI = vectorApiKey && vectorApiKey.trim().length > 0;
-    const isAutonomousEnabled = localStorage.getItem('evai-autonomous-mode') === 'true';
     
     console.log('🚀 EvAI ENHANCED NEUROSYMBOLIC MODE - IMPROVED VERSION');
     console.log('🔑 API Configuration:', { 
       hasOpenAI, 
-      hasOpenAi2, 
-      hasVectorAPI,
-      autonomous: isAutonomousEnabled 
+      hasOpenAi2: apiConfig.hasOpenAi2, 
+      hasVectorAPI: apiConfig.hasVectorAPI,
+      autonomous: apiConfig.isAutonomousEnabled 
     });
 
     try {
@@ -119,19 +73,19 @@ export function useAiResponse(
         }));
 
       // ENHANCED: Use complete neurosymbolic workflow if all keys available
-      if (hasOpenAI && hasVectorAPI) {
+      if (hasOpenAI && apiConfig.hasVectorAPI) {
         console.log('🧠 FULL NEUROSYMBOLIC WORKFLOW ACTIVATED - ENHANCED VERSION');
         
         try {
           const neurosymbolicResult = await processNeurosymbolic(
             userMessage.content,
             apiKey,
-            vectorApiKey,
+            apiConfig.vectorApiKey!,
             {
               messages: messages,
               userId: 'current-user',
               conversationId: `conv-${Date.now()}`,
-              secondaryApiKey: hasOpenAi2 ? openAiKey2 : undefined,
+              secondaryApiKey: apiConfig.hasOpenAi2 ? apiConfig.openAiKey2 : undefined,
             }
           );
 
@@ -145,7 +99,7 @@ export function useAiResponse(
           setTimeout(() => {
             storeConversationEmbedding(
               [...messages, userMessage],
-              vectorApiKey,
+              apiConfig.vectorApiKey!,
               `conv-${Date.now()}`
             ).catch(err => console.warn('⚠️ Background embedding storage failed:', err));
           }, 1000);
@@ -169,7 +123,7 @@ export function useAiResponse(
           const apiStatusText = [
             `API-1: ${apiStatus?.api1Used ? '✅' : '❌'}`,
             `API-2: ${apiStatus?.api2Used ? '✅' : '❌'}`,
-            `Vector: ${hasVectorAPI ? '✅' : '❌'}`,
+            `Vector: ${apiConfig.hasVectorAPI ? '✅' : '❌'}`,
             apiStatus?.seedGenerated ? 'Nieuwe seed' : 'Bestaande seed'
           ].join(' | ');
 
@@ -224,25 +178,20 @@ export function useAiResponse(
       // ENHANCED FALLBACK: Better partial API collaboration
       console.log('🔄 ENHANCED PARTIAL API COLLABORATION...');
       
-      let collaborationStatus: CollaborationStatus = {
-        api1: hasOpenAI,
-        api2: hasOpenAi2,
-        vector: hasVectorAPI
-      };
-
+      const collaborationStatus = createCollaborationStatus(hasOpenAI, apiConfig.hasOpenAi2, apiConfig.hasVectorAPI);
       const availableApis = Object.entries(collaborationStatus).filter(([_, available]) => available).length;
       console.log(`📊 Available APIs: ${availableApis}/3`);
 
       // Enhanced secondary insights
       let secondaryInsights: string[] = [];
-      if (hasOpenAi2) {
+      if (apiConfig.hasOpenAi2) {
         try {
           console.log('🧠 Running enhanced secondary analysis...');
           const contextString = history.map(h => `${h.role}: ${h.content}`).join('\n');
           const preAnalysis = await analyzeNeurosymbolic(
             userMessage.content,
             contextString,
-            openAiKey2!
+            apiConfig.openAiKey2!
           );
           if (preAnalysis) {
             secondaryInsights = preAnalysis.insights;
@@ -296,92 +245,31 @@ export function useAiResponse(
       if (matchedResult && "confidence" in matchedResult) {
         setSeedConfetti(true);
         
-        const confidence = Math.round(matchedResult.confidence * 100);
-        const apiStatusText = `API-1:${collaborationStatus.api1 ? '✅' : '❌'} | API-2:${collaborationStatus.api2 ? '✅' : '❌'} | Vector:${collaborationStatus.vector ? '✅' : '❌'}`;
-        const collaborationNote = `\n\n*[🤝 ENHANCED API STATUS: ${apiStatusText} | ${availableApis}/3 APIs active]*`;
+        const apiStatusText = generateApiStatusText(collaborationStatus, availableApis);
+        const collaborationNote = generateCollaborationNote(apiStatusText, availableApis);
         
-        // Use 'id' property check to determine if it's an AdvancedSeed or EmotionDetection
-        // AdvancedSeed has required 'id' field, EmotionDetection does not
-        let responseContent: string;
-        let label: "Valideren" | "Reflectievraag" | "Suggestie";
-        let emotionSeed: string | null;
-        let explainText: string;
-        
-        if ('id' in matchedResult && typeof matchedResult.id === 'string') {
-          // This is an AdvancedSeed object from database
-          const seed = matchedResult as AdvancedSeed;
-          responseContent = seed.response.nl;
-          // Filter out "Interventie" label to match Message type
-          label = seed.label === "Interventie" ? "Suggestie" : seed.label as "Valideren" | "Reflectievraag" | "Suggestie";
-          emotionSeed = seed.emotion;
-          explainText = `Gevonden match op basis van triggers: ${seed.triggers.join(', ')}. Context: ${seed.context.severity}. Enhanced API Collaboration: ${confidence}%`;
-        } else {
-          // This is an EmotionDetection object from OpenAI
-          const detection = matchedResult as EmotionDetection;
-          responseContent = detection.response;
-          label = detection.label || "Valideren";
-          emotionSeed = detection.emotion;
-          explainText = `${detection.reasoning || 'Enhanced API Collaboration'} | Enhanced API Collaboration: ${confidence}%`;
-        }
-        
-        aiResp = {
-          id: `ai-enhanced-collab-${Date.now()}`,
-          from: "ai",
-          label: label,
-          accentColor: getLabelVisuals(label).accentColor,
-          content: `${responseContent}${collaborationNote}`,
-          explainText: explainText,
-          emotionSeed: emotionSeed,
-          animate: true,
-          meta: `Enhanced API Collaboration: ${confidence}% | ${availableApis}/3 APIs`,
-          brilliant: true,
-          timestamp: new Date(),
-          replyTo: userMessage.id,
-          feedback: null,
-          symbolicInferences: [
-            ...rubricInsights.map(insight => `📊 EvAI Rubric: ${insight}`),
-            ...cotRubricGuidance.map(guidance => `🧠 EvAI Guidance: ${guidance}`),
-            `🤝 API 1 (OpenAI): ${collaborationStatus.api1 ? '✅ Actief' : '❌ ONTBREEKT - Voeg toe voor betere responses'}`,
-            `🤝 API 2 (Secondary): ${collaborationStatus.api2 ? '✅ Actief voor analyse' : '❌ ONTBREEKT - Voeg toe voor diepere analyse'}`,
-            `🧬 Vector API: ${collaborationStatus.vector ? '✅ Actief voor embeddings' : '❌ ONTBREEKT - Voeg toe voor neural search functionaliteit'}`,
-            `📊 Match Confidence: ${confidence}% (${matchedResult.confidence > 0.8 ? 'Hoog' : matchedResult.confidence > 0.6 ? 'Gemiddeld' : 'Laag'})`,
-            secondaryInsights.length > 0 ? `💡 Secondary insights: ${secondaryInsights.slice(0, 2).join(', ')}` : '',
-            `📈 Available APIs: ${availableApis}/3 | Risk Level: ${overallRisk.toFixed(1)}%`
-          ].filter(Boolean)
-        };
+        aiResp = createSuccessfulAiResponse(
+          matchedResult,
+          userMessage,
+          collaborationNote,
+          collaborationStatus,
+          availableApis,
+          rubricInsights,
+          cotRubricGuidance,
+          secondaryInsights,
+          overallRisk
+        );
 
       } else {
         // Enhanced fallback with better messaging
-        const missingApis = Object.entries(collaborationStatus)
-          .filter(([_, available]) => !available)
-          .map(([api]) => api.toUpperCase())
-          .join(', ');
+        const collaborationNote = generateMissingApisNote(collaborationStatus);
         
-        const collaborationNote = `\n\n*[⚠️ BEPERKTE FUNCTIONALITEIT: Ontbrekende APIs (${missingApis}) beperken de response kwaliteit. Voeg API keys toe voor volledige functionaliteit.]*`;
-        
-        aiResp = {
-          id: `ai-limited-enhanced-${Date.now()}`,
-          from: "ai",
-          label: "Valideren",
-          accentColor: getLabelVisuals("Valideren").accentColor,
-          content: `Ik begrijp je vraag en probeer je te helpen met de beschikbare APIs. Voor betere responses voeg je de ontbrekende API keys toe in de instellingen.${collaborationNote}`,
-          explainText: `Limited enhanced API collaboration - ${availableApis}/3 APIs available`,
-          emotionSeed: null,
-          animate: true,
-          meta: `Beperkte Enhanced API samenwerking: ${availableApis}/3`,
-          brilliant: false,
-          timestamp: new Date(),
-          replyTo: userMessage.id,
-          feedback: null,
-          symbolicInferences: [
-            `⚠️ API 1 (OpenAI): ${collaborationStatus.api1 ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor betere neural responses'}`,
-            `⚠️ API 2 (Secondary): ${collaborationStatus.api2 ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor enhanced analyse'}`,
-            `⚠️ Vector API: ${collaborationStatus.vector ? '✅ Beschikbaar' : '❌ ONTBREEKT - Voeg toe voor neural search functionaliteit'}`,
-            `📊 Functionaliteit: ${Math.round((availableApis / 3) * 100)}% van volledige capaciteit beschikbaar`,
-            `💡 Verbetering: Voeg ${3 - availableApis} ontbrekende API key${3 - availableApis > 1 ? 's' : ''} toe voor volledige functionaliteit`,
-            `🎯 Current Performance: Basis response generation mogelijk`
-          ]
-        };
+        aiResp = createLimitedFunctionalityResponse(
+          userMessage,
+          collaborationStatus,
+          availableApis,
+          collaborationNote
+        );
       }
 
       setMessages((prev) => [...prev, aiResp]);
@@ -389,25 +277,7 @@ export function useAiResponse(
     } catch (err) {
       console.error("Enhanced EvAI API collaboration error:", err);
       const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de enhanced API samenwerking.";
-      const errorResponse: Message = {
-        id: `ai-enhanced-error-${Date.now()}`,
-        from: "ai",
-        label: "Fout",
-        content: `${errorMessage}\n\n*[❌ ENHANCED API COLLABORATION ERROR: Controleer je API keys en netwerkverbinding]*`,
-        emotionSeed: "error",
-        animate: true,
-        timestamp: new Date(),
-        accentColor: getLabelVisuals("Fout").accentColor,
-        brilliant: false,
-        replyTo: userMessage.id,
-        feedback: null,
-        symbolicInferences: [
-          `❌ Enhanced Error: ${errorMessage}`,
-          `🔧 Troubleshooting: Check alle API keys in instellingen`,
-          `🌐 Network: Controleer internetverbinding`,
-          `🔄 Retry: Probeer opnieuw na het oplossen van de configuratie`
-        ]
-      };
+      const errorResponse = createErrorResponse(userMessage, errorMessage);
       setMessages((prev) => [...prev, errorResponse]);
       toast({
         title: "❌ Enhanced API Collaboration Error",
@@ -419,26 +289,8 @@ export function useAiResponse(
     }
   };
 
-  const detectAllEmotions = (content: string, assessments: RubricAssessment[]): string[] => {
-    const emotions: string[] = [];
-    const lowerContent = content.toLowerCase();
-    
-    if (lowerContent.includes('bang') || lowerContent.includes('angst') || lowerContent.includes('angstig')) emotions.push('angst');
-    if (lowerContent.includes('verdriet') || lowerContent.includes('huil') || lowerContent.includes('triest')) emotions.push('verdriet');
-    if (lowerContent.includes('boos') || lowerContent.includes('woede') || lowerContent.includes('kwaad')) emotions.push('woede');
-    if (lowerContent.includes('stress') || lowerContent.includes('druk') || lowerContent.includes('gespannen')) emotions.push('stress');
-    if (lowerContent.includes('eenzaam') || lowerContent.includes('alleen')) emotions.push('eenzaamheid');
-    if (lowerContent.includes('onzeker') || lowerContent.includes('twijfel')) emotions.push('onzekerheid');
-    
-    if (emotions.length === 0) {
-      emotions.push('onzekerheid');
-    }
-    
-    return [...new Set(emotions)].slice(0, 4);
-  };
-
   return { 
     generateAiResponse, 
-    isGenerating: isProcessing || isSeedEngineLoading || isAnalyzing || isOpenAIGenerating || isCoTAnalyzing
+    isGenerating: isProcessing || isSeedEngineLoading || isAnalyzing
   };
 }
