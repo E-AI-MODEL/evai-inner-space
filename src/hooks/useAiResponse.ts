@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
@@ -300,20 +301,13 @@ export function useAiResponse(
         const apiStatusText = `API-1:${collaborationStatus.api1 ? '✅' : '❌'} | API-2:${collaborationStatus.api2 ? '✅' : '❌'} | Vector:${collaborationStatus.vector ? '✅' : '❌'}`;
         const collaborationNote = `\n\n*[🤝 ENHANCED API STATUS: ${apiStatusText} | ${availableApis}/3 APIs active]*`;
         
-        // Use typeof check to determine response content and label
+        // Use 'type' property check to determine if it's an AdvancedSeed or EmotionDetection
         let responseContent: string;
         let label: "Valideren" | "Reflectievraag" | "Suggestie";
         let emotionSeed: string | null;
         let explainText: string;
         
-        if (typeof matchedResult.response === 'string') {
-          // This is an EmotionDetection object from OpenAI
-          const detection = matchedResult as EmotionDetection;
-          responseContent = detection.response;
-          label = detection.label || "Valideren";
-          emotionSeed = detection.emotion;
-          explainText = `${detection.reasoning || 'Enhanced API Collaboration'} | Enhanced API Collaboration: ${confidence}%`;
-        } else {
+        if ('type' in matchedResult) {
           // This is an AdvancedSeed object from database
           const seed = matchedResult as AdvancedSeed;
           responseContent = seed.response.nl;
@@ -321,6 +315,13 @@ export function useAiResponse(
           label = seed.label === "Interventie" ? "Suggestie" : seed.label as "Valideren" | "Reflectievraag" | "Suggestie";
           emotionSeed = seed.emotion;
           explainText = `Gevonden match op basis van triggers: ${seed.triggers.join(', ')}. Context: ${seed.context.severity}. Enhanced API Collaboration: ${confidence}%`;
+        } else {
+          // This is an EmotionDetection object from OpenAI
+          const detection = matchedResult as EmotionDetection;
+          responseContent = detection.response;
+          label = detection.label || "Valideren";
+          emotionSeed = detection.emotion;
+          explainText = `${detection.reasoning || 'Enhanced API Collaboration'} | Enhanced API Collaboration: ${confidence}%`;
         }
         
         aiResp = {
