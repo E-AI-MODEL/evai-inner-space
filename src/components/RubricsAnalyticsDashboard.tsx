@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Message } from '../types';
 import { useEvAI56Rubrics, RubricAssessment } from '../hooks/useEvAI56Rubrics';
@@ -6,6 +5,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from './ui/chart';
 import { AlertTriangle, Shield, TrendingUp, Brain, Sparkles } from 'lucide-react';
 import PersonalizedInsights from './PersonalizedInsights';
+import RubricsSystemDescription from './rubrics/RubricsSystemDescription';
+import SystemInteractionMatrix from './rubrics/SystemInteractionMatrix';
 
 interface RubricsAnalyticsDashboardProps {
   messages: Message[];
@@ -70,15 +71,21 @@ const RubricsAnalyticsDashboard: React.FC<RubricsAnalyticsDashboardProps> = ({ m
   if (allAssessments.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Brain className="text-blue-600" size={24} />
-            <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Analyse</h3>
+        <RubricsSystemDescription />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Brain className="text-blue-600" size={24} />
+              <h3 className="text-lg font-semibold text-blue-900">EvAI 5.6 Analyse</h3>
+            </div>
+            <p className="text-blue-700 text-sm">
+              Nog geen analysedata beschikbaar. Start een gesprek om patronen
+              en inzichten te genereren.
+            </p>
           </div>
-          <p className="text-blue-700 text-sm">
-            Nog geen analysedata beschikbaar. Start een gesprek om patronen
-            en inzichten te genereren.
-          </p>
+          
+          <SystemInteractionMatrix messageCount={messages.length} />
         </div>
         
         <PersonalizedInsights messages={messages} />
@@ -90,6 +97,15 @@ const RubricsAnalyticsDashboard: React.FC<RubricsAnalyticsDashboardProps> = ({ m
     <div className="space-y-6">
       {/* Personalized Insights - Now prominently displayed at the top */}
       <PersonalizedInsights messages={messages} />
+
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <div className="xl:col-span-3">
+          <RubricsSystemDescription />
+        </div>
+        <div className="xl:col-span-1">
+          <SystemInteractionMatrix messageCount={messages.length} />
+        </div>
+      </div>
 
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 space-y-6">
         <div className="flex items-center gap-3 mb-4">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -113,6 +112,7 @@ const Index = () => {
           onRubricsToggle={() => setShowAnalytics(!showAnalytics)}
           showRubrics={showAnalytics}
           showRubricsButton={messages.length > 0}
+          messages={messages}
         />
       </div>
 

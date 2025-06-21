@@ -12,19 +12,23 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useState } from 'react';
+import RubricsToggleControl from './rubrics/RubricsToggleControl';
+import { Message } from '../types';
 
 interface TopBarProps {
   onSettingsClick: () => void;
   onRubricsToggle?: () => void;
   showRubrics?: boolean;
   showRubricsButton?: boolean;
+  messages?: Message[];
 }
 
 const TopBar = ({ 
   onSettingsClick, 
   onRubricsToggle, 
   showRubrics = false, 
-  showRubricsButton = false 
+  showRubricsButton = false,
+  messages = []
 }: TopBarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -70,15 +74,13 @@ const TopBar = ({
         <span className="font-semibold text-lg tracking-wide text-zinc-800">EvAI Bèta Chat</span>
       </div>
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {showRubricsButton && onRubricsToggle && (
-          <button
-            onClick={onRubricsToggle}
-            className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg transition-colors"
-            aria-label="EvAI 5.6 Analyse toggle"
-          >
-            <BarChart size={20} />
-          </button>
+          <RubricsToggleControl
+            isActive={showRubrics}
+            onToggle={onRubricsToggle}
+            messages={messages}
+          />
         )}
         
         {!isOnAdminPage && (
