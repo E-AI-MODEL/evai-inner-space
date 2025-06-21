@@ -158,47 +158,6 @@ export const useAuthActions = () => {
     }
   };
 
-  const handleSpecialLogin = async (setEmail: (email: string) => void) => {
-    console.log('🎯 Special login triggered!');
-    setError(null);
-    setSuccess(null);
-    setIsSubmitting(true);
-    
-    const specialEmail = 'vis@emmauscollege.nl';
-    const specialPassword = import.meta.env.VITE_SPECIAL_LOGIN_PASSWORD || 'demo123';
-    
-    setEmail(specialEmail);
-    setSuccess('🎯 Speciale login geactiveerd! Bezig met automatisch registreren...');
-    
-    try {
-      console.log('🔐 First trying to create the special account...');
-      
-      // Probeer eerst het account aan te maken (dit is veilig, faalt als het al bestaat)
-      const signUpResult = await signUp(specialEmail, specialPassword, 'EvAI Demo User');
-      
-      if (signUpResult === 'signin' || !signUpResult) {
-        // Account bestaat al of is net aangemaakt, probeer in te loggen
-        console.log('🔐 Account exists or created, attempting login...');
-        const { error: loginError } = await signIn(specialEmail, specialPassword);
-        
-        if (loginError) {
-          console.error('❌ Special login failed:', loginError);
-          setError('🎯 Automatische login mislukt. Dit kan gebeuren als het account nog niet is geactiveerd.');
-          setSuccess('🎯 Een nieuw demo account is mogelijk aangemaakt. Controleer je email voor activatie, of probeer handmatig in te loggen.');
-        } else {
-          console.log('✅ Special login successful!');
-          setSuccess('🎯 Automatische special login succesvol!');
-        }
-      }
-    } catch (loginError: any) {
-      console.error('❌ Special login exception:', loginError);
-      setError('🎯 Er ging iets mis met de automatische login.');
-      setSuccess('🎯 Probeer handmatig in te loggen met de vooringevulde gegevens.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return {
     isSubmitting,
     error,
@@ -207,7 +166,6 @@ export const useAuthActions = () => {
     handleSignIn,
     handleSignUp,
     handlePasswordReset,
-    handleSpecialLogin,
     setError,
     setSuccess
   };

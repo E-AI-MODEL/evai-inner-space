@@ -5,7 +5,6 @@ import { Brain } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { testSupabaseConnection } from '@/integrations/supabase/client';
-import { useEasterEgg } from '@/hooks/useEasterEgg';
 import { useAuthActions } from '@/hooks/useAuthActions';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { SignInForm } from '@/components/auth/SignInForm';
@@ -28,13 +27,8 @@ const AuthPage: React.FC = () => {
     isResettingPassword,
     handleSignIn,
     handleSignUp,
-    handlePasswordReset,
-    handleSpecialLogin
+    handlePasswordReset
   } = useAuthActions();
-
-  const { iconClickCount, handleIconClick } = useEasterEgg(() => 
-    handleSpecialLogin(setEmail)
-  );
 
   // Test connection on mount
   useEffect(() => {
@@ -80,11 +74,7 @@ const AuthPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md mx-auto">
-        <AuthHeader 
-          onIconClick={handleIconClick}
-          connectionStatus={connectionStatus}
-          iconClickCount={iconClickCount}
-        />
+        <AuthHeader connectionStatus={connectionStatus} />
         
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
