@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +24,10 @@ const AuthPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('signin');
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  
+  // Hidden easter egg state
+  const [iconClickCount, setIconClickCount] = useState(0);
+  const [lastClickTime, setLastClickTime] = useState(0);
 
   // Test connection on mount
   useEffect(() => {
@@ -35,6 +40,59 @@ const AuthPage: React.FC = () => {
     };
     testConnection();
   }, []);
+
+  // Reset click count after 3 seconds of inactivity
+  useEffect(() => {
+    if (iconClickCount > 0) {
+      const timer = setTimeout(() => {
+        setIconClickCount(0);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [iconClickCount, lastClickTime]);
+
+  const handleIconClick = () => {
+    const currentTime = Date.now();
+    const timeDiff = currentTime - lastClickTime;
+    
+    // Reset count if more than 2 seconds between clicks
+    if (timeDiff > 2000) {
+      setIconClickCount(1);
+    } else {
+      setIconClickCount(prev => prev + 1);
+    }
+    
+    setLastClickTime(currentTime);
+    
+    // Trigger special login on 3rd click
+    if (iconClickCount + 1 >= 3) {
+      handleSpecialLogin();
+    }
+  };
+
+  const handleSpecialLogin = async () => {
+    console.log('🎯 Special login triggered!');
+    setError(null);
+    setSuccess(null);
+    setIsSubmitting(true);
+    
+    // Set the special email
+    const specialEmail = 'vis@emmauscollege.nl';
+    setEmail(specialEmail);
+    
+    // Show a subtle indication that special mode is activated
+    setSuccess('🎯 Speciale login geactiveerd...');
+    
+    // Reset click count
+    setIconClickCount(0);
+    
+    // You would need a special password or mechanism here
+    // For now, let's just set the email and show a message
+    setTimeout(() => {
+      setSuccess('Email ingesteld op vis@emmauscollege.nl - voer wachtwoord in om verder te gaan');
+      setIsSubmitting(false);
+    }, 1000);
+  };
 
   const getDetailedErrorMessage = (error: any) => {
     console.log('Detailed error object:', error);
@@ -206,7 +264,10 @@ const AuthPage: React.FC = () => {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="text-center pb-4">
           <div className="flex justify-center mb-4">
-            <div className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full">
+            <div 
+              className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full cursor-pointer transition-transform hover:scale-105 active:scale-95"
+              onClick={handleIconClick}
+            >
               <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
           </div>
@@ -238,6 +299,13 @@ const AuthPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Debug info for easter egg (only visible in development) */}
+          {process.env.NODE_ENV === 'development' && iconClickCount > 0 && (
+            <div className="text-xs text-gray-400 mt-1">
+              Clicks: {iconClickCount}/3
+            </div>
+          )}
         </CardHeader>
         
         <CardContent>
