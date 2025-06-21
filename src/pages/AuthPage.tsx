@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
-import { testSupabaseConnection } from '@/integrations/supabase/client';
+import { testSupabaseConnection, supabase } from '@/integrations/supabase/client';
 
 const AuthPage: React.FC = () => {
   const { signIn, signUp, loading } = useAuth();
@@ -23,6 +22,7 @@ const AuthPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('signin');
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Test connection on mount
   useEffect(() => {
@@ -36,6 +36,48 @@ const AuthPage: React.FC = () => {
     testConnection();
   }, []);
 
+  const getDetailedErrorMessage = (error: any) => {
+    console.log('Detailed error object:', error);
+    
+    // Check the actual error message
+    const errorMessage = error?.message || '';
+    const errorCode = error?.code || '';
+    
+    console.log('Error message:', errorMessage);
+    console.log('Error code:', errorCode);
+    
+    if (errorMessage.includes('Invalid login credentials')) {
+      return 'Verkeerde inloggegevens. Het email adres of wachtwoord is onjuist. Probeer wachtwoord reset als je zeker bent van je email.';
+    }
+    
+    if (errorMessage.includes('Email not confirmed')) {
+      return 'Je account is nog niet bevestigd. Controleer je email voor de bevestigingslink.';
+    }
+    
+    if (errorMessage.includes('too many requests') || errorMessage.includes('rate limit')) {
+      return 'Te veel inlogpogingen. Wacht een paar minuten en probeer het opnieuw.';
+    }
+    
+    if (errorMessage.includes('User not found')) {
+      return 'Er is geen account gevonden met dit email adres. Probeer je te registreren in plaats van in te loggen?';
+    }
+    
+    if (errorMessage.includes('Invalid email')) {
+      return 'Het email adres heeft een ongeldig formaat.';
+    }
+    
+    if (errorMessage.includes('Password should be at least')) {
+      return 'Wachtwoord moet minimaal 6 karakters lang zijn.';
+    }
+    
+    if (errorMessage.includes('User already registered')) {
+      return 'Dit email adres is al geregistreerd. Probeer in te loggen in plaats van te registreren.';
+    }
+    
+    // If we don't recognize the error, show the original message with more context
+    return `Inloggen mislukt: ${errorMessage}${errorCode ? ` (Code: ${errorCode})` : ''}`;
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -48,25 +90,47 @@ const AuthPage: React.FC = () => {
       return;
     }
 
+    console.log('Attempting login with email:', email.trim());
     const { error } = await signIn(email.trim(), password);
     
     if (error) {
       console.error('Login error details:', error);
-      if (error.message?.includes('Invalid login credentials')) {
-        setError('Verkeerde inloggegevens. Controleer je email en wachtwoord.');
-      } else if (error.message?.includes('Email not confirmed')) {
-        setError('Je account is nog niet bevestigd. Controleer je email voor de bevestigingslink.');
-      } else if (error.message?.includes('too many requests')) {
-        setError('Te veel inlogpogingen. Probeer het later opnieuw.');
-      } else {
-        setError(`Inloggen mislukt: ${error.message}`);
-      }
+      setError(getDetailedErrorMessage(error));
     } else {
       setSuccess('Succesvol ingelogd!');
       setTimeout(() => navigate('/'), 1000);
     }
     
     setIsSubmitting(false);
+  };
+
+  const handlePasswordReset = async () => {
+    if (!email.trim()) {
+      setError('Voer eerst je email adres in om je wachtwoord te resetten.');
+      return;
+    }
+
+    setIsResettingPassword(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/`
+      });
+
+      if (error) {
+        console.error('Password reset error:', error);
+        setError(`Wachtwoord reset mislukt: ${error.message}`);
+      } else {
+        setSuccess('Wachtwoord reset email verzonden! Controleer je inbox.');
+      }
+    } catch (error) {
+      console.error('Password reset exception:', error);
+      setError('Er ging iets mis bij het versturen van de reset email.');
+    } finally {
+      setIsResettingPassword(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -90,14 +154,10 @@ const AuthPage: React.FC = () => {
     const { error } = await signUp(email.trim(), password, fullName);
     
     if (error) {
-      console.error('Signup error details:', error);
+      console.log('Signup error details:', error);
+      setError(getDetailedErrorMessage(error));
       if (error.message?.includes('User already registered')) {
-        setError('Dit email adres is al geregistreerd. Probeer in te loggen.');
         setActiveTab('signin');
-      } else if (error.message?.includes('Password should be at least')) {
-        setError('Wachtwoord moet sterker zijn. Gebruik minimaal 6 karakters.');
-      } else {
-        setError(`Registratie mislukt: ${error.message}`);
       }
     } else {
       setSuccess('Account succesvol aangemaakt! Je kunt nu inloggen.');
@@ -207,6 +267,16 @@ const AuthPage: React.FC = () => {
                   disabled={isSubmitting || connectionStatus === 'error'}
                 >
                   {isSubmitting ? 'Inloggen...' : 'Inloggen'}
+                </Button>
+
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  className="w-full" 
+                  onClick={handlePasswordReset}
+                  disabled={isResettingPassword || connectionStatus === 'error'}
+                >
+                  {isResettingPassword ? 'Versturen...' : 'Wachtwoord vergeten?'}
                 </Button>
               </form>
             </TabsContent>
