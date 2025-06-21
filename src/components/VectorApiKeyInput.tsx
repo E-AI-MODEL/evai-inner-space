@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Zap } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface VectorApiKeyInputProps {
   value: string;
@@ -17,6 +18,14 @@ const VectorApiKeyInput: React.FC<VectorApiKeyInputProps> = ({
   onSave,
 }) => {
   const [showKey, setShowKey] = React.useState(false);
+
+  const handleSave = () => {
+    onSave();
+    toast({
+      title: "API Key 3 saved",
+      description: "Vector Embeddings are now active.",
+    });
+  };
 
   return (
     <div className="space-y-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -45,7 +54,7 @@ const VectorApiKeyInput: React.FC<VectorApiKeyInputProps> = ({
             {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
           </Button>
         </div>
-        <Button onClick={onSave} size="default" className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handleSave} size="default" className="bg-blue-600 hover:bg-blue-700">
           Save
         </Button>
       </div>
