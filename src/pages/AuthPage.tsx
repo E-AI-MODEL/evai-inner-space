@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -115,19 +116,41 @@ const AuthPage: React.FC = () => {
     setSuccess(null);
 
     try {
+      // Use the current origin for the redirect URL
+      const redirectTo = `${window.location.origin}/`;
+      
+      console.log('Sending password reset email to:', email.trim());
+      console.log('Redirect URL:', redirectTo);
+
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/`
+        redirectTo: redirectTo
       });
 
       if (error) {
         console.error('Password reset error:', error);
-        setError(`Wachtwoord reset mislukt: ${error.message}`);
+        
+        // Enhanced error handling for password reset
+        if (error.message.includes('Email not found')) {
+          setError('Er is geen account gevonden met dit email adres. Controleer of je het juiste email adres hebt ingevoerd.');
+        } else if (error.message.includes('Email rate limit exceeded')) {
+          setError('Te veel reset verzoeken. Wacht een paar minuten voordat je het opnieuw probeert.');
+        } else if (error.message.includes('Invalid email')) {
+          setError('Het email adres heeft een ongeldig formaat.');
+        } else {
+          setError(`Wachtwoord reset mislukt: ${error.message}`);
+        }
       } else {
-        setSuccess('Wachtwoord reset email verzonden! Controleer je inbox.');
+        console.log('Password reset email sent successfully');
+        setSuccess(`✅ Wachtwoord reset email is verzonden naar ${email.trim()}! Controleer je inbox (en spam folder) voor verdere instructies.`);
+        
+        // Show additional helpful information
+        setTimeout(() => {
+          setSuccess(`✅ Reset email verzonden naar ${email.trim()}!\n\n📧 Controleer je inbox en spam folder\n🔗 Klik op de link in de email om je wachtwoord te resetten\n⏱️ De link is 1 uur geldig`);
+        }, 2000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Password reset exception:', error);
-      setError('Er ging iets mis bij het versturen van de reset email.');
+      setError(`Er ging iets mis bij het versturen van de reset email: ${error.message || 'Onbekende fout'}`);
     } finally {
       setIsResettingPassword(false);
     }
@@ -274,10 +297,16 @@ const AuthPage: React.FC = () => {
                   variant="outline"
                   className="w-full" 
                   onClick={handlePasswordReset}
-                  disabled={isResettingPassword || connectionStatus === 'error'}
+                  disabled={isResettingPassword || connectionStatus === 'error' || !email.trim()}
                 >
-                  {isResettingPassword ? 'Versturen...' : 'Wachtwoord vergeten?'}
+                  {isResettingPassword ? 'Email wordt verzonden...' : 'Wachtwoord vergeten?'}
                 </Button>
+                
+                {!email.trim() && (
+                  <p className="text-xs text-gray-500 text-center">
+                    Voer eerst je email adres in om je wachtwoord te resetten
+                  </p>
+                )}
               </form>
             </TabsContent>
             
@@ -349,14 +378,14 @@ const AuthPage: React.FC = () => {
           {error && (
             <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
             </Alert>
           )}
           
           {success && (
             <Alert className="mt-4 border-green-200 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-700">{success}</AlertDescription>
+              <AlertDescription className="text-green-700 whitespace-pre-line">{success}</AlertDescription>
             </Alert>
           )}
           
@@ -367,6 +396,18 @@ const AuthPage: React.FC = () => {
                 Er is een probleem met de database verbinding. Probeer de pagina te verversen.
               </AlertDescription>
             </Alert>
+          )}
+
+          {/* Configuration Help */}
+          {connectionStatus === 'connected' && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-xs text-blue-700">
+                💡 <strong>Tip voor ontwikkelaars:</strong> Zorg ervoor dat in je Supabase dashboard onder 
+                Authentication → URL Configuration de volgende URLs zijn ingesteld:<br/>
+                • Site URL: <code className="bg-blue-100 px-1 rounded">{window.location.origin}</code><br/>
+                • Redirect URLs: <code className="bg-blue-100 px-1 rounded">{window.location.origin}/**</code>
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>
