@@ -18,7 +18,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     console.log('🔐 Setting up auth listener...');
@@ -31,12 +30,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
         
         console.log('🔐 Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
         
-        // Only set loading to false after first auth event
-        if (!initialized) {
-          setInitialized(true);
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
           setLoading(false);
         }
       }
@@ -55,13 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (mounted) {
             setSession(session);
             setUser(session?.user ?? null);
+            setLoading(false);
           }
         }
       } catch (error) {
         console.error('🔴 Session check failed:', error);
-      } finally {
-        if (mounted && !initialized) {
-          setInitialized(true);
+        if (mounted) {
           setLoading(false);
         }
       }
@@ -73,11 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
-    setLoading(true);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -87,23 +82,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('❌ Sign in error:', error);
-        setLoading(false);
         return { error };
       } else {
         console.log('✅ Sign in successful for:', data.user?.email);
-        // Don't set loading to false here - let the auth state change handle it
+        // Don't set loading here - let the auth state change handle it
         return { error: null };
       }
     } catch (error) {
       console.error('❌ Sign in exception:', error);
-      setLoading(false);
       return { error };
     }
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     console.log('🔐 Attempting sign up for:', email);
-    setLoading(true);
     
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -121,16 +113,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('❌ Sign up error:', error);
-        setLoading(false);
         return { error };
       } else {
         console.log('✅ Sign up successful for:', data.user?.email);
-        setLoading(false);
         return { error: null };
       }
     } catch (error) {
       console.error('❌ Sign up exception:', error);
-      setLoading(false);
       return { error };
     }
   };

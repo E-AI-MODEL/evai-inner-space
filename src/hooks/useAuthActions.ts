@@ -1,12 +1,10 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useAuthActions = () => {
   const { signIn, signUp } = useAuth();
-  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -71,7 +69,7 @@ export const useAuthActions = () => {
       setError(getDetailedErrorMessage(error));
     } else {
       setSuccess('Succesvol ingelogd!');
-      setTimeout(() => navigate('/'), 1000);
+      // Don't navigate here - let the auth state change handle the redirect
     }
     
     setIsSubmitting(false);
