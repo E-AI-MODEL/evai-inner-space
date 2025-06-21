@@ -1,9 +1,6 @@
 
-import React from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+import { Zap, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface VectorApiKeyInputProps {
@@ -12,58 +9,48 @@ interface VectorApiKeyInputProps {
   onSave: () => void;
 }
 
-const VectorApiKeyInput: React.FC<VectorApiKeyInputProps> = ({
-  value,
-  onChange,
-  onSave,
-}) => {
-  const [showKey, setShowKey] = React.useState(false);
+const VectorApiKeyInput: React.FC<VectorApiKeyInputProps> = ({ value, onChange, onSave }) => {
+  const [showKey, setShowKey] = useState(false);
 
   const handleSave = () => {
     onSave();
     toast({
-      title: "API Key 3 saved",
-      description: "Vector Embeddings are now active.",
+      title: "Vector API Key opgeslagen",
+      description: "Enhanced neurosymbolische functionaliteit is nu actief voor embeddings en neural search.",
     });
   };
 
   return (
-    <div className="space-y-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-      <Label htmlFor="vector-api-key" className="flex items-center gap-2 text-blue-800 font-medium">
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-3">
         <Zap size={16} className="text-blue-600" />
-        API Key 3 - Vector Embeddings
-      </Label>
+        <span className="text-sm font-medium text-blue-800">Vector API Key 3 - Neural Embeddings</span>
+      </div>
       
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Input
-            id="vector-api-key"
-            type={showKey ? "text" : "password"}
+          <input
+            type={showKey ? 'text' : 'password'}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="sk-..."
-            className="pr-10 bg-white"
+            className="w-full px-3 py-2 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="absolute right-0 top-0 h-full px-3"
             onClick={() => setShowKey(!showKey)}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
-            {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-          </Button>
+            {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
         </div>
-        <Button onClick={handleSave} size="default" className="bg-blue-600 hover:bg-blue-700">
+        <button
+          onClick={handleSave}
+          disabled={!value.trim()}
+          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           Save
-        </Button>
-      </div>
-      
-      <div className="bg-white/60 rounded-md p-2 text-xs text-blue-700">
-        <p className="font-medium flex items-center gap-1">
-          <span className="text-blue-600">🧠</span>
-          Text-embedding-3-small for vector operations
-        </p>
+        </button>
       </div>
     </div>
   );
