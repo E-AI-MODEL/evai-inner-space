@@ -300,13 +300,14 @@ export function useAiResponse(
         const apiStatusText = `API-1:${collaborationStatus.api1 ? '✅' : '❌'} | API-2:${collaborationStatus.api2 ? '✅' : '❌'} | Vector:${collaborationStatus.vector ? '✅' : '❌'}`;
         const collaborationNote = `\n\n*[🤝 ENHANCED API STATUS: ${apiStatusText} | ${availableApis}/3 APIs active]*`;
         
-        // Use 'context' property check to determine if it's an AdvancedSeed or EmotionDetection
+        // Use 'id' property check to determine if it's an AdvancedSeed or EmotionDetection
+        // AdvancedSeed has required 'id' field, EmotionDetection does not
         let responseContent: string;
         let label: "Valideren" | "Reflectievraag" | "Suggestie";
         let emotionSeed: string | null;
         let explainText: string;
         
-        if ('context' in matchedResult) {
+        if ('id' in matchedResult && typeof matchedResult.id === 'string') {
           // This is an AdvancedSeed object from database
           const seed = matchedResult as AdvancedSeed;
           responseContent = seed.response.nl;
