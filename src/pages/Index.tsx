@@ -35,7 +35,7 @@ const Index = () => {
     }
   }, []);
   
-  // CLEAN INTEGRATION: Get clean workflow data including reflections
+  // Get original workflow data including reflections
   const { 
     messages, 
     input, 

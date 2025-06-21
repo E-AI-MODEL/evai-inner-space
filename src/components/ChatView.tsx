@@ -13,7 +13,7 @@ interface ChatViewProps {
     messageRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
     focusedMessageId: string | null;
     onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
-    // ENHANCED: Reflection system props
+    // Reflection system props
     pendingReflections?: PendingReflection[];
     isReflectionProcessing?: boolean;
 }
@@ -42,7 +42,7 @@ const ChatView: React.FC<ChatViewProps> = ({
     
     return (
         <div className="space-y-3 pb-4">
-            {/* ENHANCED: Reflection Status Indicator */}
+            {/* Reflection Status Indicator */}
             {(pendingReflections.length > 0 || isReflectionProcessing) && (
                 <div className="flex justify-center mb-4">
                     <ReflectionStatusIndicator 
@@ -108,7 +108,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       <span className="text-sm md:text-base text-blue-700 ml-2">
-                        {isReflectionProcessing ? "AI genereert reflectievragen..." : "Clean AI analyseert en genereert antwoord..."}
+                        {isReflectionProcessing ? "AI genereert reflectievragen..." : "AI analyseert met OpenAI en genereert antwoord..."}
                       </span>
                     </div>
                   </div>
