@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -36,8 +35,19 @@ const Index = () => {
     }
   }, []);
   
-  const { messages, input, setInput, isProcessing, onSend, seedConfetti, setFeedback, clearHistory } =
-    useChat(apiKey);
+  // CLEAN INTEGRATION: Get clean workflow data including reflections
+  const { 
+    messages, 
+    input, 
+    setInput, 
+    isProcessing, 
+    onSend, 
+    seedConfetti, 
+    setFeedback, 
+    clearHistory,
+    pendingReflections,
+    isReflectionProcessing
+  } = useChat(apiKey);
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -215,6 +225,8 @@ const Index = () => {
                 messageRefs={messageRefs}
                 focusedMessageId={focusedMessageId}
                 onFeedback={setFeedback}
+                pendingReflections={pendingReflections}
+                isReflectionProcessing={isReflectionProcessing}
               />
               <div ref={messagesEndRef} />
             </div>

@@ -108,7 +108,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       <span className="text-sm md:text-base text-blue-700 ml-2">
-                        {isReflectionProcessing ? "AI genereert reflectievragen..." : "AI analyseert..."}
+                        {isReflectionProcessing ? "AI genereert reflectievragen..." : "Clean AI analyseert en genereert antwoord..."}
                       </span>
                     </div>
                   </div>

@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useChatHistory } from "./useChatHistory";
 import { Message } from "../types";
 import { toast } from "@/hooks/use-toast";
-import { useAiResponse } from "./useAiResponse";
+import { useCleanAiResponse } from "./useCleanAiResponse";
 import { useFeedbackHandler } from "./useFeedbackHandler";
 import { useBackgroundReflectionTrigger } from "./useBackgroundReflectionTrigger";
 
@@ -13,14 +12,13 @@ export function useChat(apiKey: string) {
   const [isSending, setIsSending] = useState(false);
   const [seedConfetti, setSeedConfetti] = useState(false);
 
-  const { generateAiResponse, isGenerating } = useAiResponse(
-    messages,
-    setMessages,
-    apiKey,
-    setSeedConfetti
-  );
+  // CLEAN INTEGRATION: Replace old AI response with clean workflow
+  const { generateCleanResponse, isProcessing: isCleanProcessing } = useCleanAiResponse();
   
-  const { setFeedback } = useFeedbackHandler(messages, setMessages, generateAiResponse);
+  const { setFeedback } = useFeedbackHandler(messages, setMessages, async (userMessage) => {
+    // Fallback AI response for feedback handler - keeping existing interface
+    await generateAiResponse(userMessage);
+  });
 
   // ENHANCED: Background reflection system integration
   const {
@@ -50,8 +48,104 @@ export function useChat(apiKey: string) {
     }
   }, [pendingReflections]);
 
+  // CLEAN INTEGRATION: New AI response generation using clean workflow
+  const generateAiResponse = async (userMessage: Message) => {
+    if (!apiKey.trim()) {
+      toast({
+        title: "API Key vereist",
+        description: "Voer je OpenAI API key in via de instellingen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('🎯 Generating AI response using clean workflow for:', userMessage.content);
+
+    try {
+      // Generate clean AI response
+      const cleanResult = await generateCleanResponse(
+        userMessage.content,
+        apiKey,
+        {
+          messages: messages,
+          conversationId: `chat-${Date.now()}`
+        }
+      );
+
+      if (!cleanResult.success) {
+        throw new Error('Clean AI response generation failed');
+      }
+
+      // Create AI message based on clean response
+      const aiMessage: Message = {
+        id: `ai-${Date.now()}`,
+        from: "ai",
+        label: null,
+        content: cleanResult.response,
+        emotionSeed: cleanResult.emotionSeed || null,
+        animate: true,
+        timestamp: new Date(),
+        feedback: null,
+        meta: `Confidence: ${Math.round(cleanResult.confidence * 100)}%`,
+        accentColor: cleanResult.emotionSeed ? getEmotionColor(cleanResult.emotionSeed) : undefined,
+        replyTo: userMessage.id
+      };
+
+      // Add AI message to chat
+      setMessages((prev) => [...prev, aiMessage]);
+
+      // Trigger seed confetti if emotion seed was used
+      if (cleanResult.emotionSeed) {
+        setSeedConfetti(true);
+        console.log('✨ Seed confetti triggered for emotion:', cleanResult.emotionSeed);
+      }
+
+      // Show success toast with processing details
+      toast({
+        title: "🤖 AI Antwoord Gegenereerd",
+        description: `Verwerkt in ${cleanResult.processingTime}ms met ${Math.round(cleanResult.confidence * 100)}% vertrouwen`,
+      });
+
+    } catch (error) {
+      console.error('❌ AI response generation failed:', error);
+      
+      // Create fallback error message
+      const errorMessage: Message = {
+        id: `ai-error-${Date.now()}`,
+        from: "ai",
+        label: "Fout",
+        content: "Sorry, ik ondervind momenteel technische problemen. Probeer het opnieuw.",
+        emotionSeed: null,
+        animate: false,
+        timestamp: new Date(),
+        feedback: null,
+        replyTo: userMessage.id
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+
+      toast({
+        title: "❌ AI Fout",
+        description: "Er is een fout opgetreden bij het genereren van een antwoord.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Helper function to get emotion color (simple mapping)
+  const getEmotionColor = (emotion: string): string => {
+    const colorMap: Record<string, string> = {
+      'emotional-validation': '#10B981', // green
+      'anxiety-support': '#3B82F6', // blue  
+      'mood-regulation': '#F59E0B', // amber
+      'social-connection': '#8B5CF6', // violet
+      'self-worth': '#EF4444', // red
+    };
+    return colorMap[emotion] || '#6B7280'; // default gray
+  };
+
   const onSend = async () => {
-    if (!input.trim() || isSending || isGenerating) return;
+    if (!input.trim() || isSending || isCleanProcessing) return;
 
     setIsSending(true);
     const userMessage: Message = {
@@ -83,7 +177,7 @@ export function useChat(apiKey: string) {
     messages,
     input,
     setInput,
-    isProcessing: isSending || isGenerating,
+    isProcessing: isSending || isCleanProcessing,
     onSend,
     seedConfetti,
     setFeedback,
