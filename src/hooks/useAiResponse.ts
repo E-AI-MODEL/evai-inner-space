@@ -318,7 +318,8 @@ export function useAiResponse(
           // This is an AdvancedSeed object from database
           const seed = matchedResult as AdvancedSeed;
           responseContent = seed.response.nl;
-          label = seed.label;
+          // Filter out "Interventie" label to match Message type
+          label = seed.label === "Interventie" ? "Suggestie" : seed.label as "Valideren" | "Reflectievraag" | "Suggestie";
           emotionSeed = seed.emotion;
           explainText = `Gevonden match op basis van triggers: ${seed.triggers.join(', ')}. Context: ${seed.context.severity}. Enhanced API Collaboration: ${confidence}%`;
         }
