@@ -15,6 +15,7 @@ import { Message, ChatHistoryItem } from "../types";
 import { useSymbolicEngine } from "./useSymbolicEngine";
 import { loadAdvancedSeeds } from "../lib/advancedSeedStorage";
 import { useSeeds } from "./useSeeds";
+import { EmotionDetection } from "./useOpenAI";
 
 interface CollaborationStatus {
   api1: boolean;
@@ -26,6 +27,11 @@ interface ExtendedContext {
   dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie";
   secondaryInsights?: string[];
   collaborationStatus?: CollaborationStatus;
+}
+
+// Type guard function to distinguish between EmotionDetection and AdvancedSeed
+function isEmotionDetection(result: EmotionDetection | AdvancedSeed): result is EmotionDetection {
+  return 'response' in result && typeof result.response === 'string';
 }
 
 export function useAiResponse(
@@ -300,15 +306,31 @@ export function useAiResponse(
         const apiStatusText = `API-1:${collaborationStatus.api1 ? '✅' : '❌'} | API-2:${collaborationStatus.api2 ? '✅' : '❌'} | Vector:${collaborationStatus.vector ? '✅' : '❌'}`;
         const collaborationNote = `\n\n*[🤝 ENHANCED API STATUS: ${apiStatusText} | ${availableApis}/3 APIs active]*`;
         
-        const label = matchedResult.label || "Valideren";
+        // Use type guard to determine response content and label
+        let responseContent: string;
+        let label: "Valideren" | "Reflectievraag" | "Suggestie";
+        let emotionSeed: string | null;
+        
+        if (isEmotionDetection(matchedResult)) {
+          // Handle EmotionDetection object
+          responseContent = matchedResult.response;
+          label = matchedResult.label || "Valideren";
+          emotionSeed = matchedResult.emotion;
+        } else {
+          // Handle AdvancedSeed object
+          responseContent = matchedResult.response.nl;
+          label = matchedResult.label;
+          emotionSeed = matchedResult.emotion;
+        }
+        
         aiResp = {
           id: `ai-enhanced-collab-${Date.now()}`,
           from: "ai",
           label: label,
           accentColor: getLabelVisuals(label).accentColor,
-          content: `${matchedResult.response}${collaborationNote}`,
-          explainText: `${matchedResult.reasoning} | Enhanced API Collaboration: ${confidence}%`,
-          emotionSeed: matchedResult.emotion,
+          content: `${responseContent}${collaborationNote}`,
+          explainText: `${matchedResult.reasoning || 'Enhanced API Collaboration'} | Enhanced API Collaboration: ${confidence}%`,
+          emotionSeed: emotionSeed,
           animate: true,
           meta: `Enhanced API Collaboration: ${confidence}% | ${availableApis}/3 APIs`,
           brilliant: true,
