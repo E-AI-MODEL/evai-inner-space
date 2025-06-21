@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
@@ -301,13 +300,13 @@ export function useAiResponse(
         const apiStatusText = `API-1:${collaborationStatus.api1 ? '✅' : '❌'} | API-2:${collaborationStatus.api2 ? '✅' : '❌'} | Vector:${collaborationStatus.vector ? '✅' : '❌'}`;
         const collaborationNote = `\n\n*[🤝 ENHANCED API STATUS: ${apiStatusText} | ${availableApis}/3 APIs active]*`;
         
-        // Use 'type' property check to determine if it's an AdvancedSeed or EmotionDetection
+        // Use 'context' property check to determine if it's an AdvancedSeed or EmotionDetection
         let responseContent: string;
         let label: "Valideren" | "Reflectievraag" | "Suggestie";
         let emotionSeed: string | null;
         let explainText: string;
         
-        if ('type' in matchedResult) {
+        if ('context' in matchedResult) {
           // This is an AdvancedSeed object from database
           const seed = matchedResult as AdvancedSeed;
           responseContent = seed.response.nl;
@@ -343,7 +342,7 @@ export function useAiResponse(
             ...cotRubricGuidance.map(guidance => `🧠 EvAI Guidance: ${guidance}`),
             `🤝 API 1 (OpenAI): ${collaborationStatus.api1 ? '✅ Actief' : '❌ ONTBREEKT - Voeg toe voor betere responses'}`,
             `🤝 API 2 (Secondary): ${collaborationStatus.api2 ? '✅ Actief voor analyse' : '❌ ONTBREEKT - Voeg toe voor diepere analyse'}`,
-            `🧬 Vector API: ${collaborationStatus.vector ? '✅ Actief voor embeddings' : '❌ ONTBREEKT - Voeg toe voor neural matching'}`,
+            `🧬 Vector API: ${collaborationStatus.vector ? '✅ Actief voor embeddings' : '❌ ONTBREEKT - Voeg toe voor neural search functionaliteit'}`,
             `📊 Match Confidence: ${confidence}% (${matchedResult.confidence > 0.8 ? 'Hoog' : matchedResult.confidence > 0.6 ? 'Gemiddeld' : 'Laag'})`,
             secondaryInsights.length > 0 ? `💡 Secondary insights: ${secondaryInsights.slice(0, 2).join(', ')}` : '',
             `📈 Available APIs: ${availableApis}/3 | Risk Level: ${overallRisk.toFixed(1)}%`
