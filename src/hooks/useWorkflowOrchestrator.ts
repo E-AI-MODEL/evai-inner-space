@@ -28,14 +28,6 @@ export function useWorkflowOrchestrator() {
   ) => {
     setIsProcessing(true);
     const startTime = Date.now();
-    
-    console.log('🚀 ENHANCED NEUROSYMBOLIC WORKFLOW ACTIVATED');
-    console.log('📝 Input:', input.substring(0, 100));
-    console.log('🔑 API Keys collaboration:', { 
-      hasApiKey1: !!apiKey, 
-      hasApiKey2: !!context.secondaryApiKey,
-      hasVectorKey: !!vectorApiKey 
-    });
 
     const apiCollaboration: ApiCollaborationConfig = {
       api1Used: false,
@@ -45,19 +37,31 @@ export function useWorkflowOrchestrator() {
     };
 
     try {
-      // Step 1: Store input embedding
-      await storeInputEmbedding(input, vectorApiKey, {
-        userId: context.userId,
-        conversationId: context.conversationId
-      });
+      // Step 1: Store input embedding (silent)
+      if (vectorApiKey?.trim()) {
+        try {
+          await storeInputEmbedding(input, vectorApiKey, {
+            userId: context.userId,
+            conversationId: context.conversationId
+          });
+        } catch (error) {
+          // Silent fail - no console spam
+        }
+      }
 
-      // Step 2: Neural similarity search
-      const similarities = await performNeuralSearch(input, vectorApiKey);
+      // Step 2: Neural similarity search (silent)
+      let similarities: any[] = [];
+      if (vectorApiKey?.trim()) {
+        try {
+          similarities = await performNeuralSearch(input, vectorApiKey);
+        } catch (error) {
+          // Silent fail
+        }
+      }
 
-      // Step 3: API Key 2 Secondary Analysis (IMPROVED VALIDATION)
+      // Step 3: API Key 2 Secondary Analysis (clean validation)
       let secondaryInsights: string[] = [];
-      if (context.secondaryApiKey && context.secondaryApiKey.trim().length > 0) {
-        console.log('🔑 API Key 2 available, starting secondary analysis...');
+      if (context.secondaryApiKey?.trim() && context.secondaryApiKey.startsWith('sk-')) {
         try {
           secondaryInsights = await performSecondaryAnalysis(
             input,
@@ -65,26 +69,16 @@ export function useWorkflowOrchestrator() {
             context.secondaryApiKey
           );
           
-          if (secondaryInsights && secondaryInsights.length > 0) {
+          if (secondaryInsights.length > 0) {
             apiCollaboration.api2Used = true;
             apiCollaboration.secondaryAnalysis = true;
-            console.log('✅ API Key 2 secondary analysis SUCCESS:', secondaryInsights.length, 'insights generated');
-          } else {
-            console.warn('⚠️ API Key 2 returned empty insights');
           }
-        } catch (secondaryError) {
-          console.error('❌ API Key 2 analysis FAILED:', secondaryError);
-          console.error('❌ API Key 2 error details:', {
-            hasKey: !!context.secondaryApiKey,
-            keyLength: context.secondaryApiKey?.length || 0,
-            errorMessage: secondaryError instanceof Error ? secondaryError.message : 'Unknown error'
-          });
+        } catch (error) {
+          // Silent secondary analysis failure
         }
-      } else {
-        console.warn('⚠️ API Key 2 not available or empty - skipping secondary analysis');
       }
 
-      // Step 4: Check for seed injection opportunity
+      // Step 4: Seed injection (clean)
       const activeSeeds = seeds?.filter(s => s.isActive) || [];
       let newlyGeneratedSeed = null;
       let seedInjectionUsed = false;
@@ -104,20 +98,16 @@ export function useWorkflowOrchestrator() {
             seedInjectionUsed = true;
             apiCollaboration.api1Used = true;
             apiCollaboration.seedGenerated = true;
-            console.log('✅ API Key 1 seed injection SUCCESS:', newlyGeneratedSeed.emotion);
           }
-        } catch (seedError) {
-          console.error('🔴 Seed injection failed:', seedError);
+        } catch (error) {
+          // Silent seed injection failure
         }
       }
 
-      // Step 5: Enhanced hybrid decision with injected seed and secondary insights
-      console.log('⚖️ Making enhanced hybrid decision...');
+      // Step 5: Enhanced hybrid decision with clean inputs
       const updatedSeeds = newlyGeneratedSeed 
         ? [...activeSeeds, newlyGeneratedSeed]
         : activeSeeds;
-      
-      console.log(`🌱 Seeds available for decision: ${updatedSeeds.length} (${newlyGeneratedSeed ? 'including newly injected' : 'existing only'})`);
       
       const enhancedContext = {
         ...context,
@@ -136,11 +126,8 @@ export function useWorkflowOrchestrator() {
         enhancedContext
       );
 
-      console.log(`✅ Enhanced Decision: ${hybridDecision.responseType} (${(hybridDecision.confidence * 100).toFixed(1)}%)`);
-
-      // Step 6: Background self-reflection
+      // Step 6: Background self-reflection (silent)
       if (context.messages && context.messages.length > 0) {
-        console.log('🤔 Triggering background self-reflection...');
         setTimeout(async () => {
           try {
             await executeReflection(
@@ -148,25 +135,13 @@ export function useWorkflowOrchestrator() {
               [],
               apiKey
             );
-          } catch (reflectionError) {
-            console.error('⚠️ Self-reflection failed:', reflectionError);
+          } catch (error) {
+            // Silent reflection failure
           }
         }, 1000);
       }
 
       const processingTime = Date.now() - startTime;
-      console.log(`⚡ Enhanced neurosymbolic processing completed in ${processingTime}ms`);
-      console.log('🤝 API Collaboration Summary:', apiCollaboration);
-
-      // ENHANCED LOGGING FOR API 2 DEBUG
-      console.log('🔍 API 2 DEBUG INFO:', {
-        api2KeyProvided: !!context.secondaryApiKey,
-        api2KeyLength: context.secondaryApiKey?.length || 0,
-        api2Used: apiCollaboration.api2Used,
-        secondaryAnalysisSuccess: apiCollaboration.secondaryAnalysis,
-        insightsGenerated: secondaryInsights.length,
-        insightsPreview: secondaryInsights.slice(0, 2)
-      });
 
       return {
         hybridDecision,
@@ -178,8 +153,8 @@ export function useWorkflowOrchestrator() {
       };
 
     } catch (error) {
-      console.error('❌ Enhanced neurosymbolic workflow failed:', error);
-      throw error;
+      // Clean error handling
+      throw new Error('Workflow processing failed');
     } finally {
       setIsProcessing(false);
     }

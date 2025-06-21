@@ -13,18 +13,10 @@ export function useEmbeddingProcessor() {
     }
   ): Promise<void> => {
     try {
-      console.log('💾 Storing optimized input embedding...');
-      console.log(`📝 Input length: ${input.length} chars`);
-      
       const wasStored = await storeOptimizedEmbedding(input, vectorApiKey, context);
-      
-      if (wasStored) {
-        console.log('✅ Optimized input embedding stored successfully');
-      } else {
-        console.log('⏭️ Input embedding skipped due to optimization rules');
-      }
+      // Silent operation - no logging
     } catch (embeddingError) {
-      console.error('⚠️ Failed to store optimized input embedding:', embeddingError);
+      // Silent failure
     }
   };
 
@@ -32,47 +24,20 @@ export function useEmbeddingProcessor() {
     input: string,
     vectorApiKey: string
   ): Promise<any[]> => {
-    console.log('🧠 Performing enhanced neural similarity search...');
-    console.log(`🔍 Search query: "${input.substring(0, 100)}${input.length > 100 ? '...' : ''}"`);
-    
     let similarities = [];
     
     try {
-      if (!vectorApiKey?.trim()) {
-        console.warn('⚠️ No vector API key provided for neural search');
-        return [];
-      }
-
-      if (!input || input.trim().length < 3) {
-        console.warn('⚠️ Input too short for meaningful neural search');
+      if (!vectorApiKey?.trim() || !input || input.trim().length < 3) {
         return [];
       }
       
       // Enhanced search with better parameters
-      similarities = await searchSimilar(input, vectorApiKey, 0.5, 10); // Lower threshold, more results
+      similarities = await searchSimilar(input, vectorApiKey, 0.5, 10);
       
-      console.log(`🎯 Neural search results: ${similarities.length} matches found`);
-      
-      if (similarities.length > 0) {
-        console.log('🔍 Top neural matches:', similarities.slice(0, 3).map(sim => ({
-          type: sim.content_type,
-          similarity: sim.similarity_score?.toFixed(3) || 'N/A',
-          preview: sim.content_text?.substring(0, 50) || 'No content'
-        })));
-      } else {
-        console.log('🔍 No neural matches found - this may indicate:');
-        console.log('  • Limited embedding data in database');
-        console.log('  • Search threshold too high');
-        console.log('  • Input doesn\'t match existing content patterns');
-      }
+      // Silent success - no logging spam
       
     } catch (neuralError) {
-      console.error('❌ Neural search failed:', neuralError);
-      console.error('🔧 Neural search error details:', {
-        errorMessage: neuralError.message,
-        hasApiKey: !!vectorApiKey,
-        inputLength: input.length
-      });
+      // Silent failure
     }
     
     return similarities || [];
@@ -84,11 +49,7 @@ export function useEmbeddingProcessor() {
     conversationId: string
   ): Promise<void> => {
     try {
-      console.log('💾 Storing optimized conversation embedding...');
-      console.log(`💬 Messages to process: ${messages.length}`);
-      
       if (!messages || messages.length === 0) {
-        console.log('⏭️ No messages to store');
         return;
       }
       
@@ -98,13 +59,9 @@ export function useEmbeddingProcessor() {
         conversationId
       );
       
-      if (wasStored) {
-        console.log('✅ Optimized conversation embedding stored successfully');
-      } else {
-        console.log('⏭️ Conversation embedding skipped due to optimization rules');
-      }
+      // Silent operation
     } catch (error) {
-      console.error('⚠️ Failed to store optimized conversation embedding:', error);
+      // Silent failure
     }
   };
 

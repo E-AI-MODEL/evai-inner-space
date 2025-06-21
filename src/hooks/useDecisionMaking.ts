@@ -22,12 +22,8 @@ export function useDecisionMaking() {
     neuralMatches: NeuralMatch[],
     context: Record<string, any> = {}
   ): Promise<HybridDecision> => {
-    console.log('🧠 Making hybrid decision...');
-    console.log(`📊 Decision inputs: ${symbolicMatches.length} symbolic, ${neuralMatches.length} neural matches`);
-
-    // Enhanced input validation
+    // Enhanced input validation with safe defaults
     if (!input || typeof input !== 'string') {
-      console.warn('⚠️ Invalid input provided to decision maker');
       return createFallbackDecision('Invalid input provided');
     }
 
@@ -36,25 +32,13 @@ export function useDecisionMaking() {
     const timestamp = Date.now();
     const randomFactor = Math.random();
 
-    // Get best matches with proper validation
-    const topSymbolic = symbolicMatches && symbolicMatches.length > 0 ? symbolicMatches[0] : null;
-    const topNeural = neuralMatches && neuralMatches.length > 0 ? neuralMatches[0] : null;
-
-    console.log('🎯 Top matches:', {
-      symbolic: topSymbolic ? {
-        emotion: topSymbolic.seed?.emotion,
-        score: topSymbolic.score,
-        confidence: topSymbolic.confidence
-      } : null,
-      neural: topNeural ? {
-        similarity: topNeural.similarity?.similarity_score,
-        contextualFit: topNeural.contextualFit
-      } : null
-    });
+    // Get best matches with proper validation and NaN protection
+    const topSymbolic = symbolicMatches?.length > 0 ? symbolicMatches[0] : null;
+    const topNeural = neuralMatches?.length > 0 ? neuralMatches[0] : null;
 
     if (!topSymbolic && !topNeural) {
       decision = createFallbackDecision('No matches found', randomFactor, timestamp);
-    } else if (topSymbolic && (!topNeural || (topSymbolic.confidence > 0.8 && topSymbolic.score > 0))) {
+    } else if (topSymbolic && (!topNeural || (isValidNumber(topSymbolic.confidence) && topSymbolic.confidence > 0.8))) {
       decision = createSymbolicDecision(topSymbolic, randomFactor, timestamp);
     } else if (topNeural && isValidNeuralMatch(topNeural)) {
       decision = createNeuralDecision(topNeural, timestamp);
@@ -64,11 +48,19 @@ export function useDecisionMaking() {
       decision = createFallbackDecision('Insufficient match quality', randomFactor, timestamp, topSymbolic);
     }
 
-    // Enhanced logging with error handling
+    // Safe logging without console spam
     await logDecisionSafely(input, symbolicMatches, neuralMatches, decision, startTime);
 
-    console.log(`✅ Decision completed: ${decision.responseType} (${Math.round(decision.confidence * 100)}%)`);
     return decision;
+  };
+
+  // Safe number validation to prevent NaN issues
+  const isValidNumber = (value: any): value is number => {
+    return typeof value === 'number' && !isNaN(value) && isFinite(value);
+  };
+
+  const safeNumber = (value: any, fallback: number): number => {
+    return isValidNumber(value) ? value : fallback;
   };
 
   const createFallbackDecision = (
@@ -85,13 +77,13 @@ export function useDecisionMaking() {
       'Dank je voor het delen. Wat voel je het sterkst op dit moment?'
     ];
     
-    const responseIndex = Math.floor(randomFactor * fallbackResponses.length);
-    const selectedResponse = fallbackResponses[responseIndex];
+    const responseIndex = Math.floor(safeNumber(randomFactor, 0.5) * fallbackResponses.length);
+    const selectedResponse = fallbackResponses[responseIndex] || fallbackResponses[0];
     
     return {
       selectedResponse,
       responseType: 'generated',
-      confidence: Math.max(0.3, 0.3 + (randomFactor * 0.2)),
+      confidence: Math.max(0.3, 0.3 + (safeNumber(randomFactor, 0.5) * 0.2)),
       reasoning: `${reason} - using varied fallback response ${responseIndex + 1}`,
       symbolicContribution: 0,
       neuralContribution: 0,
@@ -112,36 +104,37 @@ export function useDecisionMaking() {
   ): HybridDecision => {
     let response = topSymbolic.seed?.response?.nl || 'Ik begrijp je situatie.';
     
-    // Add slight variation occasionally
-    if (randomFactor > 0.7 && response) {
+    // Add slight variation occasionally with safe number handling
+    const safeRandomFactor = safeNumber(randomFactor, 0.5);
+    if (safeRandomFactor > 0.7 && response) {
       const variations = [
         `${response}`,
         `${response} Wat denk jij hierover?`,
         `${response} Hoe voel je je daarbij?`,
       ];
-      response = variations[Math.floor(randomFactor * variations.length)];
+      response = variations[Math.floor(safeRandomFactor * variations.length)] || response;
     }
     
     return {
       selectedResponse: response,
       responseType: 'symbolic',
-      confidence: Math.min(0.95, Math.max(0.1, topSymbolic.confidence || 0.5)),
-      reasoning: `Strong symbolic match: ${topSymbolic.triggers?.join(', ') || 'emotion trigger'} (variation: ${randomFactor > 0.7})`,
+      confidence: Math.min(0.95, Math.max(0.1, safeNumber(topSymbolic.confidence, 0.5))),
+      reasoning: `Strong symbolic match: ${topSymbolic.triggers?.join(', ') || 'emotion trigger'} (variation: ${safeRandomFactor > 0.7})`,
       symbolicContribution: 1.0,
       neuralContribution: 0,
       seed: topSymbolic.seed,
       metadata: { 
         matchedTriggers: topSymbolic.triggers || [],
         seedId: topSymbolic.seed?.id,
-        variation: randomFactor > 0.7,
+        variation: safeRandomFactor > 0.7,
         timestamp
       }
     };
   };
 
   const createNeuralDecision = (topNeural: NeuralMatch, timestamp: number): HybridDecision => {
-    const similarity = topNeural.similarity?.similarity_score || 0;
-    const contextualFit = topNeural.contextualFit || 0;
+    const similarity = safeNumber(topNeural.similarity?.similarity_score, 0);
+    const contextualFit = safeNumber(topNeural.contextualFit, 0);
     
     return {
       selectedResponse: topNeural.similarity?.content_text || 'Ik begrijp je bericht.',
@@ -165,11 +158,12 @@ export function useDecisionMaking() {
     randomFactor: number,
     timestamp: number
   ): HybridDecision => {
-    const symbolicConfidence = Math.max(0, topSymbolic.confidence || 0);
-    const neuralFit = Math.max(0, topNeural.contextualFit || 0);
+    const symbolicConfidence = safeNumber(topSymbolic.confidence, 0);
+    const neuralFit = safeNumber(topNeural.contextualFit, 0);
+    const safeRandomFactor = safeNumber(randomFactor, 0.5);
     
-    const symbolicWeight = symbolicConfidence * (0.6 + randomFactor * 0.2);
-    const neuralWeight = neuralFit * (0.4 + randomFactor * 0.2);
+    const symbolicWeight = symbolicConfidence * (0.6 + safeRandomFactor * 0.2);
+    const neuralWeight = neuralFit * (0.4 + safeRandomFactor * 0.2);
     
     const totalWeight = symbolicWeight + neuralWeight;
     const symbolicRatio = totalWeight > 0 ? symbolicWeight / totalWeight : 0.5;
@@ -209,9 +203,9 @@ export function useDecisionMaking() {
 
   const isValidNeuralMatch = (match: NeuralMatch): boolean => {
     if (!match || !match.similarity) return false;
-    const score = match.similarity.similarity_score;
-    const fit = match.contextualFit;
-    return !isNaN(score) && !isNaN(fit) && score > 0.5 && fit > 0.5;
+    const score = safeNumber(match.similarity.similarity_score, 0);
+    const fit = safeNumber(match.contextualFit, 0);
+    return score > 0.5 && fit > 0.5;
   };
 
   const logDecisionSafely = async (
@@ -231,39 +225,35 @@ export function useDecisionMaking() {
         await supabase.from('decision_logs').insert({
           user_id: user.id,
           conversation_id: conversationId,
-          user_input: input.substring(0, 1000), // Limit input length
+          user_input: input.substring(0, 1000),
           symbolic_matches: symbolicMatches.slice(0, 5).map(m => ({
             seedId: m.seed?.id || 'unknown',
             emotion: m.seed?.emotion || 'unknown',
-            score: !isNaN(m.score) ? m.score : 0,
+            score: safeNumber(m.score, 0),
             triggers: Array.isArray(m.triggers) ? m.triggers : [],
-            confidence: !isNaN(m.confidence) ? m.confidence : 0
+            confidence: safeNumber(m.confidence, 0)
           })),
           neural_similarities: neuralMatches.slice(0, 5).map(m => ({
             contentId: m.similarity?.content_id || 'unknown',
             contentType: m.similarity?.content_type || 'unknown',
-            similarityScore: !isNaN(m.similarity?.similarity_score || 0) ? m.similarity.similarity_score : 0,
-            relevanceScore: !isNaN(m.relevanceScore || 0) ? m.relevanceScore : 0
+            similarityScore: safeNumber(m.similarity?.similarity_score, 0),
+            relevanceScore: safeNumber(m.relevanceScore, 0)
           })),
           hybrid_decision: {
             responseType: decision.responseType,
-            confidence: !isNaN(decision.confidence) ? decision.confidence : 0,
+            confidence: safeNumber(decision.confidence, 0),
             reasoning: decision.reasoning || 'No reasoning provided',
-            symbolicContribution: !isNaN(decision.symbolicContribution) ? decision.symbolicContribution : 0,
-            neuralContribution: !isNaN(decision.neuralContribution) ? decision.neuralContribution : 0,
+            symbolicContribution: safeNumber(decision.symbolicContribution, 0),
+            neuralContribution: safeNumber(decision.neuralContribution, 0),
             timestamp: decision.metadata?.timestamp || Date.now()
           },
           final_response: decision.selectedResponse?.substring(0, 1000) || 'No response',
-          confidence_score: !isNaN(decision.confidence) ? decision.confidence : 0,
+          confidence_score: safeNumber(decision.confidence, 0),
           processing_time_ms: processingTime
         });
-        
-        console.log('✅ Enhanced decision logged successfully');
-      } else {
-        console.warn('⚠️ No user found, skipping decision log');
       }
     } catch (error) {
-      console.error('❌ Failed to log hybrid decision:', error);
+      // Silent logging failure - no console spam
     }
   };
 
