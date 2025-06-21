@@ -19,7 +19,7 @@ export interface ReflectionQuestion {
 
 export function useReflectionQuestionGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
-  const { generateResponse } = useOpenAI();
+  const { detectEmotion } = useOpenAI();
 
   const generateReflectionQuestion = async (
     batch: ExpiredSeedBatch,
@@ -76,18 +76,16 @@ Geef het resultaat als JSON:
   "confidence": 0.85
 }`;
 
-      const response = await generateResponse(prompt, apiKey, {
-        temperature: 0.8,
-        maxTokens: 300
-      });
+      // Use detectEmotion method instead of generateResponse
+      const response = await detectEmotion(prompt, apiKey);
 
-      if (!response) {
+      if (!response || !response.response) {
         throw new Error('No response received from OpenAI');
       }
 
       try {
         // Try to parse JSON from the response
-        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        const jsonMatch = response.response.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           throw new Error('No JSON found in response');
         }
@@ -97,7 +95,7 @@ Geef het resultaat als JSON:
         const reflectionQuestion: ReflectionQuestion = {
           id: `reflection-${batch.emotion}-${Date.now()}`,
           emotion: batch.emotion,
-          question: parsed.question || response.substring(0, 200),
+          question: parsed.question || response.response.substring(0, 200),
           context: parsed.context || `Gebaseerd op ${batch.totalCount} verlopende seeds voor ${batch.emotion}`,
           confidence: typeof parsed.confidence === 'number' ? Math.max(0.1, Math.min(1, parsed.confidence)) : 0.75,
           generatedAt: new Date(),
@@ -117,7 +115,7 @@ Geef het resultaat als JSON:
         return {
           id: `reflection-${batch.emotion}-${Date.now()}`,
           emotion: batch.emotion,
-          question: response.substring(0, 200).trim(),
+          question: response.response.substring(0, 200).trim(),
           context: `Automatisch gegenereerd op basis van ${batch.totalCount} verlopende seeds`,
           confidence: 0.70,
           generatedAt: new Date(),

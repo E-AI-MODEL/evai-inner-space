@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary } from "./useOpenAISecondary";
@@ -92,7 +93,15 @@ export function useAiResponse(
       const availableApis = Object.entries(collaborationStatus).filter(([_, available]) => available).length;
 
       // ENHANCED: Check if we should trigger a reflection question
-      const lastReflectionIndex = messages.findLastIndex(msg => msg.label === "Reflectievraag");
+      // Replace findLastIndex with a compatible alternative
+      let lastReflectionIndex = -1;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].label === "Reflectievraag") {
+          lastReflectionIndex = i;
+          break;
+        }
+      }
+      
       const shouldReflect = shouldTriggerReflection(
         pendingReflections,
         messages.length,
