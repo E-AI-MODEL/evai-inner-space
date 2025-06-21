@@ -307,13 +307,10 @@ export function useAiResponse(
       if (matchedResult && "confidence" in matchedResult) {
         setSeedConfetti(true);
         
-        const apiStatusText = generateApiStatusText(collaborationStatus, availableApis);
-        const collaborationNote = generateCollaborationNote(apiStatusText, availableApis);
-        
+        // Fixed function call - now passing 8 arguments as expected
         aiResp = createSuccessfulAiResponse(
           matchedResult,
           userMessage,
-          collaborationNote,
           collaborationStatus,
           availableApis,
           rubricInsights,

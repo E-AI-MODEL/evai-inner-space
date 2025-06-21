@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Message, ChatHistoryItem } from "../types";
 import { AdvancedSeed } from "../types/seed";
@@ -51,6 +52,15 @@ export function useAiResponseCore() {
       emotionSeed = detection.emotion;
       explainText = `${detection.reasoning || 'Enhanced API Collaboration'} | Enhanced API Collaboration: ${confidence}%`;
     }
+    
+    // Generate collaboration note inside the function
+    const apiStatusText = [
+      `API-1: ${collaborationStatus.api1 ? '✅' : '❌'}`,
+      `API-2: ${collaborationStatus.api2 ? '✅' : '❌'}`,
+      `Vector: ${collaborationStatus.vector ? '✅' : '❌'}`
+    ].join(' | ');
+    
+    const collaborationNote = `🤝 ENHANCED API STATUS: ${apiStatusText} | ${availableApis}/3 APIs active`;
     
     return {
       id: `ai-enhanced-collab-${Date.now()}`,
