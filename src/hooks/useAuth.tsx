@@ -18,44 +18,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     console.log('🔐 Setting up auth listener...');
     
+    let mounted = true;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('🔐 Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        
+        // Only set loading to false after first auth event
+        if (!initialized) {
+          setInitialized(true);
+          setLoading(false);
+        }
       }
     );
 
     // THEN check for existing session
     const getInitialSession = async () => {
+      if (!mounted) return;
+      
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('🔴 Error getting session:', error);
         } else {
           console.log('🔐 Initial session check:', session?.user?.email || 'No session');
-          setSession(session);
-          setUser(session?.user ?? null);
+          if (mounted) {
+            setSession(session);
+            setUser(session?.user ?? null);
+          }
         }
       } catch (error) {
         console.error('🔴 Session check failed:', error);
       } finally {
-        setLoading(false);
+        if (mounted && !initialized) {
+          setInitialized(true);
+          setLoading(false);
+        }
       }
     };
 
     getInitialSession();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initialized]);
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
@@ -69,16 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('❌ Sign in error:', error);
+        setLoading(false);
         return { error };
       } else {
         console.log('✅ Sign in successful for:', data.user?.email);
+        // Don't set loading to false here - let the auth state change handle it
         return { error: null };
       }
     } catch (error) {
       console.error('❌ Sign in exception:', error);
-      return { error };
-    } finally {
       setLoading(false);
+      return { error };
     }
   };
 
@@ -102,16 +121,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('❌ Sign up error:', error);
+        setLoading(false);
         return { error };
       } else {
         console.log('✅ Sign up successful for:', data.user?.email);
+        setLoading(false);
         return { error: null };
       }
     } catch (error) {
       console.error('❌ Sign up exception:', error);
-      return { error };
-    } finally {
       setLoading(false);
+      return { error };
     }
   };
 
@@ -135,15 +155,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const value = {
+    user,
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+  };
+
   return (
-    <AuthContext.Provider value={{
-      user,
-      session,
-      loading,
-      signIn,
-      signUp,
-      signOut,
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
