@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -396,18 +395,6 @@ const AuthPage: React.FC = () => {
                 Er is een probleem met de database verbinding. Probeer de pagina te verversen.
               </AlertDescription>
             </Alert>
-          )}
-
-          {/* Configuration Help */}
-          {connectionStatus === 'connected' && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-xs text-blue-700">
-                💡 <strong>Tip voor ontwikkelaars:</strong> Zorg ervoor dat in je Supabase dashboard onder 
-                Authentication → URL Configuration de volgende URLs zijn ingesteld:<br/>
-                • Site URL: <code className="bg-blue-100 px-1 rounded">{window.location.origin}</code><br/>
-                • Redirect URLs: <code className="bg-blue-100 px-1 rounded">{window.location.origin}/**</code>
-              </p>
-            </div>
           )}
         </CardContent>
       </Card>
