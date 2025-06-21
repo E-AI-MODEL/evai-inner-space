@@ -47,7 +47,6 @@ export function useAiResponse(
     createErrorResponse 
   } = useAiResponseCore();
 
-  // ENHANCED: Background reflection system integration
   const {
     pendingReflections,
     isProcessing: isReflectionProcessing,
@@ -67,12 +66,29 @@ export function useAiResponse(
   ) => {
     setIsProcessing(true);
     
+    // Verbeterde API key controle
     const apiConfig = getApiConfiguration();
-    const hasOpenAI = apiKey && apiKey.trim().length > 0;
+    const hasOpenAI = apiKey && apiKey.trim().length > 0 && apiKey.startsWith('sk-');
     
-    console.log('🚀 EvAI ENHANCED NEUROSYMBOLIC MODE WITH REFLECTION SYSTEM');
+    if (!hasOpenAI) {
+      console.error('❌ Geen geldige OpenAI API key gevonden');
+      const errorResponse = createErrorResponse(
+        userMessage, 
+        "OpenAI API key ontbreekt of is ongeldig. Stel een geldige API key in via de instellingen (moet beginnen met 'sk-')."
+      );
+      setMessages((prev) => [...prev, errorResponse]);
+      toast({
+        title: "❌ API Key Problem",
+        description: "Stel een geldige OpenAI API key in",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+      return;
+    }
+    
+    console.log('🚀 EvAI ENHANCED NEUROSYMBOLIC MODE WITH IMPROVED ERROR HANDLING');
     console.log('🔑 API Configuration:', { 
-      hasOpenAI, 
+      hasOpenAI: true, 
       hasOpenAi2: apiConfig.hasOpenAi2, 
       hasVectorAPI: apiConfig.hasVectorAPI,
       autonomous: apiConfig.isAutonomousEnabled,
@@ -91,8 +107,7 @@ export function useAiResponse(
       const collaborationStatus = createCollaborationStatus(hasOpenAI, apiConfig.hasOpenAi2, apiConfig.hasVectorAPI);
       const availableApis = Object.entries(collaborationStatus).filter(([_, available]) => available).length;
 
-      // ENHANCED: Check if we should trigger a reflection question
-      // Replace findLastIndex with a compatible alternative
+      // Check reflection trigger
       let lastReflectionIndex = -1;
       for (let i = messages.length - 1; i >= 0; i--) {
         if (messages[i].label === "Reflectievraag") {
@@ -119,9 +134,7 @@ export function useAiResponse(
             availableApis
           );
           
-          // Consume the reflection question
           consumePendingReflection(nextReflection.id);
-          
           setMessages((prev) => [...prev, reflectionResponse]);
           
           toast({
@@ -134,9 +147,9 @@ export function useAiResponse(
         }
       }
 
-      // ENHANCED: Use complete neurosymbolic workflow if all keys available
+      // Enhanced workflow met betere foutafhandeling
       if (hasOpenAI && apiConfig.hasVectorAPI) {
-        console.log('🧠 FULL NEUROSYMBOLIC WORKFLOW ACTIVATED WITH REFLECTION INTEGRATION');
+        console.log('🧠 FULL NEUROSYMBOLIC WORKFLOW WITH IMPROVED ERROR HANDLING');
         
         try {
           const neurosymbolicResult = await processNeurosymbolic(
@@ -151,13 +164,11 @@ export function useAiResponse(
             }
           );
 
-          console.log('✅ ENHANCED NEUROSYMBOLIC SUCCESS WITH REFLECTION CONTEXT:');
+          console.log('✅ ENHANCED NEUROSYMBOLIC SUCCESS:');
           console.log(`  🎯 Response Type: ${neurosymbolicResult.responseType}`);
           console.log(`  📊 Confidence: ${(neurosymbolicResult.confidence * 100).toFixed(1)}%`);
-          console.log(`  🤝 API Collaboration:`, neurosymbolicResult.apiCollaboration);
-          console.log(`  🤔 Pending Reflections: ${pendingReflections.length}`);
 
-          // Store conversation embedding for future learning
+          // Store conversation embedding in background
           setTimeout(() => {
             storeConversationEmbedding(
               [...messages, userMessage],
@@ -168,7 +179,6 @@ export function useAiResponse(
 
           setSeedConfetti(true);
 
-          // Map response type to label with better logic
           let label: "Valideren" | "Reflectievraag" | "Suggestie";
           if (neurosymbolicResult.seed?.label === "Reflectievraag") {
             label = "Reflectievraag";
@@ -178,7 +188,6 @@ export function useAiResponse(
             label = "Valideren";
           }
 
-          // Enhanced result display with reflection context
           const confidence = Math.round(neurosymbolicResult.confidence * 100);
           const apiStatus = neurosymbolicResult.apiCollaboration;
           
@@ -194,39 +203,33 @@ export function useAiResponse(
             from: "ai",
             label: label,
             accentColor: getLabelVisuals(label).accentColor,
-            content: neurosymbolicResult.response, // REMOVED: inline collaboration note
-            explainText: `${neurosymbolicResult.reasoning} | Enhanced workflow met reflectie-integratie (${confidence}% confidence)`,
+            content: neurosymbolicResult.response,
+            explainText: `${neurosymbolicResult.reasoning} | Enhanced workflow met verbeterde foutafhandeling (${confidence}% confidence)`,
             emotionSeed: neurosymbolicResult.seed?.emotion || null,
             animate: true,
-            meta: `Enhanced API + Reflectie: ${confidence}% confidence`,
+            meta: `Enhanced API: ${confidence}% confidence`,
             brilliant: true,
             timestamp: new Date(),
             replyTo: userMessage.id,
             feedback: null,
             symbolicInferences: [
-              `🧠 Enhanced Neurosymbolic + Reflectie Engine: ${neurosymbolicResult.responseType}`,
-              `🤝 API 1 (Neural): ${apiStatus?.api1Used ? '✅ Actief' : '❌ Niet gebruikt'}`,
-              `🤝 API 2 (Secondary): ${apiStatus?.api2Used ? '✅ Gebruikt voor analyse' : '❌ Niet beschikbaar'}`,
-              `🧬 Vector API: ✅ Actief voor embeddings`,
-              `🌱 Seed Status: ${apiStatus?.seedGenerated ? '✅ Nieuwe seed gegenereerd' : '⚡ Bestaande seed gebruikt'}`,
-              neurosymbolicResult.seedInjectionUsed ? '💉 Seed injectie toegepast' : '',
-              `🤔 Reflectie Systeem: ${pendingReflections.length} vraag${pendingReflections.length === 1 ? '' : 'en'} gereed`,
-              `⚖️ Confidence: ${confidence}% (${neurosymbolicResult.confidence > 0.8 ? 'Hoog' : neurosymbolicResult.confidence > 0.6 ? 'Gemiddeld' : 'Laag'})`,
+              `🧠 Enhanced Neurosymbolic Engine: ${neurosymbolicResult.responseType}`,
+              `🤝 API Status: ${apiStatusText}`,
+              `🌱 Seed: ${apiStatus?.seedGenerated ? '✅ Nieuw gegenereerd' : '⚡ Bestaand gebruikt'}`,
+              `🤔 Reflecties: ${pendingReflections.length} gereed`,
+              `⚖️ Confidence: ${confidence}%`,
               `⚡ Verwerking: ${neurosymbolicResult.processingTime}ms`,
-              `🎯 Redenering: ${neurosymbolicResult.reasoning}`,
-              // Add API status as technical detail instead of inline
-              `🤝 API SAMENWERKING + REFLECTIE: ${apiStatusText} |${confidence}% confidence${neurosymbolicResult.seedInjectionUsed ? ' + Seed injectie' : ''}${pendingReflections.length > 0 ? ` | ${pendingReflections.length} reflectievragen gereed` : ''}`
+              `🎯 Redenering: ${neurosymbolicResult.reasoning}`
             ].filter(Boolean)
           };
 
-          // ENHANCED: Add pending reflection context to regular responses
           aiResp = enhanceRegularResponse(aiResp, pendingReflections.length > 0, pendingReflections.length);
 
           setMessages((prev) => [...prev, aiResp]);
           
           toast({
-            title: `🚀 ENHANCED API + REFLECTIE (${confidence}%)`,
-            description: `${apiStatusText} - ${pendingReflections.length} reflectievragen gereed`,
+            title: `🚀 ENHANCED API (${confidence}%)`,
+            description: `${apiStatusText}`,
           });
 
           return;
@@ -234,17 +237,16 @@ export function useAiResponse(
           console.error('🔴 Enhanced neurosymbolic workflow failed:', neurosymbolicError);
           
           toast({
-            title: "⚠️ Enhanced Neurosymbolic + Reflectie Fallback",
-            description: "Schakel over naar verbeterde fallback mode",
+            title: "⚠️ Enhanced Neurosymbolic Fallback",
+            description: "Schakeling naar verbeterde fallback mode",
             variant: "destructive"
           });
         }
       }
 
-      // ENHANCED FALLBACK: Better partial API collaboration with reflection context
-      console.log('🔄 ENHANCED PARTIAL API COLLABORATION WITH REFLECTION...');
+      // Verbeterde fallback met betere foutafhandeling
+      console.log('🔄 ENHANCED FALLBACK MODE WITH BETTER ERROR HANDLING...');
 
-      // ... keep existing code (enhanced secondary insights)
       let secondaryInsights: string[] = [];
       if (apiConfig.hasOpenAi2) {
         try {
@@ -261,10 +263,10 @@ export function useAiResponse(
           }
         } catch (preErr) {
           console.error('🔴 Enhanced secondary analysis failed:', preErr);
+          secondaryInsights = ['Secundaire analyse gefaald - controleer API key 2'];
         }
       }
 
-      // ... keep existing code (Enhanced EvAI 5.6 Rubrics Analysis)
       console.log('📊 Enhanced EvAI 5.6 Rubrics analysis...');
       const rubricsAssessments = assessMessage(userMessage.content);
       const overallRisk = calculateOverallRisk(rubricsAssessments);
@@ -287,63 +289,95 @@ export function useAiResponse(
         console.log(`🎯 Enhanced EvAI detected ${rubricsAssessments.length} areas, overall risk: ${overallRisk.toFixed(1)}%`);
       }
 
-      // Enhanced seed matching with improved context including reflection state
       const extendedContext: ExtendedContext = { 
         ...context, 
         secondaryInsights, 
         collaborationStatus 
       };
 
-      console.log('🔍 Running enhanced seed matching with reflection context...');
-      const matchedResult = await checkInput(
-        userMessage.content,
-        apiKey,
-        extendedContext,
-        history
-      );
-
-      let aiResp: Message;
-
-      if (matchedResult && "confidence" in matchedResult) {
-        setSeedConfetti(true);
-        
-        // Fixed function call - now passing 8 arguments as expected
-        aiResp = createSuccessfulAiResponse(
-          matchedResult,
-          userMessage,
-          collaborationStatus,
-          availableApis,
-          rubricInsights,
-          cotRubricGuidance,
-          secondaryInsights,
-          overallRisk
+      console.log('🔍 Running enhanced seed matching with better error handling...');
+      
+      try {
+        const matchedResult = await checkInput(
+          userMessage.content,
+          apiKey,
+          extendedContext,
+          history
         );
 
-      } else {
-        // Enhanced fallback with better messaging
-        const collaborationNote = generateMissingApisNote(collaborationStatus);
+        let aiResp: Message;
+
+        if (matchedResult && "confidence" in matchedResult) {
+          setSeedConfetti(true);
+          
+          aiResp = createSuccessfulAiResponse(
+            matchedResult,
+            userMessage,
+            collaborationStatus,
+            availableApis,
+            rubricInsights,
+            cotRubricGuidance,
+            secondaryInsights,
+            overallRisk
+          );
+
+        } else {
+          const collaborationNote = generateMissingApisNote(collaborationStatus);
+          
+          aiResp = createLimitedFunctionalityResponse(
+            userMessage,
+            collaborationStatus,
+            availableApis,
+            collaborationNote
+          );
+        }
+
+        aiResp = enhanceRegularResponse(aiResp, pendingReflections.length > 0, pendingReflections.length);
+        setMessages((prev) => [...prev, aiResp]);
         
-        aiResp = createLimitedFunctionalityResponse(
-          userMessage,
-          collaborationStatus,
-          availableApis,
-          collaborationNote
-        );
+      } catch (seedError) {
+        console.error('🔴 Seed matching failed:', seedError);
+        
+        // Fallback naar basis respons
+        const basicResponse: Message = {
+          id: `ai-basic-${Date.now()}`,
+          from: "ai",
+          label: "Valideren",
+          accentColor: getLabelVisuals("Valideren").accentColor,
+          content: "Ik begrijp dat je iets wilt delen. Helaas lukt het me nu niet om je bericht volledig te verwerken. Zou je het opnieuw kunnen proberen?",
+          explainText: "Basis fallback mode - er zijn technische problemen opgetreden",
+          emotionSeed: null,
+          animate: true,
+          meta: "Basis fallback",
+          brilliant: false,
+          timestamp: new Date(),
+          replyTo: userMessage.id,
+          feedback: null,
+          symbolicInferences: [
+            "⚠️ Technische problemen gedetecteerd",
+            "🔄 Basis fallback mode actief",
+            "🔧 Controleer API keys in instellingen",
+            "📋 Probeer opnieuw of herformuleer je vraag"
+          ]
+        };
+        
+        setMessages((prev) => [...prev, basicResponse]);
+        
+        toast({
+          title: "⚠️ Technische Problemen",
+          description: "Basis respons geactiveerd - controleer je instellingen",
+          variant: "destructive",
+        });
       }
-
-      // ENHANCED: Add reflection context to all responses
-      aiResp = enhanceRegularResponse(aiResp, pendingReflections.length > 0, pendingReflections.length);
-
-      setMessages((prev) => [...prev, aiResp]);
       
     } catch (err) {
-      console.error("Enhanced EvAI API collaboration with reflection error:", err);
-      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de enhanced API samenwerking met reflectie.";
+      console.error("Critical EvAI error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Er ging iets mis bij de verwerking.";
       const errorResponse = createErrorResponse(userMessage, errorMessage);
       setMessages((prev) => [...prev, errorResponse]);
       toast({
-        title: "❌ Enhanced API + Reflectie Error",
-        description: "Controleer je API keys en netwerkverbinding",
+        title: "❌ Kritieke Fout",
+        description: "Herstart de applicatie of controleer je instellingen",
         variant: "destructive",
       });
     } finally {
