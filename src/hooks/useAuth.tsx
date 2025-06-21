@@ -23,13 +23,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('🔐 Setting up auth listener...');
     
     let mounted = true;
+    let authCheckTimeout: NodeJS.Timeout;
+
+    // Set timeout to prevent infinite loading
+    const setLoadingTimeout = () => {
+      authCheckTimeout = setTimeout(() => {
+        if (mounted) {
+          console.log('⏰ Auth check timeout - setting loading to false');
+          setLoading(false);
+        }
+      }, 5000); // 5 second timeout
+    };
+
+    setLoadingTimeout();
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('🔐 Auth state changed:', event, session?.user?.email);
+        console.log('🔐 Auth state changed:', event, session?.user?.email || 'No session');
+        
+        // Clear timeout since we got a response
+        if (authCheckTimeout) {
+          clearTimeout(authCheckTimeout);
+        }
         
         if (mounted) {
           setSession(session);
@@ -44,9 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
       
       try {
+        console.log('🔍 Checking for existing session...');
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
           console.error('🔴 Error getting session:', error);
+          if (mounted) {
+            setSession(null);
+            setUser(null);
+            setLoading(false);
+          }
         } else {
           console.log('🔐 Initial session check:', session?.user?.email || 'No session');
           if (mounted) {
@@ -55,10 +80,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
           }
         }
+        
+        // Clear timeout since we got a response
+        if (authCheckTimeout) {
+          clearTimeout(authCheckTimeout);
+        }
       } catch (error) {
         console.error('🔴 Session check failed:', error);
         if (mounted) {
+          setSession(null);
+          setUser(null);
           setLoading(false);
+        }
+        
+        // Clear timeout
+        if (authCheckTimeout) {
+          clearTimeout(authCheckTimeout);
         }
       }
     };
@@ -67,12 +104,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
+      if (authCheckTimeout) {
+        clearTimeout(authCheckTimeout);
+      }
       subscription.unsubscribe();
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
+    setLoading(true);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -82,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('❌ Sign in error:', error);
+        setLoading(false);
         return { error };
       } else {
         console.log('✅ Sign in successful for:', data.user?.email);
@@ -90,12 +132,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('❌ Sign in exception:', error);
+      setLoading(false);
       return { error };
     }
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     console.log('🔐 Attempting sign up for:', email);
+    setLoading(true);
     
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -113,13 +157,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (error) {
         console.error('❌ Sign up error:', error);
+        setLoading(false);
         return { error };
       } else {
         console.log('✅ Sign up successful for:', data.user?.email);
+        setLoading(false);
         return { error: null };
       }
     } catch (error) {
       console.error('❌ Sign up exception:', error);
+      setLoading(false);
       return { error };
     }
   };
