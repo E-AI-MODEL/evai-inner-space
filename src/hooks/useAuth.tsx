@@ -20,9 +20,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔐 Setting up auth listener...');
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('🔐 Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
@@ -31,12 +33,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🔐 Initial session check:', session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('🔴 Error getting session:', error);
+        } else {
+          console.log('🔐 Initial session check:', session?.user?.email || 'No session');
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        console.error('🔴 Session check failed:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
 
     return () => {
       subscription.unsubscribe();
@@ -45,51 +59,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     console.log('🔐 Attempting sign in for:', email);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    setLoading(true);
     
-    if (error) {
-      console.error('❌ Sign in error:', error);
-    } else {
-      console.log('✅ Sign in successful');
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
+      
+      if (error) {
+        console.error('❌ Sign in error:', error);
+        return { error };
+      } else {
+        console.log('✅ Sign in successful for:', data.user?.email);
+        return { error: null };
+      }
+    } catch (error) {
+      console.error('❌ Sign in exception:', error);
+      return { error };
+    } finally {
+      setLoading(false);
     }
-    
-    return { error };
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     console.log('🔐 Attempting sign up for:', email);
-    const redirectUrl = `${window.location.origin}/`;
+    setLoading(true);
     
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName || email,
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName || email,
+          }
         }
+      });
+      
+      if (error) {
+        console.error('❌ Sign up error:', error);
+        return { error };
+      } else {
+        console.log('✅ Sign up successful for:', data.user?.email);
+        return { error: null };
       }
-    });
-    
-    if (error) {
-      console.error('❌ Sign up error:', error);
-    } else {
-      console.log('✅ Sign up successful');
+    } catch (error) {
+      console.error('❌ Sign up exception:', error);
+      return { error };
+    } finally {
+      setLoading(false);
     }
-    
-    return { error };
   };
 
   const signOut = async () => {
     console.log('🔐 Signing out...');
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('❌ Sign out error:', error);
-    } else {
-      console.log('✅ Sign out successful');
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('❌ Sign out error:', error);
+      } else {
+        console.log('✅ Sign out successful');
+        setUser(null);
+        setSession(null);
+      }
+    } catch (error) {
+      console.error('❌ Sign out exception:', error);
+    } finally {
+      setLoading(false);
     }
   };
 

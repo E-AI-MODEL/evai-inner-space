@@ -5,7 +5,7 @@ export const checkSupabaseConnection = async () => {
   try {
     console.log('🔍 Testing Supabase connection...');
     
-    // Simple query to test connection - just get a few records
+    // Test basic connection first
     const { data, error } = await supabase
       .from('emotion_seeds')
       .select('id')
@@ -13,14 +13,34 @@ export const checkSupabaseConnection = async () => {
     
     if (error) {
       console.error('🔴 Supabase connection error:', error.message);
-      return false;
+      return { success: false, error: error.message };
     } else {
       console.log('✅ Supabase connection successful - database accessible');
-      return true;
+      return { success: true, data };
     }
   } catch (error) {
     console.error('🔴 Supabase connection failed with exception:', error);
-    return false;
+    return { success: false, error: error.message };
+  }
+};
+
+export const checkAuthConnection = async () => {
+  try {
+    console.log('🔍 Testing Supabase auth...');
+    
+    // Test auth connection
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('🔴 Supabase auth error:', error.message);
+      return { success: false, error: error.message };
+    } else {
+      console.log('✅ Supabase auth accessible');
+      return { success: true, session };
+    }
+  } catch (error) {
+    console.error('🔴 Supabase auth failed with exception:', error);
+    return { success: false, error: error.message };
   }
 };
 

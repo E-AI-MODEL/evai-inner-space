@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Brain, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { testSupabaseConnection } from '@/integrations/supabase/client';
 
 const AuthPage: React.FC = () => {
   const { signIn, signUp, loading } = useAuth();
@@ -19,25 +20,50 @@ const AuthPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('signin');
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+
+  // Test connection on mount
+  useEffect(() => {
+    const testConnection = async () => {
+      const result = await testSupabaseConnection();
+      setConnectionStatus(result.success ? 'connected' : 'error');
+      if (!result.success) {
+        setError(`Connectie probleem: ${result.error}`);
+      }
+    };
+    testConnection();
+  }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setSuccess(null);
 
-    const { error } = await signIn(email, password);
+    if (!email.trim() || !password) {
+      setError('Email en wachtwoord zijn verplicht.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const { error } = await signIn(email.trim(), password);
     
     if (error) {
-      if (error.message.includes('Invalid login credentials')) {
+      console.error('Login error details:', error);
+      if (error.message?.includes('Invalid login credentials')) {
         setError('Verkeerde inloggegevens. Controleer je email en wachtwoord.');
-      } else if (error.message.includes('Email not confirmed')) {
+      } else if (error.message?.includes('Email not confirmed')) {
         setError('Je account is nog niet bevestigd. Controleer je email voor de bevestigingslink.');
+      } else if (error.message?.includes('too many requests')) {
+        setError('Te veel inlogpogingen. Probeer het later opnieuw.');
       } else {
-        setError(error.message);
+        setError(`Inloggen mislukt: ${error.message}`);
       }
     } else {
-      navigate('/');
+      setSuccess('Succesvol ingelogd!');
+      setTimeout(() => navigate('/'), 1000);
     }
     
     setIsSubmitting(false);
@@ -47,6 +73,13 @@ const AuthPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setSuccess(null);
+
+    if (!email.trim() || !password) {
+      setError('Email en wachtwoord zijn verplicht.');
+      setIsSubmitting(false);
+      return;
+    }
 
     if (password.length < 6) {
       setError('Wachtwoord moet minimaal 6 karakters lang zijn.');
@@ -54,18 +87,22 @@ const AuthPage: React.FC = () => {
       return;
     }
 
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email.trim(), password, fullName);
     
     if (error) {
-      if (error.message.includes('User already registered')) {
+      console.error('Signup error details:', error);
+      if (error.message?.includes('User already registered')) {
         setError('Dit email adres is al geregistreerd. Probeer in te loggen.');
+        setActiveTab('signin');
+      } else if (error.message?.includes('Password should be at least')) {
+        setError('Wachtwoord moet sterker zijn. Gebruik minimaal 6 karakters.');
       } else {
-        setError(error.message);
+        setError(`Registratie mislukt: ${error.message}`);
       }
     } else {
-      setError(null);
+      setSuccess('Account succesvol aangemaakt! Je kunt nu inloggen.');
       setActiveTab('signin');
-      alert('Account aangemaakt! Controleer je email voor de bevestigingslink en log daarna in.');
+      setPassword('');
     }
     
     setIsSubmitting(false);
@@ -97,6 +134,28 @@ const AuthPage: React.FC = () => {
           <CardDescription className="text-gray-600 text-sm sm:text-base">
             Log in of maak een account aan om toegang te krijgen tot EvAI.
           </CardDescription>
+          
+          {/* Connection Status */}
+          <div className="flex items-center justify-center gap-2 mt-2">
+            {connectionStatus === 'checking' && (
+              <div className="flex items-center gap-2 text-yellow-600 text-xs">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                <span>Verbinding controleren...</span>
+              </div>
+            )}
+            {connectionStatus === 'connected' && (
+              <div className="flex items-center gap-2 text-green-600 text-xs">
+                <CheckCircle className="w-3 h-3" />
+                <span>Verbonden met database</span>
+              </div>
+            )}
+            {connectionStatus === 'error' && (
+              <div className="flex items-center gap-2 text-red-600 text-xs">
+                <AlertCircle className="w-3 h-3" />
+                <span>Verbindingsprobleem</span>
+              </div>
+            )}
+          </div>
         </CardHeader>
         
         <CardContent>
@@ -120,6 +179,7 @@ const AuthPage: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
                       required
+                      disabled={isSubmitting || connectionStatus === 'error'}
                     />
                   </div>
                 </div>
@@ -136,18 +196,16 @@ const AuthPage: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10"
                       required
+                      disabled={isSubmitting || connectionStatus === 'error'}
                     />
                   </div>
                 </div>
                 
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isSubmitting || connectionStatus === 'error'}
+                >
                   {isSubmitting ? 'Inloggen...' : 'Inloggen'}
                 </Button>
               </form>
@@ -166,6 +224,7 @@ const AuthPage: React.FC = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="pl-10"
+                      disabled={isSubmitting || connectionStatus === 'error'}
                     />
                   </div>
                 </div>
@@ -182,6 +241,7 @@ const AuthPage: React.FC = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
                       required
+                      disabled={isSubmitting || connectionStatus === 'error'}
                     />
                   </div>
                 </div>
@@ -199,23 +259,45 @@ const AuthPage: React.FC = () => {
                       className="pl-10"
                       required
                       minLength={6}
+                      disabled={isSubmitting || connectionStatus === 'error'}
                     />
                   </div>
                 </div>
                 
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isSubmitting || connectionStatus === 'error'}
+                >
                   {isSubmitting ? 'Account aanmaken...' : 'Account aanmaken'}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
+
+          {/* Status Messages */}
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {success && (
+            <Alert className="mt-4 border-green-200 bg-green-50">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">{success}</AlertDescription>
+            </Alert>
+          )}
+          
+          {connectionStatus === 'error' && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Er is een probleem met de database verbinding. Probeer de pagina te verversen.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
     </div>
