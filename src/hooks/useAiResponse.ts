@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSeedEngine } from "./useSeedEngine";
 import { useOpenAISecondary, SecondaryAnalysis } from "./useOpenAISecondary";
@@ -14,6 +15,18 @@ import { Message, ChatHistoryItem } from "../types";
 import { useSymbolicEngine } from "./useSymbolicEngine";
 import { loadAdvancedSeeds } from "../lib/advancedSeedStorage";
 import { useSeeds } from "./useSeeds";
+
+interface CollaborationStatus {
+  api1: boolean;
+  api2: boolean;
+  vector: boolean;
+}
+
+interface ExtendedContext {
+  dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie";
+  secondaryInsights?: string[];
+  collaborationStatus?: CollaborationStatus;
+}
 
 export function useAiResponse(
   messages: Message[],
@@ -197,7 +210,7 @@ export function useAiResponse(
       // FALLBACK: Show partial API collaboration
       console.log('🔄 PARTIAL API COLLABORATION...');
       
-      let collaborationStatus = {
+      let collaborationStatus: CollaborationStatus = {
         api1: hasOpenAI,
         api2: hasOpenAi2,
         vector: hasVectorAPI
@@ -247,10 +260,16 @@ export function useAiResponse(
       }
 
       // Enhanced seed matching with collaboration status
+      const extendedContext: ExtendedContext = { 
+        ...context, 
+        secondaryInsights, 
+        collaborationStatus 
+      };
+
       const matchedResult = await checkInput(
         userMessage.content,
         apiKey,
-        { ...context, secondaryInsights, collaborationStatus },
+        extendedContext,
         history
       );
 
