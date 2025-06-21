@@ -164,17 +164,11 @@ export const useAuthActions = () => {
     console.log('🎯 Special login triggered!');
     setError(null);
     setSuccess(null);
-    setIsSubmitting(true);
     
     const specialEmail = 'vis@emmauscollege.nl';
     setEmail(specialEmail);
     
-    setSuccess('🎯 Speciale login geactiveerd...');
-    
-    setTimeout(() => {
-      setSuccess('Email ingesteld op vis@emmauscollege.nl - voer wachtwoord in om verder te gaan');
-      setIsSubmitting(false);
-    }, 1000);
+    setSuccess('🎯 Speciale login geactiveerd! Voer je wachtwoord in om verder te gaan.');
   };
 
   return {
