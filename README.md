@@ -42,6 +42,7 @@ Create a `.env` file based on `.env.example` and provide your Supabase credentia
 VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
 VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
 ```
+These variables are required for the frontend to connect to Supabase.
 
 ### Supabase setup
 
