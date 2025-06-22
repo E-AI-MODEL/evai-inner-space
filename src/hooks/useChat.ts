@@ -5,7 +5,7 @@ import { Message } from "../types";
 import { toast } from "@/hooks/use-toast";
 import { useFeedbackHandler } from "./useFeedbackHandler";
 import { useBackgroundReflectionTrigger } from "./useBackgroundReflectionTrigger";
-import { useAiResponse } from "./useAiResponse";
+import { useOrchestratedAiResponse } from "./useOrchestratedAiResponse";
 
 export function useChat(apiKey: string) {
   const { messages, setMessages, clearHistory: clearChatHistory } = useChatHistory();
@@ -24,12 +24,11 @@ export function useChat(apiKey: string) {
     isProcessing: isReflectionProcessing
   } = useBackgroundReflectionTrigger(messages, apiKey);
 
-  // Original AI response system
-  const { generateAiResponse: generateOriginalAiResponse, isGenerating } = useAiResponse(
+  // Orchestrated AI response system
+  const { generateAiResponse: orchestratedAiResponse, isGenerating } = useOrchestratedAiResponse(
     messages,
     setMessages,
-    apiKey,
-    setSeedConfetti
+    apiKey
   );
 
   useEffect(() => {
@@ -54,10 +53,10 @@ export function useChat(apiKey: string) {
     }
   }, [pendingReflections]);
 
-  // Use original AI response generation
+  // Use orchestrated AI response generation
   const generateAiResponse = async (userMessage: Message) => {
-    console.log('🎯 Generating AI response using original workflow for:', userMessage.content);
-    await generateOriginalAiResponse(userMessage);
+    console.log('🎯 Generating AI response using orchestrated workflow for:', userMessage.content);
+    await orchestratedAiResponse(userMessage);
   };
 
   const onSend = async () => {
