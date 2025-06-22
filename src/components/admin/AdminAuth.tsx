@@ -11,23 +11,13 @@ interface AdminAuthProps {
   onAuthenticated: () => void;
 }
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD as string | undefined;
-const isConfigured = !!ADMIN_PASSWORD;
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
 
 const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    if (!isConfigured) {
-      toast({
-        title: "Admin login uitgeschakeld",
-        description: "VITE_ADMIN_PASSWORD ontbreekt in de omgeving.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (password === ADMIN_PASSWORD) {
       onAuthenticated();
       toast({
@@ -63,11 +53,11 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
           <CardDescription className="text-gray-600 text-sm sm:text-base">
             Voer het admin wachtwoord in om toegang te krijgen tot het dashboard.
           </CardDescription>
-          {!isConfigured && (
-            <p className="text-red-600 text-sm mt-2">
-              Admin login is uitgeschakeld. Stel VITE_ADMIN_PASSWORD in.
+          <div className="mt-2 p-2 bg-blue-50 rounded-lg">
+            <p className="text-xs text-blue-700">
+              Standaard wachtwoord: <code className="bg-blue-100 px-1 rounded">admin123</code>
             </p>
-          )}
+          </div>
         </CardHeader>
         
         <CardContent className="space-y-4">
@@ -84,11 +74,10 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="text-center"
                 autoFocus
-                disabled={!isConfigured}
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={!isConfigured}>
+            <Button type="submit" className="w-full">
               <Brain className="h-4 w-4 mr-2" />
               Toegang Verkrijgen
             </Button>
