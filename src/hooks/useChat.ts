@@ -1,13 +1,13 @@
 
 import { useState } from "react";
 import { useChatHistory } from "./useChatHistory";
-import { useOpenAI } from "./useOpenAI";
+import { useOrchestratedAiResponse } from "./useOrchestratedAiResponse";
 import { Message } from "../types";
 import { toast } from "@/hooks/use-toast";
 
 export function useChat(apiKey: string) {
   const { messages, setMessages, clearHistory: clearChatHistory } = useChatHistory();
-  const { detectEmotion, isLoading } = useOpenAI();
+  const { orchestrateResponse, isProcessing: aiProcessing } = useOrchestratedAiResponse(apiKey);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
 
@@ -18,51 +18,25 @@ export function useChat(apiKey: string) {
   };
 
   const generateAiResponse = async (userMessage: Message) => {
-    if (!apiKey.trim()) {
-      const errorMessage: Message = {
-        id: `ai-${Date.now()}`,
-        from: 'ai',
-        label: 'Fout',
-        content: 'OpenAI API key is niet ingesteld. Ga naar instellingen om deze in te voeren.',
-        emotionSeed: null,
-        animate: true,
-        timestamp: new Date(),
-        feedback: null,
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      return;
-    }
-
     try {
-      // Create conversation history for context
-      const conversationHistory = messages.slice(-6).map(msg => ({
-        role: msg.from === 'user' ? 'user' as const : 'assistant' as const,
-        content: msg.content
-      }));
-
-      const emotionResponse = await detectEmotion(
-        userMessage.content,
-        apiKey,
-        undefined,
-        conversationHistory
-      );
-
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
-        from: 'ai',
-        label: emotionResponse.label,
-        content: emotionResponse.response,
-        emotionSeed: emotionResponse.emotion,
-        animate: true,
-        timestamp: new Date(),
-        feedback: null,
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-
+      const aiMessage = await orchestrateResponse(userMessage, messages);
+      if (aiMessage) {
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        const errorMessage: Message = {
+          id: `ai-${Date.now()}`,
+          from: 'ai',
+          label: 'Fout',
+          content: 'OpenAI API key is niet ingesteld. Ga naar instellingen om deze in te voeren.',
+          emotionSeed: null,
+          animate: true,
+          timestamp: new Date(),
+          feedback: null,
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
     } catch (error) {
       console.error('Error generating AI response:', error);
-      
       const errorMessage: Message = {
         id: `ai-${Date.now()}`,
         from: 'ai',
@@ -110,7 +84,7 @@ export function useChat(apiKey: string) {
     messages,
     input,
     setInput,
-    isProcessing: isSending || isLoading,
+    isProcessing: isSending || aiProcessing,
     onSend,
     setFeedback,
     clearHistory
