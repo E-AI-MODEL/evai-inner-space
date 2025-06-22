@@ -10,6 +10,7 @@ export interface ApiCollaborationConfig {
   api2Used: boolean;
   seedGenerated?: boolean;
   secondaryAnalysis?: boolean;
+  vectorApiUsed?: boolean;
 }
 
 export function useApiCollaboration() {

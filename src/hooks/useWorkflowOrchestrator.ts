@@ -5,6 +5,7 @@ import { useApiCollaboration, type ApiCollaborationConfig } from './useApiCollab
 import { useEmbeddingProcessor } from './useEmbeddingProcessor';
 import { useHybridDecisionEngine } from './useHybridDecisionEngine';
 import { useSelfReflection } from './useSelfReflection';
+import { supabase } from '@/integrations/supabase/client';
 import { Message } from '../types';
 
 export function useWorkflowOrchestrator() {
@@ -29,16 +30,18 @@ export function useWorkflowOrchestrator() {
     setIsProcessing(true);
     const startTime = Date.now();
 
-    const apiCollaboration: ApiCollaborationConfig = {
+    const apiCollaboration: ApiCollaborationConfig & { vectorApiUsed: boolean } = {
       api1Used: false,
       api2Used: false,
       seedGenerated: false,
-      secondaryAnalysis: false
+      secondaryAnalysis: false,
+      vectorApiUsed: false
     };
 
     try {
       // Step 1: Store input embedding (silent)
       if (vectorApiKey?.trim()) {
+        apiCollaboration.vectorApiUsed = true;
         try {
           await storeInputEmbedding(input, vectorApiKey, {
             userId: context.userId,
@@ -52,6 +55,7 @@ export function useWorkflowOrchestrator() {
       // Step 2: Neural similarity search (silent)
       let similarities: any[] = [];
       if (vectorApiKey?.trim()) {
+        apiCollaboration.vectorApiUsed = true;
         try {
           similarities = await performNeuralSearch(input, vectorApiKey);
         } catch (error) {
@@ -142,6 +146,21 @@ export function useWorkflowOrchestrator() {
       }
 
       const processingTime = Date.now() - startTime;
+
+      try {
+        await supabase.rpc('log_evai_workflow', {
+          p_user_id: context.userId || null,
+          p_conversation_id: context.conversationId || null,
+          p_workflow_type: 'neurosymbolic',
+          p_api_collaboration: apiCollaboration,
+          p_processing_time: processingTime,
+          p_rubrics_data: null,
+          p_success: true,
+          p_error_details: null
+        });
+      } catch (logError) {
+        // Silent logging failure
+      }
 
       return {
         hybridDecision,
