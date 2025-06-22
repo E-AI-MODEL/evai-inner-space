@@ -36,7 +36,7 @@ export function useChat(apiKey: string) {
     try {
       // Create conversation history for context
       const conversationHistory = messages.slice(-6).map(msg => ({
-        role: msg.from === 'user' ? 'user' : 'assistant',
+        role: msg.from === 'user' ? 'user' as const : 'assistant' as const,
         content: msg.content
       }));
 

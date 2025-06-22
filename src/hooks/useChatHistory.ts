@@ -1,9 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { Message } from "../types";
 import { loadChatHistory, saveChatHistory } from "../lib/chatHistoryStorage";
 import { loadFeedback } from "../lib/feedbackStorage";
-import { getLabelVisuals } from "../lib/emotion-visuals";
 
 const initialMessages: Message[] = [
   {
@@ -20,16 +18,13 @@ const initialMessages: Message[] = [
     id: "ai-1",
     from: "ai",
     label: null,
-    accentColor: undefined,
     content: "Natuurlijk! Ik ben er om naar je te luisteren. Vertel, wat houdt je bezig op dit moment?",
-    explainText: "Dit is een startbericht om je te verwelkomen.",
     emotionSeed: null,
     animate: true,
-    meta: "Welkom",
-    brilliant: false,
     timestamp: new Date(Date.now() - 60000),
-    replyTo: "user-1",
     feedback: null,
+    explainText: "Dit is een startbericht om je te verwelkomen.",
+    meta: "Welkom",
   },
 ];
 

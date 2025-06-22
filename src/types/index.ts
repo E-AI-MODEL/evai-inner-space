@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   from: "user" | "ai";
@@ -8,6 +7,11 @@ export interface Message {
   animate: boolean;
   timestamp: Date;
   feedback?: "like" | "dislike" | null;
+  // Keep these for admin components
+  meta?: string;
+  symbolicInferences?: string[];
+  explainText?: string;
+  accentColor?: string;
 }
 
 export type ChatHistoryItem = {
