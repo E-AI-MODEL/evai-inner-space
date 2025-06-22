@@ -1,3 +1,4 @@
+
 export interface Message {
   id: string;
   from: "user" | "ai";
@@ -12,6 +13,7 @@ export interface Message {
   symbolicInferences?: string[];
   explainText?: string;
   accentColor?: string;
+  brilliant?: boolean;
 }
 
 export type ChatHistoryItem = {
