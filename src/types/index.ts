@@ -1,4 +1,5 @@
 
+
 export interface Message {
   id: string;
   from: "user" | "ai";
@@ -14,9 +15,11 @@ export interface Message {
   explainText?: string;
   accentColor?: string;
   brilliant?: boolean;
+  replyTo?: string;
 }
 
 export type ChatHistoryItem = {
   role: "user" | "assistant";
   content: string;
 };
+
