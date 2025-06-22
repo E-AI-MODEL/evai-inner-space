@@ -2,8 +2,6 @@
 import React from 'react';
 import ChatBubble from "./ChatBubble";
 import { Message } from '../types';
-import PersonalizedInsights from './PersonalizedInsights';
-import { useInsightGenerator } from '../hooks/useInsightGenerator';
 
 interface ChatViewProps {
     messages: Message[];
@@ -20,68 +18,30 @@ const ChatView: React.FC<ChatViewProps> = ({
     focusedMessageId, 
     onFeedback,
 }) => {
-    const messagesById = React.useMemo(() =>
-        messages.reduce((acc, msg) => {
-            acc[msg.id] = msg;
-            return acc;
-        }, {} as Record<string, Message>),
-    [messages]);
-
-    const { getPriorityInsights } = useInsightGenerator(messages);
-    
-    // Show insights after every 5 messages or when priority insights are available
-    const shouldShowInsights = messages.length > 0 && 
-        (messages.length % 5 === 0 || getPriorityInsights().length > 0);
-    
     return (
         <div className="space-y-3 pb-4">
-
-            {messages.map((msg, index) => {
-                const repliedToMessage = msg.replyTo ? messagesById[msg.replyTo] : undefined;
-                const isLastMessage = index === messages.length - 1;
-                const showInsightsAfter = shouldShowInsights && isLastMessage && !isProcessing;
-
-                return (
-                    <div key={msg.id} className="space-y-2">
-                        <ChatBubble
-                            id={msg.id}
-                            ref={(el) => {
-                                if (el) {
-                                    messageRefs.current.set(msg.id, el);
-                                } else {
-                                    messageRefs.current.delete(msg.id);
-                                }
-                            }}
-                            isFocused={msg.id === focusedMessageId}
-                            from={msg.from}
-                            label={msg.label}
-                            accentColor={msg.accentColor}
-                            meta={msg.meta}
-                            emotionSeed={msg.emotionSeed}
-                            animate={!!msg.animate}
-                            explainText={msg.explainText}
-                            brilliant={!!msg.brilliant}
-                            repliedToContent={repliedToMessage?.content}
-                            feedback={msg.feedback}
-                            symbolicInferences={msg.symbolicInferences}
-                            onFeedback={msg.from === 'ai' && onFeedback ? (feedbackType) => onFeedback(msg.id, feedbackType) : undefined}
-                        >
-                            {msg.content}
-                        </ChatBubble>
-
-                        {/* Contextual Insights - Show after certain messages */}
-                        {showInsightsAfter && (
-                            <div className="mt-6 mb-4">
-                                <PersonalizedInsights 
-                                    messages={messages} 
-                                    compact={true}
-                                    className="border-l-4 border-blue-400 pl-4"
-                                />
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
+            {messages.map((msg) => (
+                <ChatBubble
+                    key={msg.id}
+                    id={msg.id}
+                    ref={(el) => {
+                        if (el) {
+                            messageRefs.current.set(msg.id, el);
+                        } else {
+                            messageRefs.current.delete(msg.id);
+                        }
+                    }}
+                    isFocused={msg.id === focusedMessageId}
+                    from={msg.from}
+                    label={msg.label}
+                    emotionSeed={msg.emotionSeed}
+                    animate={!!msg.animate}
+                    feedback={msg.feedback}
+                    onFeedback={msg.from === 'ai' && onFeedback ? (feedbackType) => onFeedback(msg.id, feedbackType) : undefined}
+                >
+                    {msg.content}
+                </ChatBubble>
+            ))}
             
             {isProcessing && (
                 <div className="flex justify-start mb-4">
@@ -91,7 +51,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       <span className="text-sm md:text-base text-blue-700 ml-2">
-                        AI genereert antwoord...
+                        AI denkt na...
                       </span>
                     </div>
                   </div>
