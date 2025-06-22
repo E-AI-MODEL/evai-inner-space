@@ -53,11 +53,6 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
           <CardDescription className="text-gray-600 text-sm sm:text-base">
             Voer het admin wachtwoord in om toegang te krijgen tot het dashboard.
           </CardDescription>
-          <div className="mt-2 p-2 bg-blue-50 rounded-lg">
-            <p className="text-xs text-blue-700">
-              Standaard wachtwoord: <code className="bg-blue-100 px-1 rounded">admin123</code>
-            </p>
-          </div>
         </CardHeader>
         
         <CardContent className="space-y-4">
