@@ -9,7 +9,6 @@ import AdminRubricsOverview from './AdminRubricsOverview';
 import AdvancedSeedManager from './AdvancedSeedManager';
 import AdminAnalytics from './AdminAnalytics';
 import ConnectionStatusDashboard from './ConnectionStatusDashboard';
-import AutonomousAIMode from './AutonomousAIMode';
 import NeurosymbolicArchitectureDiagram from './NeurosymbolicArchitectureDiagram';
 import RubricSettings from '../RubricSettings';
 import SeedLearningLog from './SeedLearningLog';
@@ -127,7 +126,6 @@ const AdminTabsContent: React.FC<AdminTabsContentProps> = ({ hasRubricActivity, 
           <p className="text-sm text-gray-600 break-words">Wat weet de AI en hoe leert hij (handmatig & autonoom)?</p>
         </div>
         <div className="overflow-hidden space-y-4">
-          <AutonomousAIMode />
           <AdvancedSeedManager />
           <SeedLearningLog />
         </div>
