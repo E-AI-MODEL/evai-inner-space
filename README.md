@@ -45,8 +45,9 @@ VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
 
 ### Supabase setup
 
-Create the tables `emotion_seeds`, `seed_feedback`, `seed_rubrics` and `rubrics`
-in your Supabase project. Example schemas are provided in `docs/supabase.sql`.
+Create the required tables and functions in your Supabase project. The full
+schema, including RLS policies and indexes, is documented in
+`docs/supabase.sql`.
 After setting up the tables you can import rubric JSON files with:
 
 ```bash
