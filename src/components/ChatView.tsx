@@ -3,9 +3,7 @@ import React from 'react';
 import ChatBubble from "./ChatBubble";
 import { Message } from '../types';
 import PersonalizedInsights from './PersonalizedInsights';
-import ReflectionStatusIndicator from './ReflectionStatusIndicator';
 import { useInsightGenerator } from '../hooks/useInsightGenerator';
-import { PendingReflection } from '../hooks/useBackgroundReflectionTrigger';
 
 interface ChatViewProps {
     messages: Message[];
@@ -13,9 +11,6 @@ interface ChatViewProps {
     messageRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
     focusedMessageId: string | null;
     onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
-    // Reflection system props
-    pendingReflections?: PendingReflection[];
-    isReflectionProcessing?: boolean;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({ 
@@ -24,8 +19,6 @@ const ChatView: React.FC<ChatViewProps> = ({
     messageRefs, 
     focusedMessageId, 
     onFeedback,
-    pendingReflections = [],
-    isReflectionProcessing = false
 }) => {
     const messagesById = React.useMemo(() =>
         messages.reduce((acc, msg) => {
@@ -42,16 +35,6 @@ const ChatView: React.FC<ChatViewProps> = ({
     
     return (
         <div className="space-y-3 pb-4">
-            {/* Reflection Status Indicator */}
-            {(pendingReflections.length > 0 || isReflectionProcessing) && (
-                <div className="flex justify-center mb-4">
-                    <ReflectionStatusIndicator 
-                        pendingReflections={pendingReflections}
-                        isProcessing={isReflectionProcessing}
-                        className="sticky top-4 z-10"
-                    />
-                </div>
-            )}
 
             {messages.map((msg, index) => {
                 const repliedToMessage = msg.replyTo ? messagesById[msg.replyTo] : undefined;
@@ -108,7 +91,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                       <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       <span className="text-sm md:text-base text-blue-700 ml-2">
-                        {isReflectionProcessing ? "AI genereert reflectievragen..." : "AI analyseert met OpenAI en genereert antwoord..."}
+                        AI genereert antwoord...
                       </span>
                     </div>
                   </div>

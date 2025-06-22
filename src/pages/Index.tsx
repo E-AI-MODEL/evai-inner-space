@@ -42,11 +42,9 @@ const Index = () => {
     setInput, 
     isProcessing, 
     onSend, 
-    seedConfetti, 
-    setFeedback, 
-    clearHistory,
-    pendingReflections,
-    isReflectionProcessing
+    seedConfetti,
+    setFeedback,
+    clearHistory
   } = useChat(apiKey);
 
   // Auto-scroll to bottom when new messages are added
@@ -225,8 +223,6 @@ const Index = () => {
                 messageRefs={messageRefs}
                 focusedMessageId={focusedMessageId}
                 onFeedback={setFeedback}
-                pendingReflections={pendingReflections}
-                isReflectionProcessing={isReflectionProcessing}
               />
               <div ref={messagesEndRef} />
             </div>

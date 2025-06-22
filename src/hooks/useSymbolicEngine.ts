@@ -2,7 +2,6 @@
 import { Message } from '../types';
 import { useRubricSymbolicRules } from './useRubricSymbolicRules';
 import { useEmotionalContextEngine } from './useEmotionalContextEngine';
-import { useFeedbackLearning } from './useFeedbackLearning';
 
 export interface SymbolicRule {
   name: string;
@@ -13,7 +12,6 @@ export interface SymbolicRule {
 export function useSymbolicEngine() {
   const { rubricBasedRules } = useRubricSymbolicRules();
   const { analyzeContext } = useEmotionalContextEngine();
-  const { getAdjustedThreshold } = useFeedbackLearning();
 
   const basicRules: SymbolicRule[] = [
     {
@@ -105,7 +103,7 @@ export function useSymbolicEngine() {
       check: (messages, latest) => {
         if (latest.from !== 'user') return null;
         const ctx = analyzeContext(messages);
-        const threshold = getAdjustedThreshold('TherapeuticEscalation', 70);
+        const threshold = 70;
         if (ctx.riskScore > threshold || ctx.escalate) {
           return `🚨 Escalatie nodig - risicoscore ${Math.round(ctx.riskScore)}%, intensiteit ${ctx.intensityScore}`;
         }

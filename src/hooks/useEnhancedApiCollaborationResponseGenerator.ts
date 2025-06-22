@@ -4,7 +4,19 @@ import { Message } from '../types';
 import { AdvancedSeed } from '../types/seed';
 import { EmotionDetection } from './useOpenAI';
 import { getLabelVisuals } from '../lib/emotion-visuals';
-import { PendingReflection } from './useBackgroundReflectionTrigger';
+
+interface PendingReflection {
+  id: string;
+  emotion: string;
+  question: string;
+  context: string;
+  confidence: number;
+  triggeredAt: Date;
+  batchInfo: {
+    seedCount: number;
+    averageUsage: number;
+  };
+}
 
 export function useEnhancedApiCollaborationResponseGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);

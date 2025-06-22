@@ -1,7 +1,6 @@
 
 import React, { forwardRef } from "react";
 import { Gem, CornerDownRight, ThumbsUp, ThumbsDown } from "lucide-react";
-import TechnicalDetailsCollapsible from "./TechnicalDetailsCollapsible";
 
 interface ChatBubbleProps {
   id: string;
@@ -132,16 +131,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
         </div>
       </div>
 
-      {/* Technical Details Section - Only for AI messages with technical information */}
-      {from === 'ai' && (
-        <TechnicalDetailsCollapsible
-          messageId={id}
-          explainText={explainText}
-          meta={typeof meta === 'string' ? meta : undefined}
-          symbolicInferences={symbolicInferences}
-          label={label}
-        />
-      )}
+
     </div>
   );
 });
