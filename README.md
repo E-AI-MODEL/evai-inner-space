@@ -63,6 +63,12 @@ Open the Admin Dashboard and navigate to the **Systeem** tab. Use the `Test Supa
 
 User feedback on messages is stored in the `seed_feedback` table.
 
+### Supabase authentication
+
+The application uses Supabase Auth to manage user accounts. New visitors should
+first create an account via the **Sign Up** form. Attempting to log in without a
+registered or verified account will fail.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
