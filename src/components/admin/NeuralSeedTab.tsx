@@ -17,6 +17,7 @@ interface NeuralSeedTabProps {
 const NeuralSeedTab: React.FC<NeuralSeedTabProps> = ({ openAiKey2, seeds, onSeedGenerated }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState('');
 
   const generateSeedWithAI = async (emotion: string, triggers: string[]) => {
     if (!openAiKey2.trim()) {
@@ -142,13 +143,16 @@ const NeuralSeedTab: React.FC<NeuralSeedTabProps> = ({ openAiKey2, seeds, onSeed
       if (!response.ok) throw new Error('OpenAI API fout');
 
       const data = await response.json();
-      const recommendations = data.choices[0]?.message?.content?.trim() || 'Geen aanbevelingen beschikbaar.';
-      
+      const recommendations =
+        data.choices[0]?.message?.content?.trim() ||
+        'Geen aanbevelingen beschikbaar.';
+      setAnalysisResults(recommendations);
+
       toast({
         title: "Patroon Analyse Voltooid",
-        description: "Bekijk de console voor gedetailleerde aanbevelingen."
+        description: "Analyse voltooid. Resultaten hieronder."
       });
-      
+
       console.log('🧠 Neurosymbolische Patroon Analyse:', recommendations);
     } catch (error) {
       toast({
@@ -195,14 +199,19 @@ const NeuralSeedTab: React.FC<NeuralSeedTabProps> = ({ openAiKey2, seeds, onSeed
             <p className="text-sm text-gray-600 mb-4">
               Analyseer conversatiepatronen en ontbrekende emoties
             </p>
-            <Button 
-              onClick={analyzeConversationPattern} 
+          <Button
+              onClick={analyzeConversationPattern}
               className="w-full"
               disabled={isAnalyzing}
             >
               <BarChart size={16} className="mr-2" />
               {isAnalyzing ? 'Bezig...' : 'Analyseer Patronen'}
             </Button>
+            {analysisResults && (
+              <pre className="mt-2 p-2 bg-white text-xs rounded border">
+                {analysisResults}
+              </pre>
+            )}
           </div>
         </div>
       </CardContent>
