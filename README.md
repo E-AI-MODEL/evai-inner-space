@@ -36,15 +36,30 @@ npm i
 npm run dev
 ```
 
-Create a `.env` file based on `.env.example` and provide your Supabase credentials:
+Create a `.env` file based on `.env.example` and add your Supabase credentials:
 
 ```
 VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
 VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
 ```
-These variables are required for the frontend to connect to Supabase.
+These variables allow the frontend to connect to your own Supabase project. If
+you omit them, the application falls back to a built-in demo Supabase instance
+defined in `src/integrations/supabase/client.ts`.
 
 When running inside Lovable at [lovable.dev](https://lovable.dev) set `LOVABLE_DEV_SERVER=true` in your `.env` file so the development server integrates with the online environment.
+
+### API Keys
+
+The application can integrate with several external APIs. Provide the following
+keys in your `.env` file when available:
+
+```
+API_1_KEY=<your API-1 key>
+API_2_KEY=<your API-2 key>
+API_3_KEY=<your API-3 key>
+```
+
+These keys are optional but enable enhanced features when present.
 
 ### Supabase setup
 
