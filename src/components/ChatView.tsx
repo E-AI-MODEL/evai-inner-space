@@ -37,6 +37,9 @@ const ChatView: React.FC<ChatViewProps> = ({
                     emotionSeed={msg.emotionSeed}
                     animate={!!msg.animate}
                     feedback={msg.feedback}
+                    symbolicInferences={msg.symbolicInferences}
+                    explainText={msg.explainText}
+                    meta={msg.meta}
                     onFeedback={msg.from === 'ai' && onFeedback ? (feedbackType) => onFeedback(msg.id, feedbackType) : undefined}
                 >
                     {msg.content}

@@ -9,7 +9,7 @@ interface ChatBubbleProps {
   label: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" | null;
   accentColor?: string;
   children: React.ReactNode;
-  meta?: React.ReactNode;
+  meta?: React.ReactNode | { gapAnalysis?: string; [key: string]: any };
   explainText?: string;
   emotionSeed?: string;
   animate?: boolean;
@@ -52,6 +52,11 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
       ? ""
       : "bg-zinc-100 text-zinc-800";
 
+  // Extract gap analysis from meta if it's an object
+  const gapAnalysis = typeof meta === 'object' && meta && 'gapAnalysis' in meta 
+    ? meta.gapAnalysis 
+    : undefined;
+
   return (
     <div
       ref={ref}
@@ -71,6 +76,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
             label={label}
             reasoning={explainText}
             techniques={symbolicInferences}
+            gapAnalysis={gapAnalysis}
           />
         </div>
       )}
@@ -110,7 +116,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
               ? { backgroundColor: accentColor, color: "#222" }
               : undefined
           }
-          data-ttl={meta}
+          data-ttl={typeof meta === 'string' ? meta : undefined}
         >
           {children}
           
@@ -138,8 +144,6 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
           )}
         </div>
       </div>
-
-
     </div>
   );
 });

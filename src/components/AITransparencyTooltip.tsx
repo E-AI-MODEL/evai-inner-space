@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -9,13 +8,15 @@ interface AITransparencyTooltipProps {
   reasoning?: string;
   techniques?: string[];
   reliability?: number;
+  gapAnalysis?: string;
 }
 
 const AITransparencyTooltip: React.FC<AITransparencyTooltipProps> = ({
   label,
   reasoning,
   techniques = [],
-  reliability = 0.85
+  reliability = 0.85,
+  gapAnalysis
 }) => {
   const getDefaultReasoning = (label: string) => {
     switch (label) {
@@ -93,6 +94,15 @@ const AITransparencyTooltip: React.FC<AITransparencyTooltipProps> = ({
               <span className="text-xs font-medium text-gray-800">{reliabilityPercentage}%</span>
             </div>
           </div>
+
+          {gapAnalysis && (
+            <div>
+              <h4 className="font-semibold text-sm mb-1 text-gray-900">Analyse Details</h4>
+              <p className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded">
+                {gapAnalysis}
+              </p>
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>
