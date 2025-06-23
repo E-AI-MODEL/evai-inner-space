@@ -5,6 +5,7 @@ import { useSeeds } from "./useSeeds";
 import { AdvancedSeed } from "../types/seed";
 import { Message } from "../types";
 import { v4 as uuidv4 } from "uuid";
+import { toast } from "@/hooks/use-toast";
 
 export function useSecondaryAnalysisRunner() {
   const { analyzeNeurosymbolic } = useOpenAISecondary();
@@ -47,6 +48,7 @@ export function useSecondaryAnalysisRunner() {
         const injected = await injectSeedToDatabase(secondarySeed);
         if (injected) {
           console.log('✅ Secondary analysis seed injected:', analysis.seedSuggestion);
+          toast({ title: 'Nieuwe seed toegevoegd', description: secondarySeed.emotion });
           await refetchSeeds();
         }
       }
