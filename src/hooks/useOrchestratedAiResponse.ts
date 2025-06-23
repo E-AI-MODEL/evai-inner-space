@@ -6,11 +6,18 @@ import { Message, ChatHistoryItem } from '../types';
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { AdvancedSeed } from '../types/seed';
+import { useSeeds } from './useSeeds';
+import { useEmbeddingProcessor } from './useEmbeddingProcessor';
+import { useHybridDecisionEngine } from './useHybridDecisionEngine';
 
 export function useOrchestratedAiResponse(apiKey: string, apiKey2?: string) {
   const { detectEmotion, isLoading } = useOpenAI();
   const { analyzeNeurosymbolic, generateSeed } = useOpenAISecondary();
   const { injectSeedToDatabase } = useOpenAISeedGenerator();
+  const { data: seeds = [] } = useSeeds();
+  const { performNeuralSearch } = useEmbeddingProcessor();
+  const { processHybridDecision } = useHybridDecisionEngine();
+  const [vectorApiKey] = useState(() => localStorage.getItem('vector-api-key') || '');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const analysisPhase = (messages: Message[]): ChatHistoryItem[] => {
@@ -180,7 +187,27 @@ export function useOrchestratedAiResponse(apiKey: string, apiKey2?: string) {
       strategyPhase(history);
       const ai = await promptPhase(userMessage, history);
       const enhancement = await enhancementPhase(userMessage, history, ai);
-      return packagingPhase(ai, enhancement);
+
+      const similarities = await performNeuralSearch(
+        userMessage.content,
+        vectorApiKey
+      );
+      const topSimilarities = similarities.slice(0, 5);
+
+      const decision = await processHybridDecision(
+        userMessage.content,
+        seeds,
+        topSimilarities,
+        { primaryEmotion: ai.emotion }
+      );
+
+      const finalAi: EmotionDetection = {
+        ...ai,
+        response: decision?.selectedResponse || ai.response,
+        reasoning: decision?.reasoning || ai.reasoning
+      };
+
+      return packagingPhase(finalAi, enhancement);
     } finally {
       setIsProcessing(false);
     }
