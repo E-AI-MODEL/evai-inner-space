@@ -9,6 +9,7 @@ export interface EmotionDetection {
   meta: string;
   label: "Valideren" | "Reflectievraag" | "Suggestie";
   reasoning: string;
+  symbolicInferences?: string[];
 }
 
 export function useOpenAI() {
