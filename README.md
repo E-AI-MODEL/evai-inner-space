@@ -12,7 +12,7 @@ There are several ways of editing your application.
 
 Simply visit the [Lovable Project](https://lovable.dev/projects/68e54058-4e8d-4ef2-86eb-7ad636513683) and start prompting.
 
-Changes made via Lovable will be committed automatically to this repo.
+All synchronization happens through [lovable.dev](https://lovable.dev), and changes made via Lovable will be committed automatically to this repo.
 
 **Use your preferred IDE**
 
@@ -43,6 +43,8 @@ VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
 VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
 ```
 These variables are required for the frontend to connect to Supabase.
+
+When running inside Lovable at [lovable.dev](https://lovable.dev) set `LOVABLE_DEV_SERVER=true` in your `.env` file so the development server integrates with the online environment.
 
 ### Supabase setup
 
