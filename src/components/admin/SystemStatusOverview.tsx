@@ -25,31 +25,31 @@ const SystemStatusOverview: React.FC<SystemStatusOverviewProps> = ({
         <span className="font-medium text-gray-800">System Status</span>
       </div>
       
-      <div className="grid grid-cols-2 gap-2 text-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <div className="flex items-center justify-between">
-          <span>API Key 1</span>
-          <Badge variant={openAiActive ? "default" : "secondary"} className="text-xs">
+          <span className="text-xs sm:text-sm truncate mr-2">API Key 1</span>
+          <Badge variant={openAiActive ? "default" : "secondary"} className="text-xs flex-shrink-0">
             {openAiActive ? "Active" : "Inactive"}
           </Badge>
         </div>
         
         <div className="flex items-center justify-between">
-          <span>API Key 2</span>
-          <Badge variant={openAi2Active ? "default" : "secondary"} className="text-xs">
+          <span className="text-xs sm:text-sm truncate mr-2">API Key 2</span>
+          <Badge variant={openAi2Active ? "default" : "secondary"} className="text-xs flex-shrink-0">
             {openAi2Active ? "Active" : "Inactive"}
           </Badge>
         </div>
 
         <div className="flex items-center justify-between">
-          <span>Vector API</span>
-          <Badge variant={vectorActive ? "default" : "secondary"} className="text-xs">
+          <span className="text-xs sm:text-sm truncate mr-2">Vector API</span>
+          <Badge variant={vectorActive ? "default" : "secondary"} className="text-xs flex-shrink-0">
             {vectorActive ? "Active" : "Inactive"}
           </Badge>
         </div>
 
         <div className="flex items-center justify-between">
-          <span>Database</span>
-          <Badge variant={supabaseUrl ? "default" : "secondary"} className="text-xs">
+          <span className="text-xs sm:text-sm truncate mr-2">Database</span>
+          <Badge variant={supabaseUrl ? "default" : "secondary"} className="text-xs flex-shrink-0">
             {supabaseUrl ? "Connected" : "Disconnected"}
           </Badge>
         </div>
@@ -57,8 +57,8 @@ const SystemStatusOverview: React.FC<SystemStatusOverviewProps> = ({
       
       <div className="pt-3 mt-3 border-t border-purple-200">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-gray-800">Full System</span>
-          <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-800 text-xs sm:text-sm truncate mr-2">Full System</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
             {allActive ? (
               <CheckCircle size={14} className="text-green-600" />
             ) : (

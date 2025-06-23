@@ -1,6 +1,7 @@
 
 import React, { forwardRef } from "react";
 import { Gem, CornerDownRight, ThumbsUp, ThumbsDown } from "lucide-react";
+import AITransparencyTooltip from "./AITransparencyTooltip";
 
 interface ChatBubbleProps {
   id: string;
@@ -60,11 +61,18 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
       data-seed={emotionSeed}
     >
       {from === "ai" && label && (
-        <span
-          className={`mb-0.5 ml-2 px-2 py-0.5 rounded-full text-xs font-medium tracking-wide opacity-80 ${LABEL_CLASSES[label] ?? "bg-zinc-100 text-zinc-600"}`}
-        >
-          {label}
-        </span>
+        <div className="mb-0.5 ml-2 flex items-center">
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-medium tracking-wide opacity-80 ${LABEL_CLASSES[label] ?? "bg-zinc-100 text-zinc-600"}`}
+          >
+            {label}
+          </span>
+          <AITransparencyTooltip 
+            label={label}
+            reasoning={explainText}
+            techniques={symbolicInferences}
+          />
+        </div>
       )}
       <div className={`relative w-fit max-w-[70vw]`}>
         {/* Brilliant/diamond sparkle */}
