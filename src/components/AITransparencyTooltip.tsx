@@ -58,18 +58,23 @@ const AITransparencyTooltip: React.FC<AITransparencyTooltipProps> = ({
           <Info size={12} className="text-black/60" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-4" side="top" align="start">
+      <PopoverContent 
+        className="w-80 p-4 bg-white border border-gray-300 shadow-lg z-50" 
+        side="top" 
+        align="start"
+        sideOffset={8}
+      >
         <div className="space-y-3">
           <div>
-            <h4 className="font-semibold text-sm mb-1">Waarom dit label?</h4>
-            <p className="text-xs text-gray-600">{finalReasoning}</p>
+            <h4 className="font-semibold text-sm mb-1 text-gray-900">Waarom dit label?</h4>
+            <p className="text-xs text-gray-700 leading-relaxed">{finalReasoning}</p>
           </div>
           
           <div>
-            <h4 className="font-semibold text-sm mb-2">AI Technieken gebruikt:</h4>
+            <h4 className="font-semibold text-sm mb-2 text-gray-900">AI Technieken gebruikt:</h4>
             <div className="flex flex-wrap gap-1">
               {finalTechniques.map((technique, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
+                <Badge key={index} variant="secondary" className="text-xs bg-gray-100 text-gray-800 border border-gray-200">
                   {technique}
                 </Badge>
               ))}
@@ -77,7 +82,7 @@ const AITransparencyTooltip: React.FC<AITransparencyTooltipProps> = ({
           </div>
           
           <div>
-            <h4 className="font-semibold text-sm mb-1">Betrouwbaarheid</h4>
+            <h4 className="font-semibold text-sm mb-1 text-gray-900">Betrouwbaarheid</h4>
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-gray-200 rounded-full h-2">
                 <div 
@@ -85,7 +90,7 @@ const AITransparencyTooltip: React.FC<AITransparencyTooltipProps> = ({
                   style={{ width: `${reliabilityPercentage}%` }}
                 />
               </div>
-              <span className="text-xs font-medium">{reliabilityPercentage}%</span>
+              <span className="text-xs font-medium text-gray-800">{reliabilityPercentage}%</span>
             </div>
           </div>
         </div>

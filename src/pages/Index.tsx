@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -16,6 +15,7 @@ import DraggableEmotionHistoryButton from "../components/DraggableEmotionHistory
 const Index = () => {
   const [showIntro, setShowIntro] = useState(true);
   const [apiKey, setApiKey] = useState("");
+  const [apiKey2, setApiKey2] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -26,8 +26,12 @@ const Index = () => {
 
   useEffect(() => {
     const savedApiKey = localStorage.getItem("openai-api-key");
+    const savedApiKey2 = localStorage.getItem("openai-api-key-2"); 
     if (savedApiKey) {
       setApiKey(savedApiKey);
+    }
+    if (savedApiKey2) {
+      setApiKey2(savedApiKey2);
     }
   }, []);
   
@@ -39,7 +43,7 @@ const Index = () => {
     onSend, 
     setFeedback,
     clearHistory
-  } = useChat(apiKey);
+  } = useChat(apiKey, apiKey2);
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {

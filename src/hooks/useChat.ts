@@ -1,13 +1,12 @@
-
 import { useState } from "react";
 import { useChatHistory } from "./useChatHistory";
 import { useOrchestratedAiResponse } from "./useOrchestratedAiResponse";
 import { Message } from "../types";
 import { toast } from "@/hooks/use-toast";
 
-export function useChat(apiKey: string) {
+export function useChat(apiKey: string, apiKey2?: string) {
   const { messages, setMessages, clearHistory: clearChatHistory } = useChatHistory();
-  const { orchestrateResponse, isProcessing: aiProcessing } = useOrchestratedAiResponse(apiKey);
+  const { orchestrateResponse, isProcessing: aiProcessing } = useOrchestratedAiResponse(apiKey, apiKey2);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
 
