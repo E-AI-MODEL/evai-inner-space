@@ -29,7 +29,13 @@ export function useSecondaryAnalysisRunner() {
           triggers: [analysis.seedSuggestion],
           response: { nl: analysis.insights.join(' ') },
           context: { severity: 'medium', situation: 'therapy' },
-          meta: { priority: 1, weight: 1.0, confidence: analysis.confidence || 0.7, usageCount: 0 },
+          meta: { 
+            priority: 1, 
+            weight: 1.0, 
+            confidence: analysis.confidence || 0.7, 
+            usageCount: 0,
+            ttl: 30
+          },
           tags: ['secondary-analysis', 'auto-generated'],
           createdAt: new Date(),
           updatedAt: new Date(),

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { AdvancedSeed } from '../types/seed';
@@ -80,7 +79,8 @@ export function useEnhancedSeedGeneration() {
       validation: 'Valideren',
       reflection: 'Reflectievraag', 
       suggestion: 'Suggestie',
-      intervention: 'Interventie'
+      intervention: 'Interventie',
+      error: 'Fout'
     };
     
     return {
@@ -329,7 +329,8 @@ BELANGRIJKE VEREISTEN:
       validation: `Ik kan begrijpen dat je je ${emotion} voelt. Het is helemaal oké om deze emotie te ervaren.`,
       reflection: `Wat denk je dat je zou helpen om met dit gevoel van ${emotion} om te gaan?`,
       suggestion: `Probeer eens een paar diepe ademhalingen te nemen wanneer je je ${emotion} voelt.`,
-      intervention: `Het lijkt erop dat je nu extra ondersteuning nodig hebt. Laten we samen kijken naar wat je kan helpen.`
+      intervention: `Het lijkt erop dat je nu extra ondersteuning nodig hebt. Laten we samen kijken naar wat je kan helpen.`,
+      error: `Er lijkt een fout opgetreden te zijn. Laten we proberen dit op te lossen.`
     };
     
     return fallbacks[type];

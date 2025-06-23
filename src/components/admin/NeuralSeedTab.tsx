@@ -70,7 +70,8 @@ const NeuralSeedTab: React.FC<NeuralSeedTabProps> = ({ openAiKey2, seeds, onSeed
           priority: 1,
           weight: 1.0,
           confidence: 0.8,
-          usageCount: 0
+          usageCount: 0,
+          ttl: 30
         },
         tags: ['ai-generated'],
         createdAt: new Date(),

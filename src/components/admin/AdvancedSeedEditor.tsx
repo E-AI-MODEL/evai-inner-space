@@ -113,6 +113,7 @@ const AdvancedSeedEditor: React.FC<AdvancedSeedEditorProps> = ({ seed, onSave, o
                   if (type === 'reflection') label = 'Reflectievraag';
                   else if (type === 'suggestion') label = 'Suggestie';
                   else if (type === 'intervention') label = 'Interventie';
+                  else if (type === 'error') label = 'Fout';
                   
                   setFormData(prev => ({ ...prev, type, label }));
                 }}
@@ -122,6 +123,7 @@ const AdvancedSeedEditor: React.FC<AdvancedSeedEditorProps> = ({ seed, onSave, o
                 <option value="reflection">Reflectie</option>
                 <option value="suggestion">Suggestie</option>
                 <option value="intervention">Interventie</option>
+                <option value="error">Fout</option>
               </select>
             </div>
           </div>
