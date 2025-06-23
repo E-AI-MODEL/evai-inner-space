@@ -66,7 +66,12 @@ const AdminSystemMonitor: React.FC<AdminSystemMonitorProps> = ({ messages }) => 
     timestamp: msg.timestamp,
     content: msg.content.substring(0, 50) + (msg.content.length > 50 ? '...' : ''),
     status: msg.emotionSeed === 'error' ? 'error' as const : 'success' as const,
-    meta: msg.meta || ''
+    meta:
+      typeof msg.meta === 'string'
+        ? msg.meta
+        : msg.meta
+        ? JSON.stringify(msg.meta)
+        : ''
   }));
 
   return (

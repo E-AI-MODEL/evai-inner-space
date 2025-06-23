@@ -10,11 +10,13 @@ export interface Message {
   feedback?: "like" | "dislike" | null;
   symbolicInferences?: string[];
   explainText?: string;
-  meta?: {
-    gapAnalysis?: string;
-    autoSeed?: string;
-    [key: string]: any;
-  };
+  meta?:
+    | string
+    | {
+        gapAnalysis?: string;
+        autoSeed?: string;
+        [key: string]: any;
+      };
 }
 
 export interface ChatHistoryItem {
