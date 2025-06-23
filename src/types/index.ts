@@ -1,5 +1,4 @@
 
-
 export interface Message {
   id: string;
   from: "user" | "ai";
@@ -21,5 +20,12 @@ export interface Message {
 export type ChatHistoryItem = {
   role: "user" | "assistant";
   content: string;
+  from?: "user" | "ai"; // Add from property for compatibility
 };
 
+export interface EmotionDetection {
+  emotion: string;
+  response: string;
+  label: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout";
+  symbolicInferences?: string[]; // Add symbolicInferences property
+}
