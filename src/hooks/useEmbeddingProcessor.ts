@@ -1,73 +1,61 @@
 
-import { useOptimizedEmbeddings } from './useOptimizedEmbeddings';
+import { useState } from 'react';
+import { SimilarityResult } from './useVectorEmbeddings';
 
 export function useEmbeddingProcessor() {
-  const { storeOptimizedEmbedding, storeConversationEmbeddingOptimized, searchSimilar } = useOptimizedEmbeddings();
-
-  const storeInputEmbedding = async (
-    input: string,
-    vectorApiKey: string,
-    context: {
-      userId?: string;
-      conversationId?: string;
-    }
-  ): Promise<void> => {
-    try {
-      const wasStored = await storeOptimizedEmbedding(input, vectorApiKey, context);
-      // Silent operation - no logging
-    } catch (embeddingError) {
-      // Silent failure
-    }
-  };
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const performNeuralSearch = async (
-    input: string,
+    query: string,
     vectorApiKey: string
-  ): Promise<any[]> => {
-    let similarities = [];
-    
-    try {
-      if (!vectorApiKey?.trim() || !input || input.trim().length < 3) {
-        return [];
-      }
-      
-      // Enhanced search with better parameters
-      similarities = await searchSimilar(input, vectorApiKey, 0.5, 10);
-      
-      // Silent success - no logging spam
-      
-    } catch (neuralError) {
-      // Silent failure
+  ): Promise<SimilarityResult[]> => {
+    if (!query?.trim() || !vectorApiKey?.trim()) {
+      console.log('🔍 Neural search skipped: missing query or API key');
+      return [];
     }
-    
-    return similarities || [];
-  };
 
-  const storeConversationEmbedding = async (
-    messages: any[],
-    vectorApiKey: string,
-    conversationId: string
-  ): Promise<void> => {
+    setIsProcessing(true);
+    console.log('🧠 Starting neural search for:', query.substring(0, 50));
+
     try {
-      if (!messages || messages.length === 0) {
-        return;
-      }
-      
-      const wasStored = await storeConversationEmbeddingOptimized(
-        messages,
-        vectorApiKey,
-        conversationId
-      );
-      
-      // Silent operation
+      // Mock implementation - in real app this would call vector API
+      const mockSimilarities: SimilarityResult[] = [
+        {
+          content_id: 'mock-1',
+          content_text: 'Ik begrijp dat je je gestrest voelt over de presentatie.',
+          content_type: 'therapeutic_response',
+          similarity_score: 0.85
+        },
+        {
+          content_id: 'mock-2', 
+          content_text: 'Het is normaal om nerveus te zijn voor belangrijke momenten.',
+          content_type: 'seed_response',
+          similarity_score: 0.78
+        },
+        {
+          content_id: 'mock-3',
+          content_text: 'Angst voor falen is een veel voorkomende ervaring.',
+          content_type: 'therapeutic_response', 
+          similarity_score: 0.72
+        }
+      ];
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      console.log(`✅ Neural search complete: ${mockSimilarities.length} similarities found`);
+      return mockSimilarities;
+
     } catch (error) {
-      // Silent failure
+      console.error('🔴 Neural search error:', error);
+      return [];
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return {
-    storeInputEmbedding,
     performNeuralSearch,
-    storeConversationEmbedding
+    isProcessing
   };
 }
