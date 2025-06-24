@@ -39,13 +39,31 @@ export function useAdvancedSeedEngine() {
         console.log('✅ Seed match found:', matchedSeed.emotion);
         
         // Convert AdvancedSeed to EmotionDetection format for compatibility
+        // Map the label to the correct type
+        let compatibleLabel: "Valideren" | "Reflectievraag" | "Suggestie";
+        switch (matchedSeed.label) {
+          case 'Valideren':
+            compatibleLabel = 'Valideren';
+            break;
+          case 'Reflectievraag':
+            compatibleLabel = 'Reflectievraag';
+            break;
+          case 'Suggestie':
+            compatibleLabel = 'Suggestie';
+            break;
+          default:
+            // For 'Interventie' and 'Fout', default to 'Suggestie'
+            compatibleLabel = 'Suggestie';
+            break;
+        }
+
         const emotionDetection: EmotionDetection = {
           emotion: matchedSeed.emotion,
           confidence: matchedSeed.meta.confidence,
           response: matchedSeed.response.nl,
           triggers: matchedSeed.triggers,
           meta: `Seed match: ${matchedSeed.emotion} (weight: ${matchedSeed.meta.weight})`,
-          label: matchedSeed.label,
+          label: compatibleLabel,
           reasoning: `Matched seed: ${matchedSeed.emotion} with triggers: ${matchedSeed.triggers.join(', ')}`,
           symbolicInferences: [
             `🎯 Seed Match: ${matchedSeed.emotion}`,
