@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Message } from '../types';
 import { AdvancedSeed } from '../types/seed';
@@ -39,15 +38,12 @@ export function useEnhancedApiCollaborationResponseGenerator() {
         id: `ai-reflection-${Date.now()}`,
         from: "ai",
         label: "Reflectievraag",
-        accentColor: getLabelVisuals("Reflectievraag").accentColor,
         content: `${reflection.question}${collaborationNote}`,
         explainText: `${reflection.context} | Automatische reflectie via Enhanced API Collaboration (${confidence}% confidence)`,
         emotionSeed: reflection.emotion,
         animate: true,
         meta: `Reflectie: ${reflection.emotion} | ${confidence}% confidence`,
-        brilliant: true,
         timestamp: new Date(),
-        replyTo: userMessage.id,
         feedback: null,
         symbolicInferences: [
           `🤔 Automatische Reflectievraag: Gebaseerd op ${reflection.batchInfo.seedCount} verlopende seeds`,

@@ -1,3 +1,4 @@
+
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import { useOpenAISecondary } from './useOpenAISecondary';
 import { useOpenAISeedGenerator } from './useOpenAISeedGenerator';
@@ -41,11 +42,14 @@ export function useOrchestratedAiResponse(apiKey: string, apiKey2?: string) {
       return result;
     } catch (error) {
       console.error('🔴 Primary AI response failed:', error);
-      // Fallback response
+      // Fallback response with all required EmotionDetection properties
       return {
         emotion: 'understanding',
+        confidence: 0.7,
         label: 'Valideren',
         response: 'Ik begrijp je en wil graag helpen. Kun je me meer vertellen over hoe je je voelt?',
+        triggers: ['fallback_response'],
+        meta: 'Fallback response due to API error',
         reasoning: 'Fallback response due to API error',
         symbolicInferences: ['fallback_response']
       };
@@ -131,7 +135,7 @@ export function useOrchestratedAiResponse(apiKey: string, apiKey2?: string) {
                 tags: ['auto-generated', 'neurosymbolic-enhanced', 'high-confidence'],
                 createdAt: new Date(),
                 updatedAt: new Date(),
-                createdBy: 'ai-neurosymbolic',
+                createdBy: 'ai',
                 isActive: true,
                 version: '2.2.0'
               };
