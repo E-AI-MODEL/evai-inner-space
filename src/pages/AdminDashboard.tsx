@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tabs } from '@/components/ui/tabs';
-import AdminHeader from '../components/admin/AdminHeader';
+import CleanAdminHeader from '../components/admin/CleanAdminHeader';
 import AdminTabsList from '../components/admin/AdminTabsList';
 import AdminTabsContent from '../components/admin/AdminTabsContent';
 import AdminAuth from '../components/admin/AdminAuth';
+import ImprovedNeurosymbolicFlow from '../components/admin/ImprovedNeurosymbolicFlow';
 import { useChatHistory } from '../hooks/useChatHistory';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '../hooks/use-mobile';
+import MobileUIFixes from '../components/MobileUIFixes';
 
 const AdminDashboard = () => {
   const { messages } = useChatHistory();
@@ -45,26 +47,36 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-inter">
-      <AdminHeader 
-        onBackClick={handleBackClick}
-        messageCount={messages.length}
-        isMobile={isMobile}
-      />
+    <>
+      <MobileUIFixes />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 font-inter">
+        <CleanAdminHeader 
+          onBackClick={handleBackClick}
+          messageCount={messages.length}
+          isMobile={isMobile}
+        />
 
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <Tabs defaultValue="handleiding" className="w-full" orientation="horizontal">
-          <div className="mb-4 sm:mb-6">
-            <AdminTabsList hasRubricActivity={hasRubricActivity} />
-          </div>
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-7xl">
+          <Tabs defaultValue="handleiding" className="w-full" orientation="horizontal">
+            <div className="mb-4 sm:mb-6">
+              <AdminTabsList hasRubricActivity={hasRubricActivity} />
+            </div>
 
-          <AdminTabsContent 
-            hasRubricActivity={hasRubricActivity}
-            messages={messages}
-          />
-        </Tabs>
+            <div className="space-y-6">
+              <AdminTabsContent 
+                hasRubricActivity={hasRubricActivity}
+                messages={messages}
+              />
+              
+              {/* Add improved neurosymbolic flow to system tab */}
+              <div className="mt-8">
+                <ImprovedNeurosymbolicFlow />
+              </div>
+            </div>
+          </Tabs>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

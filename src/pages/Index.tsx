@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
@@ -11,6 +12,7 @@ import SettingsSheet from "../components/SettingsSheet";
 import { useChat } from "../hooks/useChat";
 import ChatView from "../components/ChatView";
 import DraggableEmotionHistoryButton from "../components/DraggableEmotionHistoryButton";
+import MobileUIFixes from "../components/MobileUIFixes";
 
 const Index = () => {
   const [showIntro, setShowIntro] = useState(true);
@@ -109,81 +111,84 @@ const Index = () => {
     .reverse();
 
   return (
-    <div className={`w-full bg-background font-inter flex flex-col ${isMobile ? 'h-[100dvh]' : 'h-screen'} overflow-hidden`}>
-      
-      {/* Fixed Header */}
-      <div className="flex-shrink-0 z-50">
-        <TopBar 
-          onSettingsClick={() => setIsSettingsOpen(true)}
+    <>
+      <MobileUIFixes />
+      <div className={`w-full bg-background font-inter flex flex-col ${isMobile ? 'h-[100dvh]' : 'h-screen'} overflow-hidden`}>
+        
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 z-50">
+          <TopBar 
+            onSettingsClick={() => setIsSettingsOpen(true)}
+          />
+        </div>
+
+        <SettingsSheet
+          isOpen={isSettingsOpen}
+          onOpenChange={setIsSettingsOpen}
+          apiKey={apiKey}
+          onApiKeyChange={setApiKey}
+          onApiKeySave={saveApiKey}
         />
-      </div>
 
-      <SettingsSheet
-        isOpen={isSettingsOpen}
-        onOpenChange={setIsSettingsOpen}
-        apiKey={apiKey}
-        onApiKeyChange={setApiKey}
-        onApiKeySave={saveApiKey}
-      />
+        {/* Mobile drawer voor emotie geschiedenis */}
+        <Drawer open={historyOpen} onOpenChange={setHistoryOpen}>
+          <DrawerTrigger asChild>
+            <DraggableEmotionHistoryButton onOpen={() => setHistoryOpen(true)} />
+          </DrawerTrigger>
+          <DrawerContent className="p-4 max-h-[80vh]">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-center">Emotie Geschiedenis</h3>
+            </div>
+            <SidebarEmotionHistory
+              className="flex flex-row flex-wrap justify-center gap-4 overflow-y-auto"
+              history={emotionHistory}
+              onFocus={handleFocusMessage}
+              onClear={handleClearHistory}
+            />
+          </DrawerContent>
+        </Drawer>
 
-      {/* Mobile drawer voor emotie geschiedenis */}
-      <Drawer open={historyOpen} onOpenChange={setHistoryOpen}>
-        <DrawerTrigger asChild>
-          <DraggableEmotionHistoryButton onOpen={() => setHistoryOpen(true)} />
-        </DrawerTrigger>
-        <DrawerContent className="p-4 max-h-[80vh]">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-center">Emotie Geschiedenis</h3>
-          </div>
+        {/* Main Content Area */}
+        <div className="flex flex-1 min-h-0">
+          {/* Desktop sidebar */}
           <SidebarEmotionHistory
-            className="flex flex-row flex-wrap justify-center gap-4 overflow-y-auto"
+            className="hidden md:flex flex-shrink-0"
             history={emotionHistory}
             onFocus={handleFocusMessage}
-            onClear={handleClearHistory}
+            onClear={clearHistory}
           />
-        </DrawerContent>
-      </Drawer>
-
-      {/* Main Content Area */}
-      <div className="flex flex-1 min-h-0">
-        {/* Desktop sidebar */}
-        <SidebarEmotionHistory
-          className="hidden md:flex flex-shrink-0"
-          history={emotionHistory}
-          onFocus={handleFocusMessage}
-          onClear={clearHistory}
-        />
-        
-        {/* Chat Container */}
-        <main className="flex-1 flex flex-col min-h-0">
-          {/* Scrollable Messages Area */}
-          <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-2 py-2' : 'px-4 py-4'}`}>
-            <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'}`}>
-              <ChatView
-                messages={messages}
-                isProcessing={isProcessing}
-                messageRefs={messageRefs}
-                focusedMessageId={focusedMessageId}
-                onFeedback={setFeedback}
-              />
-              <div ref={messagesEndRef} />
+          
+          {/* Chat Container */}
+          <main className="flex-1 flex flex-col min-h-0">
+            {/* Scrollable Messages Area */}
+            <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-2 py-2' : 'px-4 py-4'}`}>
+              <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'}`}>
+                <ChatView
+                  messages={messages}
+                  isProcessing={isProcessing}
+                  messageRefs={messageRefs}
+                  focusedMessageId={focusedMessageId}
+                  onFeedback={setFeedback}
+                />
+                <div ref={messagesEndRef} />
+              </div>
             </div>
-          </div>
 
-          {/* Fixed Input Bar */}
-          <div className={`flex-shrink-0 border-t border-zinc-200 bg-white ${isMobile ? 'pb-safe' : ''}`}>
-            <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full px-2' : 'max-w-2xl px-4'}`}>
-              <InputBar
-                value={input}
-                onChange={setInput}
-                onSend={onSend}
-                disabled={isProcessing}
-              />
+            {/* Fixed Input Bar */}
+            <div className={`flex-shrink-0 border-t border-zinc-200 bg-white ${isMobile ? 'pb-safe' : ''}`}>
+              <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full px-2' : 'max-w-2xl px-4'}`}>
+                <InputBar
+                  value={input}
+                  onChange={setInput}
+                  onSend={onSend}
+                  disabled={isProcessing}
+                />
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
