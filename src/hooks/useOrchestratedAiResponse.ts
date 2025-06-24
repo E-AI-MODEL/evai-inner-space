@@ -1,4 +1,3 @@
-
 import { useOpenAI, EmotionDetection } from './useOpenAI';
 import { useOpenAISecondary } from './useOpenAISecondary';
 import { useOpenAISeedGenerator } from './useOpenAISeedGenerator';
@@ -13,7 +12,7 @@ import { useHybridDecisionEngine } from './useHybridDecisionEngine';
 export function useOrchestratedAiResponse(apiKey: string, apiKey2?: string) {
   const { detectEmotion, isLoading } = useOpenAI();
   const { analyzeNeurosymbolic, generateSeed } = useOpenAISecondary();
-  const { in jectSeedToDatabase } = useOpenAISeedGenerator();
+  const { injectSeedToDatabase } = useOpenAISeedGenerator();
   const { data: seeds = [] } = useSeeds();
   const { performNeuralSearch } = useEmbeddingProcessor();
   const { processHybridDecision } = useHybridDecisionEngine();
