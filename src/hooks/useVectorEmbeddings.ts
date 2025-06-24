@@ -16,10 +16,10 @@ export function useVectorEmbeddings() {
 
   const formatSimilarityResults = (results: any[]): SimilarityResult[] => {
     return results.map(result => ({
-      content_id: result.id || result.content_id || 'unknown',
-      content_text: result.text || result.content_text || '',
-      content_type: result.type || result.content_type || 'unknown',
-      similarity_score: typeof result.score === 'number' ? result.score : 0
+      content_id: result.content_id || 'unknown',
+      content_text: result.content_text || '',
+      content_type: result.content_type || 'unknown',
+      similarity_score: typeof result.similarity_score === 'number' ? result.similarity_score : 0
     }));
   };
 
@@ -72,11 +72,11 @@ export function useVectorEmbeddings() {
       // Generate embedding for query
       const queryEmbedding = await generateEmbedding(query, apiKey);
       
-      // Search for similar embeddings using Supabase's vector similarity
-      const { data, error } = await supabase.rpc('match_embeddings', {
-        query_embedding: queryEmbedding,
-        match_threshold: 0.7,
-        match_count: limit
+      // Search for similar embeddings using the correct Supabase function
+      const { data, error } = await supabase.rpc('find_similar_embeddings', {
+        query_embedding: `[${queryEmbedding.join(',')}]`,
+        similarity_threshold: 0.7,
+        max_results: limit
       });
 
       if (error) {
@@ -84,6 +84,7 @@ export function useVectorEmbeddings() {
         return [];
       }
 
+      // Fix: Pass the data array directly to formatSimilarityResults
       return formatSimilarityResults(data || []);
     } catch (error) {
       console.error('❌ Failed to search similar embeddings:', error);
