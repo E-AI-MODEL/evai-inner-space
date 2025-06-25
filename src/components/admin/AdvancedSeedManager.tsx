@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import AdvancedSeedEditor from './AdvancedSeedEditor';
 import AdvancedSeedTable from './AdvancedSeedTable';
 import AdvancedSeedAnalytics from './AdvancedSeedAnalytics';
 import NeuralSeedTab from './NeuralSeedTab';
+import UnifiedKnowledgeManager from './UnifiedKnowledgeManager';
 
 const AdvancedSeedManager = () => {
   const {
@@ -78,12 +80,17 @@ const AdvancedSeedManager = () => {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="manage" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="unified" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="unified">Unified Core</TabsTrigger>
           <TabsTrigger value="manage">Beheer</TabsTrigger>
           <TabsTrigger value="neural">Neurosymbolisch</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="unified" className="space-y-4">
+          <UnifiedKnowledgeManager />
+        </TabsContent>
 
         <TabsContent value="manage" className="space-y-4">
           <Card>

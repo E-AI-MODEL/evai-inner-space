@@ -39,6 +39,9 @@ export function useVectorEmbeddings() {
       const embedding = await generateEmbedding(contentText, apiKey);
       const { data: { user } } = await supabase.auth.getUser();
 
+      // Store in both old format (for compatibility) and new unified format
+      
+      // Legacy vector_embeddings table
       await supabase.from('vector_embeddings').insert({
         content_id: contentId,
         content_type: contentType,
@@ -48,7 +51,21 @@ export function useVectorEmbeddings() {
         user_id: user?.id,
       });
 
-      console.log(`✅ Stored embedding for ${contentType}: ${contentId}`);
+      // New unified_knowledge table
+      await supabase.from('unified_knowledge').insert({
+        user_id: user?.id,
+        content_type: 'embedding',
+        emotion: metadata?.emotion || 'unknown',
+        triggers: metadata?.triggers || [],
+        response_text: contentText.substring(0, 2000),
+        confidence_score: metadata?.confidence || 0.7,
+        usage_count: 0,
+        metadata: metadata || {},
+        vector_embedding: `[${embedding.join(',')}]`,
+        active: true
+      });
+
+      console.log(`✅ Stored embedding for ${contentType}: ${contentId} (legacy + unified)`);
     } catch (error) {
       console.error('❌ Failed to process and store embedding:', error);
       throw error;
@@ -72,9 +89,17 @@ export function useVectorEmbeddings() {
       // Generate embedding for query
       const queryEmbedding = await generateEmbedding(query, apiKey);
       
-      // Search for similar embeddings using the correct Supabase function
-      const { data, error } = await supabase.rpc('find_similar_embeddings', {
+      // Search for similar embeddings using the unified knowledge function
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('🔍 No authenticated user for similarity search');
+        return [];
+      }
+
+      const { data, error } = await supabase.rpc('search_unified_knowledge', {
+        query_text: query,
         query_embedding: `[${queryEmbedding.join(',')}]`,
+        user_uuid: user.id,
         similarity_threshold: 0.7,
         max_results: limit
       });
@@ -84,8 +109,15 @@ export function useVectorEmbeddings() {
         return [];
       }
 
-      // Fix: Pass the data array directly to formatSimilarityResults
-      return formatSimilarityResults(data || []);
+      // Convert unified results to legacy format for compatibility
+      const legacyResults = (data || []).map((item: any) => ({
+        content_id: item.id,
+        content_text: item.response_text || '',
+        content_type: item.content_type || 'embedding',
+        similarity_score: item.similarity_score || 0
+      }));
+
+      return formatSimilarityResults(legacyResults);
     } catch (error) {
       console.error('❌ Failed to search similar embeddings:', error);
       return [];
@@ -115,6 +147,7 @@ export function useVectorEmbeddings() {
         
         const embedding = await generateEmbedding(textToEmbed, apiKey);
         
+        // Store in legacy format
         await supabase.from('vector_embeddings').insert({
           content_id: seed.id,
           content_type: 'seed',
@@ -124,12 +157,32 @@ export function useVectorEmbeddings() {
             emotion: seed.emotion,
             type: seed.type,
             severity: seed.context.severity,
+            triggers: seed.triggers
           },
           user_id: user?.id,
         });
+
+        // Store in unified format
+        await supabase.from('unified_knowledge').insert({
+          user_id: user?.id,
+          content_type: 'seed',
+          emotion: seed.emotion,
+          triggers: seed.triggers,
+          response_text: seed.response.nl,
+          confidence_score: seed.meta.confidence,
+          usage_count: seed.meta.usageCount,
+          metadata: { 
+            type: seed.type,
+            severity: seed.context.severity,
+            label: seed.label,
+            originalId: seed.id
+          },
+          vector_embedding: `[${embedding.join(',')}]`,
+          active: seed.isActive
+        });
         
         successCount++;
-        console.log(`✅ Processed seed embedding: ${seed.emotion} (${seed.id})`);
+        console.log(`✅ Processed seed embedding: ${seed.emotion} (${seed.id}) - both formats`);
       } catch (error) {
         console.error(`Failed to process seed ${seed.id} (${seed.emotion}):`, error);
         failedCount++;

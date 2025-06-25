@@ -1,15 +1,13 @@
 
 import { useState } from 'react';
-import { useSeeds } from './useSeeds';
-import { useAdvancedSeedMatcher } from './useAdvancedSeedMatcher';
+import { useUnifiedSeedEngine } from './useUnifiedSeedEngine';
 import { EmotionDetection } from './useOpenAI';
 import { AdvancedSeed } from '../types/seed';
 import { ChatHistoryItem } from '../types';
 
 export function useAdvancedSeedEngine() {
   const [isLoading, setIsLoading] = useState(false);
-  const { data: seeds = [] } = useSeeds();
-  const { findBestMatch } = useAdvancedSeedMatcher();
+  const { checkInput: checkUnifiedInput, isLoading: isUnifiedLoading } = useUnifiedSeedEngine();
 
   const checkInput = async (
     input: string,
@@ -23,61 +21,18 @@ export function useAdvancedSeedEngine() {
     if (!input?.trim()) return null;
 
     setIsLoading(true);
-    console.log('🔍 Advanced seed engine checking input:', input.substring(0, 50));
+    console.log('🔍 Advanced seed engine delegating to unified core:', input.substring(0, 50));
 
     try {
-      // Determine context for matching
-      const matchingContext = {
-        timeOfDay: getTimeOfDay(),
-        situation: 'therapy' as const
-      };
-
-      // Try to find a matching seed first
-      const matchedSeed = await findBestMatch(input, seeds, matchingContext);
-
-      if (matchedSeed) {
-        console.log('✅ Seed match found:', matchedSeed.emotion);
-        
-        // Convert AdvancedSeed to EmotionDetection format for compatibility
-        // Map the label to the correct type
-        let compatibleLabel: "Valideren" | "Reflectievraag" | "Suggestie";
-        switch (matchedSeed.label) {
-          case 'Valideren':
-            compatibleLabel = 'Valideren';
-            break;
-          case 'Reflectievraag':
-            compatibleLabel = 'Reflectievraag';
-            break;
-          case 'Suggestie':
-            compatibleLabel = 'Suggestie';
-            break;
-          default:
-            // For 'Interventie' and 'Fout', default to 'Suggestie'
-            compatibleLabel = 'Suggestie';
-            break;
-        }
-
-        const emotionDetection: EmotionDetection = {
-          emotion: matchedSeed.emotion,
-          confidence: matchedSeed.meta.confidence,
-          response: matchedSeed.response.nl,
-          triggers: matchedSeed.triggers,
-          meta: `Seed match: ${matchedSeed.emotion} (weight: ${matchedSeed.meta.weight})`,
-          label: compatibleLabel,
-          reasoning: `Matched seed: ${matchedSeed.emotion} with triggers: ${matchedSeed.triggers.join(', ')}`,
-          symbolicInferences: [
-            `🎯 Seed Match: ${matchedSeed.emotion}`,
-            `📊 Confidence: ${Math.round(matchedSeed.meta.confidence * 100)}%`,
-            `🔗 Triggers: ${matchedSeed.triggers.join(', ')}`,
-            `⚖️ Weight: ${matchedSeed.meta.weight}`,
-            `📈 Usage Count: ${matchedSeed.meta.usageCount}`
-          ]
-        };
-
-        return emotionDetection;
+      // Delegate to the unified decision core
+      const result = await checkUnifiedInput(input, apiKey, context, history);
+      
+      if (result) {
+        console.log('✅ Unified core provided result:', result);
+        return result;
       }
 
-      console.log('🔍 No seed match found, advanced engine complete');
+      console.log('🔍 No result from unified core');
       return null;
 
     } catch (error) {
@@ -88,16 +43,8 @@ export function useAdvancedSeedEngine() {
     }
   };
 
-  const getTimeOfDay = (): 'morning' | 'afternoon' | 'evening' | 'night' => {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 12) return 'morning';
-    if (hour >= 12 && hour < 18) return 'afternoon';
-    if (hour >= 18 && hour < 22) return 'evening';
-    return 'night';
-  };
-
   return {
     checkInput,
-    isLoading
+    isLoading: isLoading || isUnifiedLoading
   };
 }

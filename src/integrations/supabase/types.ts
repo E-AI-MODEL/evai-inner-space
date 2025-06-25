@@ -122,6 +122,7 @@ export type Database = {
           meta: Json | null
           response: Json | null
           updated_at: string | null
+          user_id: string | null
           weight: number | null
         }
         Insert: {
@@ -134,6 +135,7 @@ export type Database = {
           meta?: Json | null
           response?: Json | null
           updated_at?: string | null
+          user_id?: string | null
           weight?: number | null
         }
         Update: {
@@ -146,6 +148,7 @@ export type Database = {
           meta?: Json | null
           response?: Json | null
           updated_at?: string | null
+          user_id?: string | null
           weight?: number | null
         }
         Relationships: []
@@ -370,6 +373,57 @@ export type Database = {
         }
         Relationships: []
       }
+      unified_knowledge: {
+        Row: {
+          active: boolean | null
+          confidence_score: number | null
+          content_type: string
+          created_at: string | null
+          emotion: string
+          id: string
+          last_used: string | null
+          metadata: Json | null
+          response_text: string | null
+          triggers: string[] | null
+          updated_at: string | null
+          usage_count: number | null
+          user_id: string | null
+          vector_embedding: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          confidence_score?: number | null
+          content_type: string
+          created_at?: string | null
+          emotion: string
+          id?: string
+          last_used?: string | null
+          metadata?: Json | null
+          response_text?: string | null
+          triggers?: string[] | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id?: string | null
+          vector_embedding?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          confidence_score?: number | null
+          content_type?: string
+          created_at?: string | null
+          emotion?: string
+          id?: string
+          last_used?: string | null
+          metadata?: Json | null
+          response_text?: string | null
+          triggers?: string[] | null
+          updated_at?: string | null
+          usage_count?: number | null
+          user_id?: string | null
+          vector_embedding?: string | null
+        }
+        Relationships: []
+      }
       vector_embeddings: {
         Row: {
           content_id: string
@@ -411,6 +465,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consolidate_knowledge: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       find_similar_embeddings: {
         Args:
           | {
@@ -478,6 +536,24 @@ export type Database = {
               p_processing_time_ms?: number
             }
         Returns: string
+      }
+      search_unified_knowledge: {
+        Args: {
+          query_text: string
+          query_embedding: string
+          user_uuid: string
+          similarity_threshold?: number
+          max_results?: number
+        }
+        Returns: {
+          id: string
+          content_type: string
+          emotion: string
+          response_text: string
+          confidence_score: number
+          similarity_score: number
+          metadata: Json
+        }[]
       }
       update_setting: {
         Args:
