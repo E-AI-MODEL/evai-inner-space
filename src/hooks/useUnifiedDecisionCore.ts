@@ -240,11 +240,30 @@ export function useUnifiedDecisionCore() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !decision) return;
 
+      // Convert sources to plain objects for JSON serialization
+      const symbolicMatches = sources
+        .filter(s => s.content_type === 'seed')
+        .map(s => ({
+          id: s.id,
+          emotion: s.emotion,
+          confidence: s.confidence_score,
+          type: s.content_type
+        }));
+
+      const neuralSimilarities = sources
+        .filter(s => s.content_type === 'embedding')
+        .map(s => ({
+          id: s.id,
+          emotion: s.emotion,
+          similarity: s.similarity_score || 0,
+          type: s.content_type
+        }));
+
       await supabase.rpc('log_hybrid_decision', {
         p_user_id: user.id,
         p_user_input: input,
-        p_symbolic_matches: sources.filter(s => s.content_type === 'seed'),
-        p_neural_similarities: sources.filter(s => s.content_type === 'embedding'),
+        p_symbolic_matches: symbolicMatches,
+        p_neural_similarities: neuralSimilarities,
         p_hybrid_decision: {
           method: 'unified_core',
           emotion: decision.emotion,

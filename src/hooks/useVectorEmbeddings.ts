@@ -42,11 +42,12 @@ export function useVectorEmbeddings() {
       // Store in both old format (for compatibility) and new unified format
       
       // Legacy vector_embeddings table
+      const embeddingString = `[${embedding.join(',')}]`;
       await supabase.from('vector_embeddings').insert({
         content_id: contentId,
         content_type: contentType,
         content_text: contentText.substring(0, 2000),
-        embedding: `[${embedding.join(',')}]`,
+        embedding: embeddingString,
         metadata: metadata || {},
         user_id: user?.id,
       });
@@ -61,7 +62,7 @@ export function useVectorEmbeddings() {
         confidence_score: metadata?.confidence || 0.7,
         usage_count: 0,
         metadata: metadata || {},
-        vector_embedding: `[${embedding.join(',')}]`,
+        vector_embedding: embeddingString,
         active: true
       });
 
@@ -96,9 +97,10 @@ export function useVectorEmbeddings() {
         return [];
       }
 
+      const embeddingString = `[${queryEmbedding.join(',')}]`;
       const { data, error } = await supabase.rpc('search_unified_knowledge', {
         query_text: query,
-        query_embedding: `[${queryEmbedding.join(',')}]`,
+        query_embedding: embeddingString,
         user_uuid: user.id,
         similarity_threshold: 0.7,
         max_results: limit
@@ -146,13 +148,14 @@ export function useVectorEmbeddings() {
         const textToEmbed = `Emotie: ${seed.emotion}. Triggers: ${seed.triggers.join(', ')}. Response: ${seed.response.nl}`;
         
         const embedding = await generateEmbedding(textToEmbed, apiKey);
+        const embeddingString = `[${embedding.join(',')}]`;
         
         // Store in legacy format
         await supabase.from('vector_embeddings').insert({
           content_id: seed.id,
           content_type: 'seed',
           content_text: textToEmbed.substring(0, 2000),
-          embedding: `[${embedding.join(',')}]`,
+          embedding: embeddingString,
           metadata: { 
             emotion: seed.emotion,
             type: seed.type,
@@ -177,7 +180,7 @@ export function useVectorEmbeddings() {
             label: seed.label,
             originalId: seed.id
           },
-          vector_embedding: `[${embedding.join(',')}]`,
+          vector_embedding: embeddingString,
           active: seed.isActive
         });
         
