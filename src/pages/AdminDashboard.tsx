@@ -24,56 +24,104 @@ import SystemStatus from '../components/admin/SystemStatus';
 import SystemStatusOverview from '../components/admin/SystemStatusOverview';
 import SystemStatusDetails from '../components/admin/SystemStatusDetails';
 import UnifiedKnowledgeManager from '../components/admin/UnifiedKnowledgeManager';
+import { performFullSystemCheck } from '../utils/connectionUtils';
 
 const AdminDashboard: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
-    openaiApi1: 'missing',
-    openaiApi2: 'missing',
-    vectorApi: 'missing',
-    supabase: 'connected',
+    openaiApi1: 'checking',
+    openaiApi2: 'checking',
+    vectorApi: 'checking',
+    supabase: 'checking',
     seeds: 'loading'
   });
 
-  const { data: seeds, isLoading: seedsLoading, error: seedsError } = useSeeds();
+  const { data: seeds, isLoading: seedsLoading, error: seedsError, refetch: refetchSeeds } = useSeeds();
   const { isRunning, progress, results, runHealthCheck } = useHealthCheck();
 
-  useEffect(() => {
-    checkConnectionStatus();
-  }, []);
-
-  const checkConnectionStatus = () => {
-    const openaiKey1 = localStorage.getItem('openai-api-key');
-    const openaiKey2 = localStorage.getItem('openai-api-key-2');
-    const vectorKey = localStorage.getItem('vector-api-key');
-
+  const checkConnections = async () => {
+    console.log('🔍 Starting comprehensive connection status check...');
+    
     setConnectionStatus(prev => ({
       ...prev,
-      openaiApi1: openaiKey1?.trim() ? 'configured' : 'missing',
-      openaiApi2: openaiKey2?.trim() ? 'configured' : 'missing',
-      vectorApi: vectorKey?.trim() ? 'configured' : 'missing',
-      supabase: 'connected'
+      supabase: 'checking',
+      openaiApi1: 'checking',
+      openaiApi2: 'checking',
+      vectorApi: 'checking'
     }));
+
+    try {
+      const systemResults = await performFullSystemCheck();
+      
+      setConnectionStatus(prev => ({
+        ...prev,
+        supabase: systemResults.supabase ? 'connected' : 'error',
+        openaiApi1: systemResults.openaiApi1 ? 'configured' : 'missing',
+        openaiApi2: systemResults.openaiApi2 ? 'configured' : 'missing',
+        vectorApi: systemResults.vectorApi ? 'configured' : 'missing'
+      }));
+
+      if (systemResults.supabase) {
+        toast({
+          title: "Verbinding hersteld",
+          description: "Supabase verbinding is succesvol hersteld.",
+        });
+      } else {
+        toast({
+          title: "Verbindingsprobleem",
+          description: "Kan geen verbinding maken met Supabase database.",
+          variant: "destructive"
+        });
+      }
+
+    } catch (error) {
+      console.error('🔴 Connection check failed:', error);
+      setConnectionStatus(prev => ({
+        ...prev,
+        supabase: 'error',
+        openaiApi1: 'missing',
+        openaiApi2: 'missing',
+        vectorApi: 'missing'
+      }));
+
+      toast({
+        title: "Systeemfout",
+        description: "Er is een fout opgetreden bij het controleren van de verbindingen.",
+        variant: "destructive"
+      });
+    }
   };
+
+  useEffect(() => {
+    console.log('🚀 AdminDashboard mounted, starting initial connection check');
+    checkConnections();
+  }, []);
 
   // Update seeds status when seeds data changes
   useEffect(() => {
     if (seedsLoading) {
       setConnectionStatus(prev => ({ ...prev, seeds: 'loading' }));
     } else if (seedsError) {
+      console.error('🔴 Seeds loading error:', seedsError);
       setConnectionStatus(prev => ({ ...prev, seeds: 'error' }));
     } else {
+      console.log(`✅ Seeds loaded successfully: ${seeds?.length || 0} total seeds`);
       setConnectionStatus(prev => ({ ...prev, seeds: 'loaded' }));
     }
-  }, [seedsLoading, seedsError, seeds]);
+  }, [seeds, seedsError, seedsLoading]);
 
   const activeSeedsCount = seeds?.filter(s => s.isActive).length || 0;
   const totalSeedsCount = seeds?.length || 0;
 
   const systemHealthData = {
-    status: 'operational',
+    status: connectionStatus.supabase === 'connected' ? 'operational' : 'error',
     uptime: '99.9%',
-    errorRate: '0.1',
-    avgResponseTime: '245ms'
+    errorRate: connectionStatus.supabase === 'connected' ? '0.1' : '15.2',
+    avgResponseTime: connectionStatus.supabase === 'connected' ? '245ms' : '2.1s'
+  };
+
+  const handleRefreshAll = async () => {
+    await checkConnections();
+    await refetchSeeds();
   };
 
   return (
@@ -88,6 +136,10 @@ const AdminDashboard: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-3">
+            <Button onClick={handleRefreshAll} variant="outline" className="flex items-center gap-2">
+              <Activity size={16} />
+              Ververs Alles
+            </Button>
             <Link to="/admin/guide">
               <Button variant="outline" className="flex items-center gap-2">
                 <HelpCircle size={16} />
@@ -101,6 +153,22 @@ const AdminDashboard: React.FC = () => {
             </Link>
           </div>
         </div>
+
+        {/* Connection Status Alert */}
+        {connectionStatus.supabase === 'error' && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Database className="h-4 w-4 text-red-600" />
+              <span className="font-medium text-red-800">Supabase Verbindingsprobleem</span>
+            </div>
+            <p className="text-sm text-red-700 mb-3">
+              Kan geen verbinding maken met de Supabase database. Dit kan de functionaliteit beperken.
+            </p>
+            <Button onClick={checkConnections} size="sm" variant="outline" className="text-red-700 border-red-300">
+              Probeer Opnieuw
+            </Button>
+          </div>
+        )}
 
         {/* System Status Overview */}
         <div className="mb-6">
@@ -233,7 +301,6 @@ const AdminDashboard: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Seeds Tab */}
           <TabsContent value="seeds" className="space-y-6">
             <Card>
               <CardHeader>
@@ -277,7 +344,6 @@ const AdminDashboard: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
             <Card>
               <CardHeader>
@@ -307,7 +373,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                   
                   <Button 
-                    onClick={checkConnectionStatus}
+                    onClick={checkConnections}
                     variant="outline"
                     className="w-full"
                   >

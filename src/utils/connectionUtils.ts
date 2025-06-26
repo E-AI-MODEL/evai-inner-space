@@ -5,7 +5,7 @@ export const checkSupabaseConnection = async () => {
   try {
     console.log('🔍 Testing Supabase connection...');
     
-    // Test basic connection first
+    // Test basic connection first with a simple health check
     const { data, error } = await supabase
       .from('emotion_seeds')
       .select('id')
@@ -13,14 +13,14 @@ export const checkSupabaseConnection = async () => {
     
     if (error) {
       console.error('🔴 Supabase connection error:', error.message);
-      return { success: false, error: error.message };
+      return false;
     } else {
       console.log('✅ Supabase connection successful - database accessible');
-      return { success: true, data };
+      return true;
     }
   } catch (error) {
     console.error('🔴 Supabase connection failed with exception:', error);
-    return { success: false, error: error.message };
+    return false;
   }
 };
 
@@ -33,23 +33,53 @@ export const checkAuthConnection = async () => {
     
     if (error) {
       console.error('🔴 Supabase auth error:', error.message);
-      return { success: false, error: error.message };
+      return false;
     } else {
       console.log('✅ Supabase auth accessible');
-      return { success: true, session };
+      return true;
     }
   } catch (error) {
     console.error('🔴 Supabase auth failed with exception:', error);
-    return { success: false, error: error.message };
+    return false;
   }
 };
 
 export const checkApiKeyStatus = (apiKey: string, keyName: string) => {
-  if (apiKey.trim()) {
+  if (apiKey && apiKey.trim()) {
     console.log(`🔑 ${keyName} configured`);
     return 'configured' as const;
   } else {
     console.log(`🔴 ${keyName} key missing`);
     return 'missing' as const;
   }
+};
+
+export const performFullSystemCheck = async () => {
+  console.log('🚀 Starting full system health check...');
+  
+  const results = {
+    supabase: false,
+    auth: false,
+    openaiApi1: false,
+    openaiApi2: false,
+    vectorApi: false
+  };
+
+  // Check Supabase database connection
+  results.supabase = await checkSupabaseConnection();
+  
+  // Check Supabase auth
+  results.auth = await checkAuthConnection();
+  
+  // Check API keys
+  const openaiKey1 = localStorage.getItem('openai-api-key');
+  const openaiKey2 = localStorage.getItem('openai-api-key-2');
+  const vectorKey = localStorage.getItem('vector-api-key');
+  
+  results.openaiApi1 = checkApiKeyStatus(openaiKey1 || '', 'OpenAI API 1') === 'configured';
+  results.openaiApi2 = checkApiKeyStatus(openaiKey2 || '', 'OpenAI API 2') === 'configured';
+  results.vectorApi = checkApiKeyStatus(vectorKey || '', 'Vector API') === 'configured';
+  
+  console.log('📊 System check results:', results);
+  return results;
 };
