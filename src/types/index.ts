@@ -1,26 +1,19 @@
 
-export interface Message {
-  id: string;
-  from: "user" | "ai";
-  label: "Valideren" | "Reflectievraag" | "Suggestie" | "Fout" | null;
+export interface ChatHistoryItem {
+  role: 'user' | 'assistant';
   content: string;
-  emotionSeed: string | null;
-  animate?: boolean;
-  timestamp?: Date;
-  feedback?: "like" | "dislike" | null;
-  symbolicInferences?: string[];
-  explainText?: string;
-  meta?:
-    | string
-    | {
-        gapAnalysis?: string;
-        autoSeed?: string;
-        [key: string]: any;
-      };
 }
 
-export interface ChatHistoryItem {
-  role: "user" | "assistant";
+export interface Message {
+  id: string;
+  from: 'user' | 'ai';
   content: string;
-  from: "user" | "ai";
+  timestamp: Date;
+  emotionSeed?: string;
+  confidence?: number;
+  label?: "Valideren" | "Reflectievraag" | "Suggestie";
+  explainText?: string;
+  feedback?: 'like' | 'dislike';
+  symbolicInferences?: string[];
+  secondaryInsights?: string[];
 }
