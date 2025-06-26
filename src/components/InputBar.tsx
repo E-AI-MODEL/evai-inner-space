@@ -6,7 +6,7 @@ import { useIsMobile } from "../hooks/use-mobile";
 const InputBar: React.FC<{
   value: string;
   onChange: (val: string) => void;
-  onSend: () => void;
+  onSend: (message: string) => void;
   disabled?: boolean;
 }> = ({ value, onChange, onSend, disabled }) => {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -14,9 +14,9 @@ const InputBar: React.FC<{
 
   // Enter key verzenden, Ctrl+Enter voor nieuwe regel
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
-      if (!disabled && value.trim()) onSend();
+      if (!disabled && value.trim()) onSend(value);
     }
     // Ctrl+Enter of Shift+Enter voor nieuwe regel (default gedrag)
   };
@@ -30,7 +30,7 @@ const InputBar: React.FC<{
       }`}
       onSubmit={e => {
         e.preventDefault();
-        if (!disabled && value.trim()) onSend();
+        if (!disabled && value.trim()) onSend(value);
       }}
       style={{ fontFamily: "Inter, sans-serif" }}
     >

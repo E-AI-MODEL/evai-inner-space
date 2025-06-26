@@ -27,9 +27,9 @@ import UnifiedKnowledgeManager from '../components/admin/UnifiedKnowledgeManager
 
 const AdminDashboard: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
-    openaiApi1: 'not-configured',
-    openaiApi2: 'not-configured',
-    vectorApi: 'not-configured',
+    openaiApi1: 'missing',
+    openaiApi2: 'missing',
+    vectorApi: 'missing',
     supabase: 'connected'
   });
 
@@ -46,9 +46,9 @@ const AdminDashboard: React.FC = () => {
     const vectorKey = localStorage.getItem('vector-api-key');
 
     setConnectionStatus({
-      openaiApi1: openaiKey1?.trim() ? 'configured' : 'not-configured',
-      openaiApi2: openaiKey2?.trim() ? 'configured' : 'not-configured',
-      vectorApi: vectorKey?.trim() ? 'configured' : 'not-configured',
+      openaiApi1: openaiKey1?.trim() ? 'configured' : 'missing',
+      openaiApi2: openaiKey2?.trim() ? 'configured' : 'missing',
+      vectorApi: vectorKey?.trim() ? 'configured' : 'missing',
       supabase: 'connected'
     });
   };

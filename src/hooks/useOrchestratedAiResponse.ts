@@ -232,7 +232,7 @@ export function useOrchestratedAiResponse(apiKey: string, apiKey2?: string) {
         if (decision && decision.confidence > 0.8) {
           finalAi = {
             ...ai,
-            response: decision.selectedResponse,
+            response: decision.response,
             reasoning: decision.reasoning
           };
           console.log('🎯 High-confidence hybrid decision applied');

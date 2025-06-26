@@ -7,7 +7,7 @@ export interface HybridDecision {
   response: string;
   confidence: number;
   reasoning: string;
-  label: "Valideren" | "Reflectievraag" | "Suggestie";
+  label: 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Interventie' | 'Fout';
   symbolicInferences: string[];
   meta: string;
   method: 'symbolic' | 'neural' | 'hybrid';
@@ -60,7 +60,7 @@ export function useDecisionMaking() {
     let emotion: string;
     let response: string;
     let confidence: number;
-    let label: "Valideren" | "Reflectievraag" | "Suggestie";
+    let label: 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Interventie' | 'Fout';
 
     if ('seed' in primarySource) {
       // Symbolic match
@@ -81,8 +81,10 @@ export function useDecisionMaking() {
     // Apply context modifications
     if (context.dislikedLabel && context.dislikedLabel === label) {
       // Change label if user disliked it
-      const alternatives: ("Valideren" | "Reflectievraag" | "Suggestie")[] = 
-        ['Valideren', 'Reflectievraag', 'Suggestie'].filter(l => l !== context.dislikedLabel);
+      const alternatives = (
+        ['Valideren', 'Reflectievraag', 'Suggestie']
+          .filter(l => l !== context.dislikedLabel)
+      ) as ('Valideren' | 'Reflectievraag' | 'Suggestie')[];
       label = alternatives[0];
     }
 
