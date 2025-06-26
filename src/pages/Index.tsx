@@ -15,7 +15,7 @@ import DraggableEmotionHistoryButton from "../components/DraggableEmotionHistory
 import MobileUIFixes from "../components/MobileUIFixes";
 
 const Index = () => {
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(false); // Changed to false to skip intro for debugging
   const [apiKey, setApiKey] = useState("");
   const [apiKey2, setApiKey2] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -53,6 +53,8 @@ const Index = () => {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isProcessing]);
+
+  console.log('🔍 Index component rendering - showIntro:', showIntro, 'messages:', messages?.length || 0);
 
   if (showIntro) {
     return <IntroAnimation onFinished={() => setShowIntro(false)} />;
@@ -130,6 +132,13 @@ const Index = () => {
           onApiKeySave={saveApiKey}
         />
 
+        {/* Debug info */}
+        <div className="p-4 bg-blue-50 border-b border-blue-200">
+          <p className="text-sm text-blue-700">
+            Debug: Messages loaded: {messages?.length || 0} | Processing: {isProcessing ? 'Yes' : 'No'}
+          </p>
+        </div>
+
         {/* Mobile drawer voor emotie geschiedenis */}
         <Drawer open={historyOpen} onOpenChange={setHistoryOpen}>
           <DrawerTrigger asChild>
@@ -163,8 +172,24 @@ const Index = () => {
             {/* Scrollable Messages Area */}
             <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-2 py-2' : 'px-4 py-4'}`}>
               <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'}`}>
+                {/* Fallback content when no messages */}
+                {(!messages || messages.length === 0) && (
+                  <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+                    <div className="text-6xl mb-4">💙</div>
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-2">Welkom bij EvAI</h2>
+                    <p className="text-gray-600 mb-6 max-w-md">
+                      Je empathische AI-partner voor emotionele ondersteuning en reflectie.
+                    </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md">
+                      <p className="text-sm text-blue-700">
+                        Begin een gesprek door hieronder een bericht te typen.
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
                 <ChatView
-                  messages={messages}
+                  messages={messages || []}
                   isProcessing={isProcessing}
                   messageRefs={messageRefs}
                   focusedMessageId={focusedMessageId}
