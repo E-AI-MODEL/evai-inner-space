@@ -18,6 +18,14 @@ const ChatView: React.FC<ChatViewProps> = ({
     focusedMessageId, 
     onFeedback,
 }) => {
+    // Convert label to match ChatBubble's expected type
+    const convertLabel = (label?: 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Interventie' | 'Fout' | null) => {
+        if (label === 'Interventie') {
+            return 'Suggestie'; // Map Interventie to Suggestie for ChatBubble compatibility
+        }
+        return label as 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Fout' | null;
+    };
+
     return (
         <div className="space-y-3 pb-4">
             {messages.map((msg) => (
@@ -33,7 +41,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                     }}
                     isFocused={msg.id === focusedMessageId}
                     from={msg.from}
-                    label={msg.label}
+                    label={convertLabel(msg.label)}
                     emotionSeed={msg.emotionSeed}
                     animate={!!msg.animate}
                     feedback={msg.feedback}

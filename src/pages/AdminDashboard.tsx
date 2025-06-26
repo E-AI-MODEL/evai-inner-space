@@ -30,7 +30,8 @@ const AdminDashboard: React.FC = () => {
     openaiApi1: 'missing',
     openaiApi2: 'missing',
     vectorApi: 'missing',
-    supabase: 'connected'
+    supabase: 'connected',
+    seeds: 'loading'
   });
 
   const { data: seeds, isLoading: seedsLoading, error: seedsError } = useSeeds();
@@ -45,13 +46,25 @@ const AdminDashboard: React.FC = () => {
     const openaiKey2 = localStorage.getItem('openai-api-key-2');
     const vectorKey = localStorage.getItem('vector-api-key');
 
-    setConnectionStatus({
+    setConnectionStatus(prev => ({
+      ...prev,
       openaiApi1: openaiKey1?.trim() ? 'configured' : 'missing',
       openaiApi2: openaiKey2?.trim() ? 'configured' : 'missing',
       vectorApi: vectorKey?.trim() ? 'configured' : 'missing',
       supabase: 'connected'
-    });
+    }));
   };
+
+  // Update seeds status when seeds data changes
+  useEffect(() => {
+    if (seedsLoading) {
+      setConnectionStatus(prev => ({ ...prev, seeds: 'loading' }));
+    } else if (seedsError) {
+      setConnectionStatus(prev => ({ ...prev, seeds: 'error' }));
+    } else {
+      setConnectionStatus(prev => ({ ...prev, seeds: 'loaded' }));
+    }
+  }, [seedsLoading, seedsError, seeds]);
 
   const activeSeedsCount = seeds?.filter(s => s.isActive).length || 0;
   const totalSeedsCount = seeds?.length || 0;
