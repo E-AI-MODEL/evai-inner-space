@@ -8,18 +8,51 @@ import { AdvancedSeed } from '../types/seed';
 import { v4 as uuidv4 } from 'uuid';
 
 export function useChat(apiKey?: string, apiKey2?: string) {
+  console.log('🔥 useChat hook called with keys:', { 
+    key1: apiKey ? 'present' : 'missing', 
+    key2: apiKey2 ? 'present' : 'missing' 
+  });
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
-  const { checkInput } = useSeedEngine();
-  const { detectEmotion } = useOpenAI();
-  const { analyzeNeurosymbolic } = useOpenAISecondary();
+  console.log('🔥 useChat initial state:', {
+    messagesLength: messages.length,
+    inputLength: input.length,
+    isProcessing
+  });
+
+  let seedEngineHook, openAIHook, openAISecondaryHook;
+  
+  try {
+    console.log('🔥 Initializing hooks...');
+    seedEngineHook = useSeedEngine();
+    openAIHook = useOpenAI();
+    openAISecondaryHook = useOpenAISecondary();
+    console.log('🔥 All hooks initialized successfully');
+  } catch (error) {
+    console.error('🔴 Error initializing hooks:', error);
+    // Provide fallback functions
+    seedEngineHook = { checkInput: async () => null };
+    openAIHook = { detectEmotion: async () => ({ response: 'Error', emotion: 'error', confidence: 0, label: 'Fout' }) };
+    openAISecondaryHook = { analyzeNeurosymbolic: async () => null };
+  }
+
+  const { checkInput } = seedEngineHook;
+  const { detectEmotion } = openAIHook;
+  const { analyzeNeurosymbolic } = openAISecondaryHook;
 
   const onSend = useCallback(async (message: string) => {
-    if (!message.trim() || isProcessing) return;
+    console.log('🔥 onSend called with message:', message.substring(0, 50) + '...');
+    
+    if (!message.trim() || isProcessing) {
+      console.log('🔥 onSend early return - empty message or processing');
+      return;
+    }
 
     setIsProcessing(true);
+    console.log('🔥 Set processing to true');
     
     // Add user message
     const userMessage: Message = {
@@ -29,7 +62,11 @@ export function useChat(apiKey?: string, apiKey2?: string) {
       timestamp: new Date()
     };
     
-    setMessages(prev => [...prev, userMessage]);
+    console.log('🔥 Adding user message:', userMessage.id);
+    setMessages(prev => {
+      console.log('🔥 Previous messages count:', prev.length);
+      return [...prev, userMessage];
+    });
     setInput('');
 
     try {
@@ -39,13 +76,23 @@ export function useChat(apiKey?: string, apiKey2?: string) {
         content: msg.content
       }));
 
+      console.log('🔥 Prepared history with', history.length, 'items');
+
       // Try unified seed engine first
       console.log('🚀 Processing with Unified Decision Core...');
-      const unifiedResult = await checkInput(message, apiKey, undefined, history);
+      let unifiedResult;
+      try {
+        unifiedResult = await checkInput(message, apiKey, undefined, history);
+        console.log('🔥 Unified result:', unifiedResult ? 'success' : 'null');
+      } catch (error) {
+        console.error('🔴 Unified decision core failed:', error);
+        unifiedResult = null;
+      }
       
       let aiResponse: Message;
 
       if (unifiedResult) {
+        console.log('🔥 Processing unified result...');
         // Handle unified result (could be EmotionDetection or AdvancedSeed)
         if ('confidence' in unifiedResult && typeof unifiedResult.confidence === 'number') {
           // It's an EmotionDetection from OpenAI
@@ -121,7 +168,11 @@ export function useChat(apiKey?: string, apiKey2?: string) {
         };
       }
 
-      setMessages(prev => [...prev, aiResponse]);
+      console.log('🔥 Adding AI response:', aiResponse.id);
+      setMessages(prev => {
+        console.log('🔥 Adding AI message to', prev.length, 'existing messages');
+        return [...prev, aiResponse];
+      });
       console.log('✅ Response generated successfully');
 
     } catch (error) {
@@ -137,24 +188,28 @@ export function useChat(apiKey?: string, apiKey2?: string) {
         label: 'Valideren'
       };
       
+      console.log('🔥 Adding error message:', errorMessage.id);
       setMessages(prev => [...prev, errorMessage]);
     } finally {
+      console.log('🔥 Setting processing to false');
       setIsProcessing(false);
     }
   }, [messages, isProcessing, apiKey, apiKey2, checkInput, detectEmotion, analyzeNeurosymbolic]);
 
   const setFeedback = useCallback((messageId: string, feedback: 'like' | 'dislike') => {
+    console.log('🔥 Setting feedback for message:', messageId, feedback);
     setMessages(prev => prev.map(msg => 
       msg.id === messageId ? { ...msg, feedback } : msg
     ));
   }, []);
 
   const clearHistory = useCallback(() => {
+    console.log('🔥 Clearing chat history');
     setMessages([]);
     setInput('');
   }, []);
 
-  return {
+  const result = {
     messages,
     input,
     setInput,
@@ -163,4 +218,12 @@ export function useChat(apiKey?: string, apiKey2?: string) {
     setFeedback,
     clearHistory
   };
+
+  console.log('🔥 useChat returning:', {
+    messagesLength: result.messages.length,
+    hasOnSend: typeof result.onSend === 'function',
+    hasSetInput: typeof result.setInput === 'function'
+  });
+
+  return result;
 }
