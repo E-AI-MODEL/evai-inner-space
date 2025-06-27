@@ -32,7 +32,7 @@ const TopBar: React.FC<TopBarProps> = ({
               <h1 className="text-xl font-bold text-gray-800">EvAI</h1>
             </div>
             <div className="hidden sm:block text-sm text-gray-500">
-              Empathische AI Assistent
+              AI Assistent
             </div>
           </div>
           

@@ -26,11 +26,9 @@ const ChatView: React.FC<ChatViewProps> = ({
         return label as 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Fout' | null;
     };
 
-    console.log('🔍 ChatView rendering - messages:', messages?.length || 0, 'processing:', isProcessing);
-
     return (
         <div className="space-y-3 pb-4">
-            {messages && messages.length > 0 ? (
+            {messages && messages.length > 0 && (
                 messages.map((msg) => (
                     <ChatBubble
                         key={msg.id}
@@ -56,10 +54,6 @@ const ChatView: React.FC<ChatViewProps> = ({
                         {msg.content}
                     </ChatBubble>
                 ))
-            ) : (
-                <div className="text-center py-8 text-gray-500">
-                    <p>Nog geen berichten. Begin een gesprek!</p>
-                </div>
             )}
             
             {isProcessing && (
