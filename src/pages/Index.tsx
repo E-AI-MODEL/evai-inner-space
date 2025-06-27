@@ -15,7 +15,7 @@ import DraggableEmotionHistoryButton from "../components/DraggableEmotionHistory
 import MobileUIFixes from "../components/MobileUIFixes";
 
 const Index = () => {
-  const [showIntro, setShowIntro] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
   const [apiKey, setApiKey] = useState("");
   const [apiKey2, setApiKey2] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);

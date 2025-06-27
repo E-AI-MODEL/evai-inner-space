@@ -1,14 +1,15 @@
 
 import React from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import AuthPage from '@/pages/AuthPage';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   console.log('🛡️ ProtectedRoute - Loading:', loading, 'User:', user?.email || 'No user');
 
@@ -24,15 +25,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  // If no user is logged in, show the auth page
+  // If no user is logged in, redirect to auth page
   if (!user) {
-    console.log('🛡️ No user found, showing auth page');
-    return <AuthPage />;
+    console.log('🛡️ No user found, redirecting to /auth');
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // User is authenticated, show the protected content
+  // User is authenticated, show the protected content or nested routes
   console.log('🛡️ User authenticated, showing protected content');
-  return <>{children}</>;
+  if (children) {
+    return <>{children}</>;
+  }
+  return <Outlet />;
 };
 
 export default ProtectedRoute;
