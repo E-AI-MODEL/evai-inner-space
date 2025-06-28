@@ -9,11 +9,11 @@ import {
   Database, 
   Brain, 
   Activity, 
-  Users, 
+  Users,
   TrendingUp,
   Zap,
-  BookOpen,
-  HelpCircle
+  HelpCircle,
+  Monitor
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
@@ -25,6 +25,10 @@ import SystemStatusOverview from '../components/admin/SystemStatusOverview';
 import SystemStatusDetails from '../components/admin/SystemStatusDetails';
 import UnifiedKnowledgeManager from '../components/admin/UnifiedKnowledgeManager';
 import { performFullSystemCheck } from '../utils/connectionUtils';
+import RealtimeMonitor from '../components/RealtimeMonitor';
+import NeurosymbolicVisualizer from '../components/NeurosymbolicVisualizer';
+import ConfigurationPanel from '../components/ConfigurationPanel';
+import { useProcessingOrchestrator } from '../hooks/useProcessingOrchestrator';
 
 const AdminDashboard: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
@@ -37,6 +41,7 @@ const AdminDashboard: React.FC = () => {
 
   const { data: seeds, isLoading: seedsLoading, error: seedsError, refetch: refetchSeeds } = useSeeds();
   const { isRunning, progress, results, runHealthCheck } = useHealthCheck();
+  const { stats, lastDecision, isProcessing } = useProcessingOrchestrator();
 
   const checkConnections = async () => {
     console.log('🔍 Starting comprehensive connection status check...');
@@ -112,6 +117,47 @@ const AdminDashboard: React.FC = () => {
   const activeSeedsCount = seeds?.filter(s => s.isActive).length || 0;
   const totalSeedsCount = seeds?.length || 0;
 
+  const formatApiStatus = (apiCollaboration?: any) => {
+    if (!apiCollaboration) return 'Geen API data';
+
+    const statuses = [] as string[];
+    if (apiCollaboration.api1_used !== undefined) {
+      statuses.push(`API1: ${apiCollaboration.api1_used ? '✅' : '❌'}`);
+    }
+    if (apiCollaboration.api2_used !== undefined) {
+      statuses.push(`API2: ${apiCollaboration.api2_used ? '✅' : '❌'}`);
+    }
+    if (apiCollaboration.vector_api_used !== undefined) {
+      statuses.push(`Vector: ${apiCollaboration.vector_api_used ? '✅' : '❌'}`);
+    }
+    if (apiCollaboration.seed_generated !== undefined) {
+      statuses.push(`Seed: ${apiCollaboration.seed_generated ? '✅' : '❌'}`);
+    }
+
+    return statuses.length > 0 ? statuses.join(', ') : 'Geen API status';
+  };
+
+  const neurosymbolicData = lastDecision ? {
+    symbolicMatches: [
+      {
+        pattern: 'Symbolic pattern detected',
+        confidence: lastDecision.confidence,
+        source: lastDecision.source
+      }
+    ],
+    neuralAnalysis: {
+      emotion: 'neutral',
+      confidence: lastDecision.confidence,
+      reasoning: lastDecision.reasoning[0] || 'Neural processing'
+    },
+    hybridDecision: {
+      finalEmotion: 'neutral',
+      confidence: lastDecision.confidence,
+      processingPath: lastDecision.type,
+      componentsUsed: formatApiStatus(lastDecision.metadata?.apiCollaboration)
+    }
+  } : undefined;
+
   const systemHealthData = {
     status: connectionStatus.supabase === 'connected' ? 'operational' : 'error',
     uptime: '99.9%',
@@ -181,7 +227,7 @@ const AdminDashboard: React.FC = () => {
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="unified-knowledge" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-white/60 backdrop-blur-sm border border-purple-200">
+          <TabsList className="grid w-full grid-cols-7 bg-white/60 backdrop-blur-sm border border-purple-200">
             <TabsTrigger value="unified-knowledge" className="flex items-center gap-2">
               <Brain size={16} />
               <span className="hidden sm:inline">Unified Knowledge</span>
@@ -190,6 +236,10 @@ const AdminDashboard: React.FC = () => {
               <Activity size={16} />
               <span className="hidden sm:inline">Health</span>
             </TabsTrigger>
+            <TabsTrigger value="monitor" className="flex items-center gap-2">
+              <Monitor size={16} />
+              <span className="hidden sm:inline">Monitor</span>
+            </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <TrendingUp size={16} />
               <span className="hidden sm:inline">Analytics</span>
@@ -197,6 +247,10 @@ const AdminDashboard: React.FC = () => {
             <TabsTrigger value="seeds" className="flex items-center gap-2">
               <Database size={16} />
               <span className="hidden sm:inline">Seeds</span>
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="flex items-center gap-2">
+              <Activity size={16} />
+              <span className="hidden sm:inline">Activity</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings size={16} />
@@ -266,6 +320,29 @@ const AdminDashboard: React.FC = () => {
             <SystemStatus systemHealth={systemHealthData} />
           </TabsContent>
 
+          {/* Monitor Tab */}
+          <TabsContent value="monitor" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <NeurosymbolicVisualizer
+                  data={neurosymbolicData}
+                  isProcessing={isProcessing}
+                />
+              </div>
+              <div>
+                <RealtimeMonitor
+                  isProcessing={isProcessing}
+                  lastDecision={lastDecision ? {
+                    type: lastDecision.type,
+                    confidence: lastDecision.confidence,
+                    source: lastDecision.source,
+                    processingTime: lastDecision.processingTime
+                  } : null}
+                />
+              </div>
+            </div>
+          </TabsContent>
+
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <Card>
@@ -295,6 +372,46 @@ const AdminDashboard: React.FC = () => {
                   <div className="text-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg">
                     <div className="text-2xl font-bold text-orange-600">245ms</div>
                     <div className="text-sm text-gray-600">Avg Response</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Activity Log */}
+          <TabsContent value="activity" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Activiteitslog</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {lastDecision && (
+                    <div className="border rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="outline">{lastDecision.type}</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date().toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className="text-sm">{lastDecision.reasoning[0]}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-muted-foreground">Vertrouwen:</span>
+                        <Badge variant="secondary">
+                          {Math.round(lastDecision.confidence * 100)}%
+                        </Badge>
+                      </div>
+                      {lastDecision.metadata?.apiCollaboration && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          API Status: {formatApiStatus(lastDecision.metadata.apiCollaboration)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Activiteitslogboek wordt bijgewerkt tijdens gebruik</p>
                   </div>
                 </div>
               </CardContent>
@@ -345,43 +462,7 @@ const AdminDashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings size={20} />
-                  System Configuration
-                </CardTitle>
-                <CardDescription>
-                  Configure API keys and system settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <BookOpen className="h-4 w-4 text-amber-600" />
-                      <span className="font-medium text-amber-800">Configuration</span>
-                    </div>
-                    <p className="text-sm text-amber-700 mb-3">
-                      API keys are configured in the main chat interface via the settings panel.
-                    </p>
-                    <Link to="/">
-                      <Button variant="outline" size="sm">
-                        Go to Settings
-                      </Button>
-                    </Link>
-                  </div>
-                  
-                  <Button 
-                    onClick={checkConnections}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Refresh Connection Status
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ConfigurationPanel />
           </TabsContent>
         </Tabs>
       </div>

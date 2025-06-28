@@ -13,7 +13,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 const Index = lazy(() => import("./pages/Index"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const EnhancedAdminDashboard = lazy(() => import("./pages/EnhancedAdminDashboard"));
 const AdminGuide = lazy(() => import("./pages/AdminGuide"));
 const TestPage = lazy(() => import("./pages/TestPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -59,7 +58,6 @@ const App = () => (
               <Route element={<ProtectedRoute><ProtectedLayout /></ProtectedRoute>}>
                 <Route index element={<Index />} />
                 <Route path="admin" element={<AdminDashboard />} />
-                <Route path="admin/enhanced" element={<EnhancedAdminDashboard />} />
                 <Route path="admin/guide" element={<AdminGuide />} />
                 <Route path="test" element={<TestPage />} />
               </Route>
