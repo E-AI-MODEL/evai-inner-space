@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Message } from '../types';
 import { useEvAI56Rubrics } from './useEvAI56Rubrics';
+import { OPENAI_MODEL } from '../openaiConfig';
 
 export interface CoTFeedbackPattern {
   emotion: string;
@@ -107,7 +108,7 @@ Focus op:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: OPENAI_MODEL,
           messages: [
             {
               role: 'system',
@@ -180,7 +181,7 @@ Geef een JSON array terug met specifieke, rubrics-gevalideerde verbeteringen:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: OPENAI_MODEL,
           messages: [
             {
               role: 'system',

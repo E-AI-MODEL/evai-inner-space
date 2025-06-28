@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { AdvancedSeed } from '../types/seed';
 import { SeedGenerationRequest, OpenAISeedGeneratorConfig } from '../types/openAISeedGenerator';
+import { OPENAI_MODEL } from '../openaiConfig';
 
 const DEFAULT_CONFIG: OpenAISeedGeneratorConfig = {
-  model: 'gpt-4.1-2025-04-14',
+  model: OPENAI_MODEL,
   temperature: 0.8, // Increased for more variety
   maxTokens: 600,
   defaultTTL: 43200

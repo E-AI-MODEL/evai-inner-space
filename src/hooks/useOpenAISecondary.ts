@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { OPENAI_MODEL } from '../openaiConfig';
 
 export interface SecondaryAnalysis {
   patterns: string[];
@@ -51,7 +52,7 @@ Focus op Nederlandse therapeutische context.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: OPENAI_MODEL,
           messages: [
             { role: 'user', content: prompt }
           ],
@@ -137,7 +138,7 @@ Geef alleen de response tekst terug, geen JSON.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: OPENAI_MODEL,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.8,
           max_tokens: 200
