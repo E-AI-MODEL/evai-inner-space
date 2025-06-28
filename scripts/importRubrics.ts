@@ -16,7 +16,10 @@ const files = [
 async function run() {
   for (const { code, file } of files) {
     const path = `./rubrics/${file}`
-    if (!fs.existsSync(path)) continue
+    if (!fs.existsSync(path)) {
+      console.warn(`Skipping missing rubric file: ${path}`)
+      continue
+    }
     const rubric_json = JSON.parse(fs.readFileSync(path, 'utf-8'))
     await supabase.from('rubrics').upsert({ code, rubric_json })
   }
