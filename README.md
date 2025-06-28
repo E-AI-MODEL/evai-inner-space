@@ -36,36 +36,51 @@ npm i
 npm run dev
 ```
 
-Create a `.env` file based on `.env.example` and add your Supabase credentials:
+Create a `.env` file based on `.env.example` and add your Supabase credentials. **All four variables below are mandatory.** They can be found in the Supabase dashboard under **Settings → API** as the *Project URL* and *anon public key*:
 
 ```
 VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
 VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
+SUPABASE_URL=<YOUR_SUPABASE_URL>
+SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
 ```
-These variables allow the frontend to connect to your own Supabase project. If
-you omit them, the application falls back to a built-in demo Supabase instance
-defined in `src/integrations/supabase/client.ts`.
+These variables are required for both the frontend and Node scripts to connect
+to your Supabase project.
+
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are used by the browser code,
+while `SUPABASE_URL` and `SUPABASE_ANON_KEY` are used by Node scripts. The value
+for each pair should be identical.
+
+Example Node usage:
+
+```ts
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.SUPABASE_URL as string
+const supabaseKey = process.env.SUPABASE_ANON_KEY as string
+const supabase = createClient(supabaseUrl, supabaseKey)
+```
 
 When running inside Lovable at [lovable.dev](https://lovable.dev) set `LOVABLE_DEV_SERVER=true` in your `.env` file so the development server integrates with the online environment.
 
 ### API Keys
 
-The application can integrate with several external APIs. Provide the following
-keys in your `.env` file when available:
-
-```
-API_1_KEY=<your API-1 key>
-API_2_KEY=<your API-2 key>
-API_3_KEY=<your API-3 key>
-```
-
-These keys are optional but enable enhanced features when present.
+OpenAI and vector API keys are entered through the configuration panels in the
+UI. They live only on the frontend and are stored in your browser's
+`localStorage` under the names `openai-api-key`, `openai-api-key-2` and
+`vector-api-key`. Environment variables such as `API_1_KEY`, `API_2_KEY` and
+`API_3_KEY` are no longer used.
 
 ### Supabase setup
 
 Create the required tables and functions in your Supabase project. The full
 schema, including RLS policies and indexes, is documented in
 `docs/supabase.sql`.
+
+Structured rubric files are **not** stored in the repository. Obtain them from
+your organisation or generate them as described in `docs/rubrics.md`. Place the
+files inside a `rubrics/` directory.
+
 After setting up the tables you can import rubric JSON files with:
 
 ```bash

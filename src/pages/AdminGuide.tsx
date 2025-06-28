@@ -51,7 +51,7 @@ const AdminGuide = () => {
       color: "bg-orange-500",
       tasks: [
         "Ga naar de tab 'Analyse' om rubric-gebaseerde prestaties te bekijken",
-        "Controleer de AdminRubricsOverview voor gedetailleerde analyse",
+        "Bekijk de rubrieken voor gedetailleerde analyse",
         "Bekijk feedback statistieken in de Data tab",
         "Monitor emotie detectie accuratesse en response kwaliteit"
       ]
