@@ -36,6 +36,13 @@ npm i
 npm run dev
 ```
 
+The local API proxy is written in TypeScript and uses **ts-node** to run.
+Start it with:
+
+```sh
+npm run start:server
+```
+
 Create a `.env` file based on `.env.example` and add your Supabase credentials:
 
 ```

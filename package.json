@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start:server": "node server/index.ts",
+    "start:server": "ts-node server/index.ts",
     "test": "vitest"
   },
   "dependencies": {
@@ -86,7 +86,8 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1",
-    "vitest": "^1.6.1"
+    "vitest": "^1.6.1",
+    "ts-node": "^10.9.1"
   },
   "license": "MIT"
 }
