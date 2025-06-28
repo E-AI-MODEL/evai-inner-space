@@ -3,7 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Brain, Shield, Settings, User, Monitor } from "lucide-react";
+import { Brain, Shield, Settings, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface TopBarProps {
@@ -24,9 +24,6 @@ const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="text-gray-600 hover:text-gray-800">
             <Shield className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/admin/enhanced')} className="text-gray-600 hover:text-gray-800">
-            <Monitor className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="sm" onClick={onSettingsClick} className="text-gray-600 hover:text-gray-800">
             <Settings className="h-4 w-4" />
