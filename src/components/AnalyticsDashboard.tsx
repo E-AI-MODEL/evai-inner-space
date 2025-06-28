@@ -4,15 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Brain, Activity, Target, Zap } from 'lucide-react';
-
-interface AnalyticsData {
-  totalRequests: number;
-  averageProcessingTime: number;
-  successRate: number;
-  lastProcessingTime: number;
-  processingPath: string;
-  componentsUsed: string;
-}
+import { AnalyticsData } from '@/types/analytics';
 
 interface AnalyticsDashboardProps {
   data: AnalyticsData;
