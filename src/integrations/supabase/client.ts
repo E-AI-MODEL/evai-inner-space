@@ -8,10 +8,15 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as
   | string
   | undefined;
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error(
-    'Missing Supabase configuration. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'
-  );
+const missingVars: string[] = [];
+if (!SUPABASE_URL) missingVars.push('VITE_SUPABASE_URL');
+if (!SUPABASE_PUBLISHABLE_KEY) missingVars.push('VITE_SUPABASE_ANON_KEY');
+
+if (missingVars.length > 0) {
+  const message = `Supabase configuration missing: ${missingVars.join(
+    ', '
+  )}. Check the README for setup instructions.`;
+  throw new Error(message);
 }
 
 // Configure Supabase client with proper auth settings

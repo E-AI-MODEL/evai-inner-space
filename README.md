@@ -36,7 +36,7 @@ npm i
 npm run dev
 ```
 
-Create a `.env` file based on `.env.example` and add your Supabase credentials:
+Create a `.env` file based on `.env.example` and add your Supabase credentials. **All four variables below are mandatory.** They can be found in the Supabase dashboard under **Settings → API** as the *Project URL* and *anon public key*:
 
 ```
 VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
@@ -46,6 +46,10 @@ SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
 ```
 These variables are required for both the frontend and Node scripts to connect
 to your Supabase project.
+
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are used by the browser code,
+while `SUPABASE_URL` and `SUPABASE_ANON_KEY` are used by Node scripts. The value
+for each pair should be identical.
 
 Example Node usage:
 
