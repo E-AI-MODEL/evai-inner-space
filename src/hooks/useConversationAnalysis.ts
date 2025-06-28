@@ -2,9 +2,10 @@
 import { useState } from 'react';
 import type { Message } from '../types';
 import { ConversationAnalysisResult, OpenAISeedGeneratorConfig } from '../types/openAISeedGenerator';
+import { OPENAI_MODEL } from '../openaiConfig';
 
 const DEFAULT_CONFIG: Partial<OpenAISeedGeneratorConfig> = {
-  model: 'gpt-4.1-2025-04-14',
+  model: OPENAI_MODEL,
   temperature: 0.5,
   maxTokens: 200
 };
