@@ -4,10 +4,19 @@ export interface NeurosymbolicDecision {
   confidence: number;
   reasoning: string[];
   source: string;
-  metadata: {
+  processingTime: number;
+  metadata?: {
     processingTime: number;
     fallbackUsed: boolean;
     priority: 'high' | 'medium' | 'low';
+    apiCollaboration?: {
+      api1_used?: boolean;
+      api2_used?: boolean;
+      vector_api_used?: boolean;
+      seed_generated?: boolean;
+      secondary_analysis?: boolean;
+    };
+    componentsUsed?: string[];
   };
 }
 

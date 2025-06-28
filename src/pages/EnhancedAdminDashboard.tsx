@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,13 +21,33 @@ const EnhancedAdminDashboard: React.FC = () => {
     return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
   }
 
+  const formatApiStatus = (apiCollaboration?: any) => {
+    if (!apiCollaboration) return 'Geen API data';
+    
+    const statuses = [];
+    if (apiCollaboration.api1_used !== undefined) {
+      statuses.push(`API1: ${apiCollaboration.api1_used ? '✅' : '❌'}`);
+    }
+    if (apiCollaboration.api2_used !== undefined) {
+      statuses.push(`API2: ${apiCollaboration.api2_used ? '✅' : '❌'}`);
+    }
+    if (apiCollaboration.vector_api_used !== undefined) {
+      statuses.push(`Vector: ${apiCollaboration.vector_api_used ? '✅' : '❌'}`);
+    }
+    if (apiCollaboration.seed_generated !== undefined) {
+      statuses.push(`Seed: ${apiCollaboration.seed_generated ? '✅' : '❌'}`);
+    }
+    
+    return statuses.length > 0 ? statuses.join(', ') : 'Geen API status';
+  };
+
   const analyticsData = {
     totalRequests: stats.totalRequests,
     averageProcessingTime: stats.averageProcessingTime,
     successRate: stats.successRate,
     lastProcessingTime: stats.lastProcessingTime,
     processingPath: lastDecision?.type || 'none',
-    componentsUsed: lastDecision?.metadata?.componentsUsed || []
+    componentsUsed: formatApiStatus(lastDecision?.metadata?.apiCollaboration)
   };
 
   const neurosymbolicData = lastDecision ? {
@@ -48,7 +67,7 @@ const EnhancedAdminDashboard: React.FC = () => {
       finalEmotion: 'neutral',
       confidence: lastDecision.confidence,
       processingPath: lastDecision.type,
-      componentsUsed: lastDecision.metadata?.componentsUsed || []
+      componentsUsed: formatApiStatus(lastDecision?.metadata?.apiCollaboration)
     }
   } : undefined;
 
@@ -122,7 +141,12 @@ const EnhancedAdminDashboard: React.FC = () => {
               <div>
                 <RealtimeMonitor 
                   isProcessing={isProcessing}
-                  lastDecision={lastDecision}
+                  lastDecision={lastDecision ? {
+                    type: lastDecision.type,
+                    confidence: lastDecision.confidence,
+                    source: lastDecision.source,
+                    processingTime: lastDecision.processingTime || lastDecision.metadata?.processingTime || 0
+                  } : null}
                 />
               </div>
             </div>
@@ -272,6 +296,11 @@ const EnhancedAdminDashboard: React.FC = () => {
                           {Math.round(lastDecision.confidence * 100)}%
                         </Badge>
                       </div>
+                      {lastDecision.metadata?.apiCollaboration && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          API Status: {formatApiStatus(lastDecision.metadata.apiCollaboration)}
+                        </div>
+                      )}
                     </div>
                   )}
                   
