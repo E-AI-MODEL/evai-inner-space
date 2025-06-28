@@ -76,6 +76,11 @@ UI. They live only on the frontend and are stored in your browser's
 Create the required tables and functions in your Supabase project. The full
 schema, including RLS policies and indexes, is documented in
 `docs/supabase.sql`.
+
+Structured rubric files are **not** stored in the repository. Obtain them from
+your organisation or generate them as described in `docs/rubrics.md`. Place the
+files inside a `rubrics/` directory.
+
 After setting up the tables you can import rubric JSON files with:
 
 ```bash
