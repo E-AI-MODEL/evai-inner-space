@@ -32,7 +32,7 @@ export function useAdvancedSeedMatcher() {
       const { data: keywordMatches, error: keywordError } = await supabase
         .from('emotion_seeds')
         .select('*')
-        .or(`triggers.cs.{${userInput.toLowerCase()}},emotion.ilike.%${userInput.toLowerCase()}%`)
+        .ilike('emotion', `%${userInput.toLowerCase()}%`)
         .eq('active', true)
         .limit(5);
 
@@ -42,14 +42,26 @@ export function useAdvancedSeedMatcher() {
 
       if (keywordMatches && keywordMatches.length > 0) {
         const bestMatch = keywordMatches[0];
+        const response = typeof bestMatch.response === 'object' && bestMatch.response 
+          ? (bestMatch.response as any).nl || (bestMatch.response as any).response || ''
+          : String(bestMatch.response || '');
+        
+        const triggers = bestMatch.meta && typeof bestMatch.meta === 'object'
+          ? (bestMatch.meta as any).triggers || []
+          : [];
+          
+        const metadata = bestMatch.meta && typeof bestMatch.meta === 'object'
+          ? bestMatch.meta as Record<string, any>
+          : {};
+
         return {
           id: bestMatch.id,
           emotion: bestMatch.emotion,
-          response: bestMatch.response_nl || bestMatch.response || '',
+          response,
           confidence: 0.9, // High confidence for exact matches
           label: bestMatch.label as any,
-          triggers: bestMatch.triggers || [],
-          metadata: bestMatch.metadata || {}
+          triggers: Array.isArray(triggers) ? triggers : [],
+          metadata
         };
       }
 
@@ -76,14 +88,18 @@ export function useAdvancedSeedMatcher() {
               console.warn('Vector search failed:', vectorError);
             } else if (vectorMatches && vectorMatches.length > 0) {
               const bestMatch = vectorMatches[0];
+              const metadata = typeof bestMatch.metadata === 'object' && bestMatch.metadata
+                ? bestMatch.metadata as Record<string, any>
+                : {};
+                
               return {
                 id: bestMatch.id,
                 emotion: bestMatch.emotion,
                 response: bestMatch.response_text || '',
                 confidence: bestMatch.similarity_score,
                 label: 'Valideren',
-                triggers: bestMatch.triggers || [],
-                metadata: bestMatch.metadata || {}
+                triggers: metadata.triggers || [],
+                metadata
               };
             }
           }
