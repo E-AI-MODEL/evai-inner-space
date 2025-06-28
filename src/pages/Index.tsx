@@ -1,14 +1,11 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import TopBar from "../components/TopBar";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import InputBar from "../components/InputBar";
 import { Drawer, DrawerContent, DrawerTrigger } from "../components/ui/drawer";
 import { useIsMobile } from "../hooks/use-mobile";
-import { toast } from "@/hooks/use-toast";
 import IntroAnimation from "../components/IntroAnimation";
 import { getEmotionVisuals } from "../lib/emotion-visuals";
-import SettingsSheet from "../components/SettingsSheet";
 import { useChat } from "../hooks/useChat";
 import ChatView from "../components/ChatView";
 import DraggableEmotionHistoryButton from "../components/DraggableEmotionHistoryButton";
@@ -16,9 +13,6 @@ import MobileUIFixes from "../components/MobileUIFixes";
 
 const Index = () => {
   const [showIntro, setShowIntro] = useState<boolean>(true);
-  const [apiKey, setApiKey] = useState("");
-  const [apiKey2, setApiKey2] = useState("");
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -26,22 +20,6 @@ const Index = () => {
   const messageRefs = useRef(new Map<string, HTMLDivElement | null>());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Load API keys from localStorage
-  useEffect(() => {
-    try {
-      const savedApiKey = localStorage.getItem("openai-api-key");
-      const savedApiKey2 = localStorage.getItem("openai-api-key-2"); 
-      
-      if (savedApiKey) {
-        setApiKey(savedApiKey);
-      }
-      if (savedApiKey2) {
-        setApiKey2(savedApiKey2);
-      }
-    } catch (error) {
-      console.error('Error loading API keys:', error);
-    }
-  }, []);
   
   // Initialize chat hook
   const { 
@@ -52,7 +30,7 @@ const Index = () => {
     onSend, 
     setFeedback,
     clearHistory
-  } = useChat(apiKey, apiKey2);
+  } = useChat();
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
@@ -65,16 +43,6 @@ const Index = () => {
     return <IntroAnimation onFinished={() => setShowIntro(false)} />;
   }
 
-  const saveApiKey = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem("openai-api-key", apiKey.trim());
-      toast({
-        title: "API Key opgeslagen",
-        description: "Je OpenAI API key is lokaal opgeslagen.",
-      });
-      setIsSettingsOpen(false);
-    }
-  };
 
   const handleFocusMessage = (id: string) => {
     const node = messageRefs.current.get(id);
@@ -121,22 +89,6 @@ const Index = () => {
     <>
       <MobileUIFixes />
       <div className={`w-full bg-background font-inter flex flex-col ${isMobile ? 'h-[100dvh]' : 'h-screen'} overflow-hidden`}>
-        
-        {/* Fixed Header */}
-        <div className="flex-shrink-0 z-50">
-          <TopBar 
-            onSettingsClick={() => setIsSettingsOpen(true)}
-          />
-        </div>
-
-        <SettingsSheet
-          isOpen={isSettingsOpen}
-          onOpenChange={setIsSettingsOpen}
-          apiKey={apiKey}
-          onApiKeyChange={setApiKey}
-          onApiKeySave={saveApiKey}
-        />
-
         {/* Mobile drawer voor emotie geschiedenis */}
         <Drawer open={historyOpen} onOpenChange={setHistoryOpen}>
           <DrawerTrigger asChild>
