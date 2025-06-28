@@ -1,28 +1,20 @@
 
 import { useState, useCallback } from 'react';
 import { Message, ChatHistoryItem } from '../types';
-import { useSeedEngine } from './useSeedEngine';
-import { useOpenAI, EmotionDetection } from './useOpenAI';
-import { useOpenAISecondary } from './useOpenAISecondary';
-import { AdvancedSeed } from '../types/seed';
+import { useProcessingOrchestrator } from './useProcessingOrchestrator';
 import { v4 as uuidv4 } from 'uuid';
 
 export function useChat(apiKey?: string, apiKey2?: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const { checkInput } = useSeedEngine();
-  const { detectEmotion } = useOpenAI();
-  const { analyzeNeurosymbolic } = useOpenAISecondary();
+  
+  const { orchestrateProcessing, isProcessing, stats } = useProcessingOrchestrator();
 
   const onSend = useCallback(async (message: string) => {
     if (!message.trim() || isProcessing) {
       return;
     }
 
-    setIsProcessing(true);
-    
     // Add user message
     const userMessage: Message = {
       id: uuidv4(),
@@ -35,96 +27,33 @@ export function useChat(apiKey?: string, apiKey2?: string) {
     setInput('');
 
     try {
-      // Convert to ChatHistoryItem format for API calls
+      // Convert to ChatHistoryItem format
       const history: ChatHistoryItem[] = messages.map(msg => ({
         role: msg.from === 'user' ? 'user' : 'assistant',
-        content: msg.content
+        content: msg.content,
+        timestamp: msg.timestamp
       }));
 
-      // Try unified seed engine first
-      let unifiedResult;
-      try {
-        unifiedResult = await checkInput(message, apiKey, undefined, history);
-      } catch (error) {
-        console.error('Unified decision core failed:', error);
-        unifiedResult = null;
-      }
-      
-      let aiResponse: Message;
+      // Process through unified orchestrator
+      const result = await orchestrateProcessing(message, history, apiKey, apiKey2);
 
-      if (unifiedResult) {
-        // Handle unified result (could be EmotionDetection or AdvancedSeed)
-        if ('confidence' in unifiedResult && typeof unifiedResult.confidence === 'number') {
-          // It's an EmotionDetection from OpenAI
-          const emotionResult = unifiedResult as EmotionDetection;
-          aiResponse = {
-            id: uuidv4(),
-            from: 'ai',
-            content: emotionResult.response,
-            timestamp: new Date(),
-            emotionSeed: emotionResult.emotion,
-            confidence: emotionResult.confidence,
-            label: emotionResult.label,
-            explainText: emotionResult.reasoning,
-            symbolicInferences: emotionResult.symbolicInferences || []
-          };
-        } else {
-          // It's an AdvancedSeed from database
-          const seedResult = unifiedResult as AdvancedSeed;
-          aiResponse = {
-            id: uuidv4(),
-            from: 'ai',
-            content: seedResult.response.nl,
-            timestamp: new Date(),
-            emotionSeed: seedResult.emotion,
-            confidence: seedResult.meta.confidence,
-            label: seedResult.label,
-            explainText: `Seed match: ${seedResult.emotion}`,
-            symbolicInferences: [`🌱 Seed: ${seedResult.emotion}`, `🎯 Type: ${seedResult.type}`]
-          };
+      const aiResponse: Message = {
+        id: uuidv4(),
+        from: 'ai',
+        content: result.content,
+        timestamp: new Date(),
+        emotionSeed: result.emotion,
+        confidence: result.confidence,
+        label: result.label,
+        explainText: result.reasoning,
+        symbolicInferences: result.symbolicInferences,
+        secondaryInsights: result.secondaryInsights,
+        meta: {
+          processingPath: result.metadata.processingPath,
+          totalProcessingTime: result.metadata.totalProcessingTime,
+          componentsUsed: result.metadata.componentsUsed
         }
-
-        // Try secondary analysis if API key 2 is available
-        if (apiKey2?.trim()) {
-          try {
-            const secondaryAnalysis = await analyzeNeurosymbolic(
-              message,
-              aiResponse.content,
-              apiKey2
-            );
-            
-            if (secondaryAnalysis) {
-              aiResponse.secondaryInsights = secondaryAnalysis.insights.slice(0, 3);
-              if (secondaryAnalysis.patterns.length > 0) {
-                aiResponse.symbolicInferences = [
-                  ...(aiResponse.symbolicInferences || []),
-                  ...secondaryAnalysis.patterns.slice(0, 2).map(p => `🔍 ${p}`)
-                ];
-              }
-            }
-          } catch (error) {
-            console.warn('Secondary analysis failed, continuing without it');
-          }
-        }
-      } else {
-        // Fallback to direct OpenAI call
-        if (!apiKey?.trim()) {
-          throw new Error('OpenAI API key is required');
-        }
-
-        const fallbackResult = await detectEmotion(message, apiKey, undefined, history);
-        aiResponse = {
-          id: uuidv4(),
-          from: 'ai',
-          content: fallbackResult.response,
-          timestamp: new Date(),
-          emotionSeed: fallbackResult.emotion,
-          confidence: fallbackResult.confidence,
-          label: fallbackResult.label,
-          explainText: fallbackResult.reasoning,
-          symbolicInferences: fallbackResult.symbolicInferences || []
-        };
-      }
+      };
 
       setMessages(prev => [...prev, aiResponse]);
 
@@ -138,14 +67,12 @@ export function useChat(apiKey?: string, apiKey2?: string) {
         timestamp: new Date(),
         emotionSeed: 'error',
         confidence: 0,
-        label: 'Valideren'
+        label: 'Fout'
       };
       
       setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsProcessing(false);
     }
-  }, [messages, isProcessing, apiKey, apiKey2, checkInput, detectEmotion, analyzeNeurosymbolic]);
+  }, [messages, isProcessing, apiKey, apiKey2, orchestrateProcessing]);
 
   const setFeedback = useCallback((messageId: string, feedback: 'like' | 'dislike') => {
     setMessages(prev => prev.map(msg => 
@@ -158,6 +85,14 @@ export function useChat(apiKey?: string, apiKey2?: string) {
     setInput('');
   }, []);
 
+  const getChatStats = useCallback(() => {
+    return {
+      messageCount: messages.length,
+      processingStats: stats,
+      lastActivity: messages.length > 0 ? messages[messages.length - 1].timestamp : null
+    };
+  }, [messages, stats]);
+
   return {
     messages,
     input,
@@ -165,6 +100,7 @@ export function useChat(apiKey?: string, apiKey2?: string) {
     isProcessing,
     onSend,
     setFeedback,
-    clearHistory
+    clearHistory,
+    getChatStats
   };
 }

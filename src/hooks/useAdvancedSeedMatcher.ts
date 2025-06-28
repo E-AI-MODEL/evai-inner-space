@@ -1,141 +1,108 @@
 
-import { useState } from 'react';
-import { AdvancedSeed } from '../types/seed';
-import { incrementSeedUsage } from '../lib/advancedSeedStorage';
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { generateEmbedding } from '@/lib/embeddingUtils';
 
-export interface MatchingContext {
-  userAge?: 'child' | 'teen' | 'adult' | 'senior';
-  timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
-  situation?: 'work' | 'home' | 'school' | 'social' | 'therapy';
+interface AdvancedSeedMatch {
+  id: string;
+  emotion: string;
+  response: string;
+  confidence: number;
+  label?: 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Interventie' | 'Fout';
+  triggers: string[];
+  metadata: Record<string, any>;
 }
 
 export function useAdvancedSeedMatcher() {
   const [isMatching, setIsMatching] = useState(false);
 
-  const findBestMatch = async (
-    input: string,
-    seeds: AdvancedSeed[],
-    context?: MatchingContext
-  ): Promise<AdvancedSeed | null> => {
-    if (seeds.length === 0) return null;
+  const matchAdvancedSeed = useCallback(async (
+    userInput: string,
+    apiKey?: string,
+    threshold: number = 0.7
+  ): Promise<AdvancedSeedMatch | null> => {
+    if (!userInput?.trim()) {
+      return null;
+    }
 
     setIsMatching(true);
-    console.log('🔍 Advanced seed matching voor:', input.substring(0, 50));
-
+    
     try {
-      const normalized = input.toLowerCase();
-      const activeSeeds = seeds.filter(s => s.isActive);
-      
-      if (activeSeeds.length === 0) {
-        console.log('🔴 Geen actieve seeds beschikbaar');
-        return null;
+      // First try exact keyword matching for speed
+      const { data: keywordMatches, error: keywordError } = await supabase
+        .from('emotion_seeds')
+        .select('*')
+        .or(`triggers.cs.{${userInput.toLowerCase()}},emotion.ilike.%${userInput.toLowerCase()}%`)
+        .eq('active', true)
+        .limit(5);
+
+      if (keywordError) {
+        console.warn('Keyword matching failed:', keywordError);
       }
 
-      const candidates: Array<{ seed: AdvancedSeed; score: number }> = [];
-
-      for (const seed of activeSeeds) {
-        let score = 0;
-        
-        // Check trigger matches
-        const triggerMatches = seed.triggers.filter(trigger => 
-          normalized.includes(trigger.toLowerCase())
-        );
-        
-        if (triggerMatches.length === 0) continue;
-
-        // Base score from triggers and weight
-        score = triggerMatches.length * 10 * seed.meta.weight;
-
-        // Context matching bonuses
-        if (context) {
-          if (context.userAge && seed.context.userAge === context.userAge) score += 5;
-          if (context.timeOfDay && seed.context.timeOfDay === context.timeOfDay) score += 3;
-          if (context.situation && seed.context.situation === context.situation) score += 5;
-        }
-
-        // Freshness bonus (prefer less recently used seeds)
-        if (seed.meta.lastUsed) {
-          const lastUsedDate = seed.meta.lastUsed instanceof Date 
-            ? seed.meta.lastUsed 
-            : new Date(seed.meta.lastUsed);
-          const hoursSince = (Date.now() - lastUsedDate.getTime()) / (1000 * 60 * 60);
-          if (hoursSince > 24) score += 2;
-        } else {
-          score += 3; // Bonus for never used seeds
-        }
-
-        // TTL penalty (reduce score if recently used within TTL)
-        if (seed.meta.ttl && seed.meta.lastUsed) {
-          const lastUsedDate = seed.meta.lastUsed instanceof Date 
-            ? seed.meta.lastUsed 
-            : new Date(seed.meta.lastUsed);
-          const minutesSince = (Date.now() - lastUsedDate.getTime()) / (1000 * 60);
-          if (minutesSince < seed.meta.ttl) {
-            score *= 0.5;
-          }
-        }
-
-        // Usage frequency penalty (prefer less overused seeds)
-        if (seed.meta.usageCount > 5) {
-          score *= Math.max(0.3, 1 - seed.meta.usageCount * 0.1);
-        }
-
-        candidates.push({ seed, score });
-        console.log(`🎯 Candidate: ${seed.emotion} - Score: ${score.toFixed(1)} (triggers: ${triggerMatches.length}, weight: ${seed.meta.weight}, usage: ${seed.meta.usageCount})`);
+      if (keywordMatches && keywordMatches.length > 0) {
+        const bestMatch = keywordMatches[0];
+        return {
+          id: bestMatch.id,
+          emotion: bestMatch.emotion,
+          response: bestMatch.response_nl || bestMatch.response || '',
+          confidence: 0.9, // High confidence for exact matches
+          label: bestMatch.label as any,
+          triggers: bestMatch.triggers || [],
+          metadata: bestMatch.metadata || {}
+        };
       }
 
-      if (candidates.length === 0) {
-        console.log('🔴 Geen matching candidates gevonden');
-        return null;
-      }
-
-      // Sort by score and select probabilistically from top candidates
-      candidates.sort((a, b) => b.score - a.score);
-      const topCandidates = candidates.slice(0, Math.min(3, candidates.length));
-      
-      console.log('🏆 Top candidates:', topCandidates.map(c => `${c.seed.emotion}(${c.score.toFixed(1)})`).join(', '));
-
-      // Weighted random selection from top candidates
-      const totalScore = topCandidates.reduce((sum, c) => sum + c.score, 0);
-      let randomValue = Math.random() * totalScore;
-
-      for (const candidate of topCandidates) {
-        randomValue -= candidate.score;
-        if (randomValue <= 0) {
-          const selectedSeed = candidate.seed;
-          console.log('✅ Seed geselecteerd:', selectedSeed.emotion, 'Score:', candidate.score.toFixed(1));
+      // If no exact matches and we have an API key, try vector similarity
+      if (apiKey?.trim()) {
+        try {
+          const queryEmbedding = await generateEmbedding(userInput, apiKey);
+          const { data: { user } } = await supabase.auth.getUser();
           
-          // Increment usage count in background
-          try {
-            await incrementSeedUsage(selectedSeed.id);
-            console.log('📊 Usage count updated voor seed:', selectedSeed.id);
-          } catch (error) {
-            console.error('🔴 Failed to increment usage:', error);
+          if (user) {
+            const embeddingString = `[${queryEmbedding.join(',')}]`;
+            const { data: vectorMatches, error: vectorError } = await supabase.rpc(
+              'search_unified_knowledge',
+              {
+                query_text: userInput,
+                query_embedding: embeddingString,
+                user_uuid: user.id,
+                similarity_threshold: threshold,
+                max_results: 3
+              }
+            );
+
+            if (vectorError) {
+              console.warn('Vector search failed:', vectorError);
+            } else if (vectorMatches && vectorMatches.length > 0) {
+              const bestMatch = vectorMatches[0];
+              return {
+                id: bestMatch.id,
+                emotion: bestMatch.emotion,
+                response: bestMatch.response_text || '',
+                confidence: bestMatch.similarity_score,
+                label: 'Valideren',
+                triggers: bestMatch.triggers || [],
+                metadata: bestMatch.metadata || {}
+              };
+            }
           }
-          
-          return selectedSeed;
+        } catch (embeddingError) {
+          console.warn('Vector embedding search failed:', embeddingError);
         }
       }
 
-      // Fallback to first candidate
-      const fallbackSeed = candidates[0].seed;
-      console.log('🔄 Fallback naar eerste candidate:', fallbackSeed.emotion);
-      
-      try {
-        await incrementSeedUsage(fallbackSeed.id);
-      } catch (error) {
-        console.error('🔴 Failed to increment usage (fallback):', error);
-      }
-      
-      return fallbackSeed;
-
+      return null;
     } catch (error) {
-      console.error('🔴 Advanced seed matching error:', error);
+      console.error('Advanced seed matching failed:', error);
       return null;
     } finally {
       setIsMatching(false);
     }
-  };
+  }, []);
 
-  return { findBestMatch, isMatching };
+  return {
+    matchAdvancedSeed,
+    isMatching
+  };
 }
