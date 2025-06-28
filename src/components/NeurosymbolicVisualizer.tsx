@@ -4,25 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Brain, Zap, Database, GitBranch } from 'lucide-react';
-
-interface NeurosymbolicData {
-  symbolicMatches: Array<{
-    pattern: string;
-    confidence: number;
-    source: string;
-  }>;
-  neuralAnalysis: {
-    emotion: string;
-    confidence: number;
-    reasoning: string;
-  };
-  hybridDecision: {
-    finalEmotion: string;
-    confidence: number;
-    processingPath: string;
-    componentsUsed: string[];
-  };
-}
+import { NeurosymbolicData } from '@/types/neurosymbolic';
 
 interface NeurosymbolicVisualizerProps {
   data?: NeurosymbolicData;

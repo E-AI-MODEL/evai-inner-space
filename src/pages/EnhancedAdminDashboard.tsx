@@ -11,26 +11,8 @@ import ConfigurationPanel from '@/components/ConfigurationPanel';
 import { useProcessingOrchestrator } from '@/hooks/useProcessingOrchestrator';
 import { Brain, Settings, Activity, BarChart, Monitor, GitBranch, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
-// Local interface for neurosymbolic data with corrected types
-interface NeurosymbolicData {
-  symbolicMatches: Array<{
-    pattern: string;
-    confidence: number;
-    source: string;
-  }>;
-  neuralAnalysis: {
-    emotion: string;
-    confidence: number;
-    reasoning: string;
-  };
-  hybridDecision: {
-    finalEmotion: string;
-    confidence: number;
-    processingPath: string;
-    componentsUsed: string;
-  };
-}
+import { NeurosymbolicData } from '@/types/neurosymbolic';
+import { AnalyticsData } from '@/types/analytics';
 
 const EnhancedAdminDashboard: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -61,7 +43,7 @@ const EnhancedAdminDashboard: React.FC = () => {
     return statuses.length > 0 ? statuses.join(', ') : 'Geen API status';
   };
 
-  const analyticsData = {
+  const analyticsData: AnalyticsData = {
     totalRequests: stats.totalRequests,
     averageProcessingTime: stats.averageProcessingTime,
     successRate: stats.successRate,
