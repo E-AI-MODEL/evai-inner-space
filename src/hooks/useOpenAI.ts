@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { ChatHistoryItem } from '../types';
+import { OPENAI_MODEL } from '../openaiConfig';
 
 export interface EmotionDetection {
   emotion: string;
@@ -61,7 +62,7 @@ Focus op Nederlandse therapeutische context met empathie en begrip.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: OPENAI_MODEL,
           messages: [
             { role: 'system', content: 'Je bent een empathische therapeutische AI die helpt met emotionele ondersteuning in het Nederlands.' },
             { role: 'user', content: prompt }
@@ -95,7 +96,7 @@ Focus op Nederlandse therapeutische context met empathie en begrip.`;
             reasoning: parsed.reasoning || 'Neural processing',
             label: parsed.label || 'Valideren',
             triggers: Array.isArray(parsed.triggers) ? parsed.triggers : [parsed.emotion || 'neutral'],
-            meta: 'OpenAI GPT-4.1',
+            meta: `OpenAI ${OPENAI_MODEL}`,
             symbolicInferences: [`🧠 Neural: ${parsed.emotion}`, `📊 Confidence: ${Math.round((parsed.confidence || 0.7) * 100)}%`]
           };
 
@@ -113,7 +114,7 @@ Focus op Nederlandse therapeutische context met empathie en begrip.`;
           reasoning: 'Fallback processing',
           label: 'Valideren',
           triggers: ['neutral'],
-          meta: 'OpenAI GPT-4.1 (fallback)',
+          meta: `OpenAI ${OPENAI_MODEL} (fallback)`,
           symbolicInferences: ['🧠 Neural processing (fallback)']
         };
       }

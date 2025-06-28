@@ -7,6 +7,7 @@ import { BarChart } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { AdvancedSeed } from '../../types/seed';
 import { v4 as uuidv4 } from 'uuid';
+import { OPENAI_MODEL } from '../../openaiConfig';
 
 interface NeuralSeedTabProps {
   openAiKey2: string;
@@ -39,7 +40,7 @@ const NeuralSeedTab: React.FC<NeuralSeedTabProps> = ({ openAiKey2, seeds, onSeed
           'Authorization': `Bearer ${openAiKey2}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: OPENAI_MODEL,
           messages: [
             { role: 'user', content: `Genereer een therapeutische response voor de emotie "${emotion}" met triggers: ${triggers.join(', ')}. Geef alleen de Nederlandse response text terug, maximaal 100 woorden, empathisch en ondersteunend.` }
           ],
@@ -131,7 +132,7 @@ const NeuralSeedTab: React.FC<NeuralSeedTabProps> = ({ openAiKey2, seeds, onSeed
           'Authorization': `Bearer ${openAiKey2}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
+          model: OPENAI_MODEL,
           messages: [
             { role: 'user', content: analysisPrompt }
           ],
