@@ -30,15 +30,18 @@ export function useUnifiedDecisionEngine() {
         symbolicResult = await processSymbolic(context.userInput, context.conversationHistory);
         
         if (symbolicResult && symbolicResult.confidence > 0.8) {
+          const processingTime = Date.now() - startTime;
           const decision: NeurosymbolicDecision = {
             type: 'symbolic',
             confidence: symbolicResult.confidence,
             reasoning: [`High-confidence symbolic match: ${symbolicResult.pattern}`],
             source: 'symbolic_engine',
+            processingTime,
             metadata: {
-              processingTime: Date.now() - startTime,
+              processingTime,
               fallbackUsed: false,
-              priority: 'high'
+              priority: 'high',
+              componentsUsed
             }
           };
           
@@ -52,7 +55,7 @@ export function useUnifiedDecisionEngine() {
             symbolicInferences: symbolicResult.inferences || [],
             metadata: {
               processingPath: 'symbolic',
-              totalProcessingTime: Date.now() - startTime,
+              totalProcessingTime: processingTime,
               componentsUsed
             }
           };
@@ -68,15 +71,18 @@ export function useUnifiedDecisionEngine() {
         seedResult = await matchAdvancedSeed(context.userInput, apiKey);
         
         if (seedResult && seedResult.confidence > 0.7) {
+          const processingTime = Date.now() - startTime;
           const decision: NeurosymbolicDecision = {
             type: 'hybrid',
             confidence: seedResult.confidence,
             reasoning: [`Advanced seed match: ${seedResult.emotion}`, `Similarity: ${seedResult.confidence}`],
             source: 'advanced_seed_engine',
+            processingTime,
             metadata: {
-              processingTime: Date.now() - startTime,
+              processingTime,
               fallbackUsed: false,
-              priority: 'medium'
+              priority: 'medium',
+              componentsUsed
             }
           };
           
@@ -90,7 +96,7 @@ export function useUnifiedDecisionEngine() {
             symbolicInferences: [`🌱 Seed: ${seedResult.emotion}`, `🎯 Confidence: ${Math.round(seedResult.confidence * 100)}%`],
             metadata: {
               processingPath: 'hybrid',
-              totalProcessingTime: Date.now() - startTime,
+              totalProcessingTime: processingTime,
               componentsUsed
             }
           };
@@ -112,15 +118,18 @@ export function useUnifiedDecisionEngine() {
         context.conversationHistory
       );
 
+      const processingTime = Date.now() - startTime;
       const decision: NeurosymbolicDecision = {
         type: 'neural',
         confidence: neuralResult.confidence,
         reasoning: [neuralResult.reasoning || 'Neural network processing'],
         source: 'openai_engine',
+        processingTime,
         metadata: {
-          processingTime: Date.now() - startTime,
+          processingTime,
           fallbackUsed: true,
-          priority: 'low'
+          priority: 'low',
+          componentsUsed
         }
       };
       
@@ -148,7 +157,7 @@ export function useUnifiedDecisionEngine() {
         secondaryInsights,
         metadata: {
           processingPath: 'neural',
-          totalProcessingTime: Date.now() - startTime,
+          totalProcessingTime: processingTime,
           componentsUsed
         }
       };
@@ -156,15 +165,18 @@ export function useUnifiedDecisionEngine() {
     } catch (error) {
       console.error('Unified decision engine failed:', error);
       
+      const processingTime = Date.now() - startTime;
       const errorDecision: NeurosymbolicDecision = {
         type: 'neural',
         confidence: 0,
         reasoning: [`Error: ${error instanceof Error ? error.message : 'Unknown error'}`],
         source: 'error_handler',
+        processingTime,
         metadata: {
-          processingTime: Date.now() - startTime,
+          processingTime,
           fallbackUsed: true,
-          priority: 'low'
+          priority: 'low',
+          componentsUsed: ['Error Handler']
         }
       };
       
@@ -179,7 +191,7 @@ export function useUnifiedDecisionEngine() {
         symbolicInferences: ['❌ Processing failed'],
         metadata: {
           processingPath: 'error',
-          totalProcessingTime: Date.now() - startTime,
+          totalProcessingTime: processingTime,
           componentsUsed: ['Error Handler']
         }
       };

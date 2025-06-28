@@ -12,6 +12,26 @@ import { useProcessingOrchestrator } from '@/hooks/useProcessingOrchestrator';
 import { Brain, Settings, Activity, BarChart, Monitor, GitBranch, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+// Local interface for neurosymbolic data with corrected types
+interface NeurosymbolicData {
+  symbolicMatches: Array<{
+    pattern: string;
+    confidence: number;
+    source: string;
+  }>;
+  neuralAnalysis: {
+    emotion: string;
+    confidence: number;
+    reasoning: string;
+  };
+  hybridDecision: {
+    finalEmotion: string;
+    confidence: number;
+    processingPath: string;
+    componentsUsed: string;
+  };
+}
+
 const EnhancedAdminDashboard: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { stats, lastDecision, isProcessing } = useProcessingOrchestrator();
@@ -50,7 +70,7 @@ const EnhancedAdminDashboard: React.FC = () => {
     componentsUsed: formatApiStatus(lastDecision?.metadata?.apiCollaboration)
   };
 
-  const neurosymbolicData = lastDecision ? {
+  const neurosymbolicData: NeurosymbolicData | undefined = lastDecision ? {
     symbolicMatches: [
       {
         pattern: 'Symbolic pattern detected',
@@ -145,7 +165,7 @@ const EnhancedAdminDashboard: React.FC = () => {
                     type: lastDecision.type,
                     confidence: lastDecision.confidence,
                     source: lastDecision.source,
-                    processingTime: lastDecision.processingTime || lastDecision.metadata?.processingTime || 0
+                    processingTime: lastDecision.processingTime
                   } : null}
                 />
               </div>

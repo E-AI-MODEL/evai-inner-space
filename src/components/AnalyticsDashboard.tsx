@@ -11,7 +11,7 @@ interface AnalyticsData {
   successRate: number;
   lastProcessingTime: number;
   processingPath: string;
-  componentsUsed: string[];
+  componentsUsed: string;
 }
 
 interface AnalyticsDashboardProps {
@@ -67,7 +67,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ data }) => {
             {data.processingPath}
           </Badge>
           <div className="mt-2 text-xs text-muted-foreground">
-            {data.componentsUsed.join(', ')}
+            {data.componentsUsed}
           </div>
         </CardContent>
       </Card>
