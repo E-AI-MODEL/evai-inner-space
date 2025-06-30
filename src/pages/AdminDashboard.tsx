@@ -60,30 +60,84 @@ const AdminDashboard = () => {
   const { data: analytics } = useQuery({
     queryKey: ['admin-analytics'],
     queryFn: async () => {
-      // Mock analytics data - in production this would fetch from Supabase
+      const { data: seedRows, error: seedErr } = await supabase
+        .from('emotion_seeds')
+        .select('id, active');
+
+      if (seedErr) throw seedErr;
+
+      const { data: logRows, error: logErr } = await supabase
+        .from('api_collaboration_logs')
+        .select('success, processing_time_ms, api1_used, api2_used, vector_api_used, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (logErr) throw logErr;
+
+      const { data: decisions, error: decErr } = await supabase
+        .from('decision_logs')
+        .select('confidence_score, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (decErr) throw decErr;
+
+      const { data: feedbackRows } = await supabase
+        .from('seed_feedback')
+        .select('rating');
+
+      const totalSeeds = seedRows?.length || 0;
+      const activeSeeds = seedRows?.filter(s => s.active).length || 0;
+
+      const totalConversations = decisions?.length || 0;
+      const avgConfidence = decisions && decisions.length > 0
+        ? decisions.reduce((sum, d) => sum + (d.confidence_score || 0), 0) / decisions.length
+        : 0;
+
+      const now = new Date();
+      const lastWeek = new Date(now);
+      lastWeek.setDate(now.getDate() - 7);
+      const previousWeek = new Date(now);
+      previousWeek.setDate(now.getDate() - 14);
+      const lastWeekCount = decisions.filter(d => new Date(d.created_at) >= lastWeek).length;
+      const prevWeekCount = decisions.filter(d => new Date(d.created_at) >= previousWeek && new Date(d.created_at) < lastWeek).length;
+      const weeklyGrowth = prevWeekCount ? ((lastWeekCount - prevWeekCount) / prevWeekCount) * 100 : lastWeekCount * 100;
+
+      const successes = logRows.filter(l => l.success).length;
+      const successRate = logRows.length > 0 ? (successes / logRows.length) * 100 : 100;
+      const avgResponseTime = logRows.length > 0
+        ? Math.round(logRows.reduce((sum, l) => sum + (l.processing_time_ms || 0), 0) / logRows.length)
+        : 0;
+      const openaiCount = logRows.filter(l => l.api1_used || l.api2_used).length;
+      const vectorCount = logRows.filter(l => l.vector_api_used).length;
+      const supabaseCount = logRows.length;
+
+      const pos = feedbackRows?.filter(f => f.rating === 'up').length || 0;
+      const totalFeedback = feedbackRows?.length || 0;
+      const userSatisfaction = totalFeedback > 0 ? +(pos / totalFeedback * 5).toFixed(1) : 0;
+
       return {
-        totalSeeds: seeds.length,
-        activeSeeds: seeds.filter(s => s.isActive).length,
-        totalConversations: 150,
-        avgConfidence: 0.82,
-        weeklyGrowth: 12.5,
-        systemHealth: 'excellent',
+        totalSeeds,
+        activeSeeds,
+        totalConversations,
+        avgConfidence,
+        weeklyGrowth,
+        systemHealth: successRate > 90 ? 'excellent' : 'warning',
         apiUsage: {
-          openai: 1240,
-          vector: 890,
-          supabase: 2150
+          openai: openaiCount,
+          vector: vectorCount,
+          supabase: supabaseCount
         },
-        recentActivity: [
-          { action: 'Seed Generated', time: '2 min ago', status: 'success' },
-          { action: 'User Login', time: '5 min ago', status: 'info' },
-          { action: 'API Call', time: '8 min ago', status: 'success' },
-          { action: 'Database Update', time: '12 min ago', status: 'success' }
-        ],
+        recentActivity: decisions.slice(0, 4).map(d => ({
+          action: 'AI Response',
+          time: d.created_at ? new Date(d.created_at).toLocaleTimeString('nl-NL') : '',
+          status: 'success'
+        })),
         performanceMetrics: {
-          avgResponseTime: 450,
-          successRate: 98.5,
-          errorRate: 1.5,
-          userSatisfaction: 4.3
+          avgResponseTime,
+          successRate,
+          errorRate: 100 - successRate,
+          userSatisfaction
         }
       };
     },
