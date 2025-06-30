@@ -10,12 +10,30 @@ import { useChat } from "../hooks/useChat";
 import ChatView from "../components/ChatView";
 import DraggableEmotionHistoryButton from "../components/DraggableEmotionHistoryButton";
 import MobileUIFixes from "../components/MobileUIFixes";
+import TopBar from "../components/TopBar";
+import SettingsSheet from "../components/SettingsSheet";
+import { useAuth } from "../hooks/useAuth";
 
 const Index = () => {
-  const [showIntro, setShowIntro] = useState<boolean>(true);
+  const { isAuthorized, authorizeChat } = useAuth();
+  const [showIntro, setShowIntro] = useState(!isAuthorized);
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  const handleFinishedIntro = () => {
+    authorizeChat();
+    setShowIntro(false);
+  };
+
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const saveApiKey = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem("openai-api-key", apiKey.trim());
+      setSettingsOpen(false);
+    }
+  };
 
   const messageRefs = useRef(new Map<string, HTMLDivElement | null>());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -40,7 +58,7 @@ const Index = () => {
   }, [messages, isProcessing]);
 
   if (showIntro) {
-    return <IntroAnimation onFinished={() => setShowIntro(false)} />;
+    return <IntroAnimation onFinished={handleFinishedIntro} />;
   }
 
 
@@ -89,6 +107,16 @@ const Index = () => {
     <>
       <MobileUIFixes />
       <div className={`w-full bg-background font-inter flex flex-col ${isMobile ? 'h-[100dvh]' : 'h-screen'} overflow-hidden`}>
+        <TopBar onSettingsClick={() => setSettingsOpen(true)} />
+        <SettingsSheet
+          isOpen={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          apiKey={apiKey}
+          onApiKeyChange={setApiKey}
+          onApiKeySave={saveApiKey}
+        />
+        <div className={`flex-1 flex flex-col ${isMobile ? '' : ''}`}
+        >
         {/* Mobile drawer voor emotie geschiedenis */}
         <Drawer open={historyOpen} onOpenChange={setHistoryOpen}>
           <DrawerTrigger asChild>
@@ -154,6 +182,7 @@ const Index = () => {
             </div>
           </main>
         </div>
+      </div>
       </div>
     </>
   );
