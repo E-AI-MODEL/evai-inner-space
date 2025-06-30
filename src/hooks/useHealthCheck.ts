@@ -15,7 +15,7 @@ export const useHealthCheck = () => {
   
   const { data: seeds, refetch: refetchSeeds } = useSeeds();
   const { detectEmotion } = useOpenAI();
-  const { analyzeNeurosymbolic } = useOpenAISecondary();
+  const { createStrategicBriefing } = useOpenAISecondary();
   const { checkInput } = useSeedEngine();
 
   const runHealthCheck = async () => {
@@ -91,16 +91,17 @@ export const useHealthCheck = () => {
       const apiKey2 = localStorage.getItem('openai-api-key-2');
       if (apiKey2?.trim()) {
         try {
-          const analysis = await analyzeNeurosymbolic(
+          const briefing = await createStrategicBriefing(
             'Ik voel me verdrietig',
-            'Test context',
+            [],
+            null,
             apiKey2
           );
           tests.push({
             component: 'OpenAI API 2',
-            status: analysis ? 'success' : 'warning',
-            message: analysis ? 'Neurosymbolische analyse werkend' : 'Geen analyse resultaat',
-            details: analysis ? `${analysis.patterns.length} patronen, ${analysis.insights.length} inzichten` : undefined
+            status: briefing ? 'success' : 'warning',
+            message: briefing ? 'Strategische briefing werkend' : 'Geen briefing',
+            details: briefing ? briefing.goal : undefined
           });
         } catch (error) {
           tests.push({
