@@ -140,12 +140,14 @@ const NeurosymbolicVisualizer: React.FC<NeurosymbolicVisualizerProps> = ({
                 <div>
                   <span className="text-sm font-medium">Gebruikte Componenten:</span>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {data.hybridDecision.componentsUsed.map((component, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {component}
-                      </Badge>
-                    ))}
+                    <Badge variant="outline" className="text-xs">
+                      {data.hybridDecision.componentsUsed}
+                    </Badge>
                   </div>
+                </div>
+                <div>
+                  <span className="text-sm font-medium">Verwerkingstijd:</span>
+                  <span className="text-sm ml-2">{data.hybridDecision.processingTime}ms</span>
                 </div>
               </div>
             </CardContent>

@@ -153,8 +153,9 @@ const AdminDashboard: React.FC = () => {
     hybridDecision: {
       finalEmotion: 'neutral',
       confidence: lastDecision.confidence,
-      processingPath: lastDecision.type,
-      componentsUsed: formatApiStatus(lastDecision.metadata?.apiCollaboration)
+      processingPath: lastDecision.type as 'neural' | 'symbolic' | 'hybrid',
+      componentsUsed: formatApiStatus(lastDecision.metadata?.apiCollaboration),
+      processingTime: lastDecision.processingTime || 0
     }
   } : undefined;
 

@@ -62,14 +62,12 @@ export const useAuthActions = () => {
     }
 
     console.log('Attempting login with email:', email.trim());
-    const { error } = await signIn(email.trim(), password);
-    
-    if (error) {
+    try {
+      await signIn(email.trim(), password);
+      setSuccess('Succesvol ingelogd!');
+    } catch (error: any) {
       console.error('Login error details:', error);
       setError(getDetailedErrorMessage(error));
-    } else {
-      setSuccess('Succesvol ingelogd!');
-      // Don't navigate here - let the auth state change handle the redirect
     }
     
     setIsSubmitting(false);
@@ -92,18 +90,17 @@ export const useAuthActions = () => {
       return;
     }
 
-    const { error } = await signUp(email.trim(), password, fullName);
-    
-    if (error) {
+    try {
+      await signUp(email.trim(), password, fullName);
+      setSuccess('Account succesvol aangemaakt! Je kunt nu inloggen.');
+      setIsSubmitting(false);
+      return 'signin'; // Return tab to switch to
+    } catch (error: any) {
       console.log('Signup error details:', error);
       setError(getDetailedErrorMessage(error));
       if (error.message?.includes('User already registered')) {
         return 'signin'; // Return tab to switch to
       }
-    } else {
-      setSuccess('Account succesvol aangemaakt! Je kunt nu inloggen.');
-      setIsSubmitting(false);
-      return 'signin'; // Return tab to switch to
     }
     
     setIsSubmitting(false);
