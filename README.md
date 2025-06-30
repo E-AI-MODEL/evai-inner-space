@@ -109,6 +109,18 @@ npm test
 # Via Admin Dashboard -> Systeem tab -> "Test Supabase"
 ```
 
+### Linting
+
+Run the linter after installing dependencies to avoid errors like `Cannot find package '@eslint/js'`:
+
+```bash
+# Install dependencies (only needed once after cloning)
+npm install
+
+# Run lint checks
+npm run lint
+```
+
 ## 📋 Technische Stack
 
 - **Frontend**: React 18, TypeScript, Tailwind CSS, Shadcn/UI
