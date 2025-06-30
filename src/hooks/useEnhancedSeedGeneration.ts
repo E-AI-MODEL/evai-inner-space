@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { incrementApiUsage } from '@/utils/apiUsageTracker';
 import { v4 as uuidv4 } from 'uuid';
 import { AdvancedSeed } from '../types/seed';
 import { SeedGenerationRequest, OpenAISeedGeneratorConfig } from '../types/openAISeedGenerator';
@@ -216,10 +217,11 @@ BELANGRIJKE VEREISTEN:
   };
 
   const callOpenAI = async (
-    prompt: string, 
-    apiKey: string, 
+    prompt: string,
+    apiKey: string,
     config: OpenAISeedGeneratorConfig
   ): Promise<Response> => {
+    incrementApiUsage('openai1');
     return fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {

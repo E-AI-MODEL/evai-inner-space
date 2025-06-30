@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { incrementApiUsage } from '@/utils/apiUsageTracker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +34,8 @@ const NeuralSeedTab: React.FC<NeuralSeedTabProps> = ({ openAiKey2, seeds, onSeed
     setIsGenerating(true);
 
     try {
+      incrementApiUsage('openai2');
+      incrementApiUsage('openai2');
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {

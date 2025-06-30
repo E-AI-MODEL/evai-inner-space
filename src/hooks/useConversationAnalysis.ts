@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { Message } from '../types';
 import { ConversationAnalysisResult, OpenAISeedGeneratorConfig } from '../types/openAISeedGenerator';
 import { OPENAI_MODEL } from '../openaiConfig';
+import { incrementApiUsage } from '@/utils/apiUsageTracker';
 
 const DEFAULT_CONFIG: Partial<OpenAISeedGeneratorConfig> = {
   model: OPENAI_MODEL,
@@ -79,6 +80,7 @@ Focus op Nederlandse emoties die therapeutisch relevant zijn.`;
     apiKey: string,
     config: Partial<OpenAISeedGeneratorConfig>
   ): Promise<Response> => {
+    incrementApiUsage('openai2');
     return fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {

@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { incrementApiUsage } from '@/utils/apiUsageTracker';
 
 export interface SimilarityResult {
   content_id: string;
@@ -31,6 +32,7 @@ export function useVectorEmbeddings() {
       console.log('🔍 Searching vector embeddings for:', query.substring(0, 50));
       
       // Generate embedding for query
+      incrementApiUsage('vector');
       const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
         method: 'POST',
         headers: {
@@ -85,6 +87,7 @@ export function useVectorEmbeddings() {
       for (const seed of seeds) {
         try {
           // Generate embedding for seed
+          incrementApiUsage('vector');
           const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
             method: 'POST',
             headers: {
