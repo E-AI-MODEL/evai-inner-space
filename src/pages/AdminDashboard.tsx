@@ -9,11 +9,24 @@ import { useSeeds } from '../hooks/useSeeds';
 import { testSupabaseConnection } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
+import ConfigurationPanel from '../components/ConfigurationPanel';
+import LiveEventLog from '../components/admin/LiveEventLog';
+import SystemHealthCheck from '../components/admin/SystemHealthCheck';
+import SystemStatusOverview from '../components/admin/SystemStatusOverview';
+import SystemStatusDetails from '../components/admin/SystemStatusDetails';
+import { ConnectionStatus } from '../types/connectionStatus';
 
 const AdminDashboard = () => {
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const { toast } = useToast();
   const { data: seeds = [] } = useSeeds();
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
+    supabase: 'checking',
+    openaiApi1: 'checking',
+    openaiApi2: 'checking',
+    vectorApi: 'checking',
+    seeds: 'loading'
+  });
 
   // Test Supabase connection on component mount
   useEffect(() => {
@@ -25,9 +38,23 @@ const AdminDashboard = () => {
         setSupabaseStatus('disconnected');
       }
     };
-    
+
     checkConnection();
   }, []);
+
+  useEffect(() => {
+    setConnectionStatus({
+      supabase: supabaseStatus === 'connected'
+        ? 'connected'
+        : supabaseStatus === 'connecting'
+          ? 'checking'
+          : 'error',
+      openaiApi1: localStorage.getItem('openai-api-key') ? 'configured' : 'missing',
+      openaiApi2: localStorage.getItem('openai-api-key-2') ? 'configured' : 'missing',
+      vectorApi: localStorage.getItem('vector-api-key') ? 'configured' : 'missing',
+      seeds: seeds.length > 0 ? 'loaded' : 'error'
+    });
+  }, [supabaseStatus, seeds]);
 
   // Query for admin analytics
   const { data: analytics } = useQuery({
@@ -272,61 +299,34 @@ const AdminDashboard = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Systeem Gezondheid</CardTitle>
+                <CardTitle>Systeem Status</CardTitle>
                 <CardDescription>
-                  Monitor van kritieke componenten
+                  Overzicht van gekoppelde services
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Database</span>
-                    <Badge className="bg-green-100 text-green-800">Online</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">AI Engine</span>
-                    <Badge className="bg-green-100 text-green-800">Actief</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Vector Search</span>
-                    <Badge className="bg-green-100 text-green-800">Operationeel</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Self-Learning</span>
-                    <Badge className="bg-green-100 text-green-800">Actief</Badge>
-                  </div>
-                </div>
+              <CardContent className="space-y-4">
+                <SystemStatusOverview
+                  openAiActive={connectionStatus.openaiApi1 === 'configured'}
+                  openAi2Active={connectionStatus.openaiApi2 === 'configured'}
+                  vectorActive={connectionStatus.vectorApi === 'configured'}
+                />
+                <SystemStatusDetails
+                  status={connectionStatus}
+                  seedsCount={seeds.length}
+                  activeSeedsCount={seeds.filter(s => s.isActive).length}
+                />
               </CardContent>
             </Card>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <SystemHealthCheck />
+            <LiveEventLog />
           </div>
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Systeem Instellingen
-              </CardTitle>
-              <CardDescription>
-                Configureer je EvAI systeem
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Button
-                  onClick={() => {
-                    toast({
-                      title: "Instellingen opgeslagen",
-                      description: "Je systeeminstellingen zijn bijgewerkt.",
-                    });
-                  }}
-                >
-                  Instellingen Opslaan
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <ConfigurationPanel />
         </TabsContent>
       </Tabs>
     </div>
