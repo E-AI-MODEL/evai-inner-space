@@ -4,3 +4,5 @@ export interface StrategicBriefing {
   keyPoints: string[];
   priority?: 'low' | 'medium' | 'high';
 }
+
+export type { UnifiedResponse } from './core';
