@@ -25,3 +25,4 @@ export interface Message {
   symbolicInferences?: string[];
   secondaryInsights?: string[];
 }
+export type { StrategicBriefing } from './orchestration';

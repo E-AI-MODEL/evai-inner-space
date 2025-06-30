@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { OPENAI_MODEL } from '../openaiConfig';
+import type { StrategicBriefing } from '../types';
 
 export interface SecondaryAnalysis {
   patterns: string[];
