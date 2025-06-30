@@ -11,7 +11,6 @@ import SettingsSheet from "./components/SettingsSheet";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const Index = lazy(() => import("./pages/Index"));
-const AuthPage = lazy(() => import("./pages/AuthPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminGuide = lazy(() => import("./pages/AdminGuide"));
 const TestPage = lazy(() => import("./pages/TestPage"));
@@ -54,9 +53,8 @@ const App = () => (
         <BrowserRouter>
           <Suspense fallback={<div>Loading...</div>}>
             <Routes>
-              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/" element={<Index />} />
               <Route element={<ProtectedRoute><ProtectedLayout /></ProtectedRoute>}>
-                <Route index element={<Index />} />
                 <Route path="admin" element={<AdminDashboard />} />
                 <Route path="admin/guide" element={<AdminGuide />} />
                 <Route path="test" element={<TestPage />} />

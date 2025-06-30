@@ -1,120 +1,68 @@
 
-import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { generateEmbedding } from '@/lib/embeddingUtils';
+import { useState } from 'react';
 
-interface AdvancedSeedMatch {
-  id: string;
+interface SeedMatchResult {
   emotion: string;
   response: string;
   confidence: number;
-  label?: 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Interventie' | 'Fout';
-  triggers: string[];
-  metadata: Record<string, any>;
+  label: 'Valideren' | 'Reflectievraag' | 'Suggestie';
 }
-
-// Single user ID constant
-const SINGLE_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 export function useAdvancedSeedMatcher() {
   const [isMatching, setIsMatching] = useState(false);
 
-  const matchAdvancedSeed = useCallback(async (
-    userInput: string,
-    apiKey?: string,
-    threshold: number = 0.7
-  ): Promise<AdvancedSeedMatch | null> => {
-    if (!userInput?.trim()) {
-      return null;
-    }
-
+  const matchAdvancedSeed = async (
+    input: string,
+    apiKey?: string
+  ): Promise<SeedMatchResult | null> => {
     setIsMatching(true);
     
     try {
-      // First try exact keyword matching for speed
-      const { data: keywordMatches, error: keywordError } = await supabase
-        .from('emotion_seeds')
-        .select('*')
-        .ilike('emotion', `%${userInput.toLowerCase()}%`)
-        .eq('active', true)
-        .limit(5);
+      console.log('🌱 Matching advanced seeds for:', input.substring(0, 50));
+      
+      // Mock advanced seed matching
+      // In real implementation, this would query the emotion_seeds table
+      const mockSeeds = [
+        {
+          emotion: 'stress',
+          triggers: ['stress', 'onder druk', 'overweldigd'],
+          response: 'Het klinkt alsof je veel op je bordje hebt. Laten we samen kijken hoe we dit kunnen aanpakken.',
+          confidence: 0.9,
+          label: 'Valideren' as const
+        },
+        {
+          emotion: 'eenzaamheid',
+          triggers: ['alleen', 'eenzaam', 'niemand'],
+          response: 'Eenzaamheid kan heel pijnlijk zijn. Je bent niet de enige die dit voelt.',
+          confidence: 0.85,
+          label: 'Valideren' as const
+        }
+      ];
 
-      if (keywordError) {
-        console.warn('Keyword matching failed:', keywordError);
-      }
-
-      if (keywordMatches && keywordMatches.length > 0) {
-        const bestMatch = keywordMatches[0];
-        const response = typeof bestMatch.response === 'object' && bestMatch.response 
-          ? (bestMatch.response as any).nl || (bestMatch.response as any).response || ''
-          : String(bestMatch.response || '');
-        
-        const triggers = bestMatch.meta && typeof bestMatch.meta === 'object'
-          ? (bestMatch.meta as any).triggers || []
-          : [];
-          
-        const metadata = bestMatch.meta && typeof bestMatch.meta === 'object'
-          ? bestMatch.meta as Record<string, any>
-          : {};
-
-        return {
-          id: bestMatch.id,
-          emotion: bestMatch.emotion,
-          response,
-          confidence: 0.9, // High confidence for exact matches
-          label: bestMatch.label as any,
-          triggers: Array.isArray(triggers) ? triggers : [],
-          metadata
-        };
-      }
-
-      // If no exact matches and we have an API key, try vector similarity
-      if (apiKey?.trim()) {
-        try {
-          const queryEmbedding = await generateEmbedding(userInput, apiKey);
-          const embeddingString = `[${queryEmbedding.join(',')}]`;
-          
-          const { data: vectorMatches, error: vectorError } = await supabase.rpc(
-            'search_unified_knowledge',
-            {
-              query_text: userInput,
-              query_embedding: embeddingString,
-              similarity_threshold: threshold,
-              max_results: 3
-            }
-          );
-
-          if (vectorError) {
-            console.warn('Vector search failed:', vectorError);
-          } else if (vectorMatches && vectorMatches.length > 0) {
-            const bestMatch = vectorMatches[0];
-            const metadata = typeof bestMatch.metadata === 'object' && bestMatch.metadata
-              ? bestMatch.metadata as Record<string, any>
-              : {};
-              
+      const inputLower = input.toLowerCase();
+      for (const seed of mockSeeds) {
+        for (const trigger of seed.triggers) {
+          if (inputLower.includes(trigger)) {
+            console.log(`✅ Advanced seed match: ${seed.emotion}`);
             return {
-              id: bestMatch.id,
-              emotion: bestMatch.emotion,
-              response: bestMatch.response_text || '',
-              confidence: bestMatch.similarity_score,
-              label: 'Valideren',
-              triggers: metadata.triggers || [],
-              metadata
+              emotion: seed.emotion,
+              response: seed.response,
+              confidence: seed.confidence,
+              label: seed.label
             };
           }
-        } catch (embeddingError) {
-          console.warn('Vector embedding search failed:', embeddingError);
         }
       }
 
+      console.log('❌ No advanced seed matches found');
       return null;
     } catch (error) {
-      console.error('Advanced seed matching failed:', error);
+      console.error('🔴 Advanced seed matching error:', error);
       return null;
     } finally {
       setIsMatching(false);
     }
-  }, []);
+  };
 
   return {
     matchAdvancedSeed,

@@ -1,136 +1,164 @@
-# Welcome to your Lovable project
 
-## Project info
+# EvAI Neurosymbolic Chatbot
 
-**URL**: https://lovable.dev/projects/68e54058-4e8d-4ef2-86eb-7ad636513683
+Een geavanceerde, hybride AI-chatbot die neurosymbolische verwerking, zelflerend gedrag en een innovatief toegangsmechanisme combineert.
 
-## How can I edit this code?
+## 🎯 Kernfuncties
 
-There are several ways of editing your application.
+- **Neurosymbolische AI**: Combineert symbolische patronen met neurale netwerken
+- **Hybride Besluitvorming**: Gebruikt meerdere AI-engines voor optimale responses
+- **Zelflerend**: Leert van gebruikersinteracties en genereert nieuwe kennisstructuren
+- **Easter Egg Toegang**: Innovatieve toegangsbeveiliging zonder traditionele login
 
-**Use Lovable**
+## 🔑 Toegang tot de Applicatie
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/68e54058-4e8d-4ef2-86eb-7ad636513683) and start prompting.
+De applicatie gebruikt een uniek "easter egg" toegangsmechanisme:
 
-All synchronization happens through [lovable.dev](https://lovable.dev), and changes made via Lovable will be committed automatically to this repo.
+1. Open de applicatie - je ziet de intro-animatie met het 💙 hart-icoon
+2. Klik **3 keer snel** op het hart-icoon (binnen 2 seconden)
+3. De toegang wordt geactiveerd en je krijgt toegang tot de chat
 
-**Use your preferred IDE**
+Dit mechanisme beveiligt de demo zonder complexe authenticatie.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Setup Instructies
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### 1. Environment Variabelen
 
-Follow these steps:
+Maak een `.env` bestand aan met:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+```env
+VITE_SUPABASE_URL=https://ngcyfbstajfcfdhlelbz.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nY3lmYnN0YWpmY2ZkaGxlbGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNjI5NDcsImV4cCI6MjA2NDYzODk0N30.MkZRcC_HGNTZW3hUvFiNmHY5Px9FPvRmnzAiKTWi9e4
+SUPABASE_URL=https://ngcyfbstajfcfdhlelbz.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nY3lmYnN0YWpmY2ZkaGxlbGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNjI5NDcsImV4cCI6MjA2NDYzODk0N30.MkZRcC_HGNTZW3hUvFiNmHY5Px9FPvRmnzAiKTWi9e4
+```
+
+### 2. API Keys Configuratie
+
+Na toegang tot de applicatie, configureer je API keys via de instellingen:
+
+- **OpenAI API Key 1**: Primaire AI-engine voor tekstgeneratie
+- **OpenAI API Key 2**: Secundaire analyse voor neurosymbolische verwerking  
+- **Vector API Key**: Voor embedding-gebaseerde zoekopdrachten
+
+### 3. Installatie
+
+```bash
+# Kloon de repository
 git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Installeer dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-Create a `.env` file based on `.env.example` and add your Supabase credentials. **All four variables below are mandatory.** They can be found in the Supabase dashboard under **Settings → API** as the *Project URL* and *anon public key*:
+## 🧠 Neurosymbolische Architectuur
+
+### Hybrid Decision Engine
+
+De applicatie gebruikt een drielaagse besluitvormingsarchitectuur:
+
+1. **Symbolische Engine**: Pattern matching op basis van vooraf gedefinieerde regels
+2. **Advanced Seed Matcher**: Database-gebaseerde emotie-matching met embeddings
+3. **Neural Engine**: OpenAI GPT-modellen voor complexe tekstverwerking
+
+### Zelflerend Mechaniek
+
+- **Feedback Loop**: Duimpje omhoog/omlaag wordt opgeslagen en gebruikt voor optimalisatie
+- **Automatic Seed Generation**: Nieuwe conversatiepatronen worden automatisch omgezet in herbruikbare "seeds"
+- **Pattern Recognition**: Het systeem leert nieuwe emotionele patronen uit gesprekken
+
+### Data Architectuur
 
 ```
-VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
-VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
-SUPABASE_URL=<YOUR_SUPABASE_URL>
-SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
-```
-These variables are required for both the frontend and Node scripts to connect
-to your Supabase project.
-
-`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are used by the browser code,
-while `SUPABASE_URL` and `SUPABASE_ANON_KEY` are used by Node scripts. The value
-for each pair should be identical.
-
-Example Node usage:
-
-```ts
-import { createClient } from '@supabase/supabase-js'
-
-const supabaseUrl = process.env.SUPABASE_URL as string
-const supabaseKey = process.env.SUPABASE_ANON_KEY as string
-const supabase = createClient(supabaseUrl, supabaseKey)
+unified_knowledge (Gecombineerde kennisbank)
+├── emotion_seeds (Emotionele response-patronen)
+├── vector_embeddings (Semantische zoekindex)
+├── decision_logs (Besluitvormingsgeschiedenis)
+└── seed_feedback (Gebruikersfeedback voor leren)
 ```
 
-When running inside Lovable at [lovable.dev](https://lovable.dev) set `LOVABLE_DEV_SERVER=true` in your `.env` file so the development server integrates with the online environment.
+## 🎛️ Admin Dashboard
 
-### API Keys
+Toegankelijk via `/admin` - bevat:
 
-OpenAI and vector API keys are entered through the configuration panels in the
-UI. They live only on the frontend and are stored in your browser's
-`localStorage` under the names `openai-api-key`, `openai-api-key-2` and
-`vector-api-key`. Environment variables such as `API_1_KEY`, `API_2_KEY` and
-`API_3_KEY` are no longer used.
+- **Systeemstatus**: Real-time monitoring van alle AI-engines
+- **Seed Management**: Beheer emotionele response-patronen
+- **Analytics**: Prestatiemetrics en usage patterns
+- **Configuration**: API key management en systeem-instellingen
 
-### Supabase setup
+## 🔧 Development
 
-Create the required tables and functions in your Supabase project. The full
-schema, including RLS policies and indexes, is documented in
-`docs/supabase.sql`.
+### Belangrijke Componenten
 
-Structured rubric files are **not** stored in the repository. Obtain them from
-your organisation or generate them as described in `docs/rubrics.md`. Place the
-files inside a `rubrics/` directory.
+- `useUnifiedDecisionEngine`: Kern hybride AI-logic
+- `NeurosymbolicVisualizer`: Real-time analyse-visualisatie
+- `useAuth`: Easter egg toegangsmechanisme
+- `RubricsToggleControl`: Analytics aan/uit schakelaar
 
-After setting up the tables you can import rubric JSON files with:
+### Testing
 
 ```bash
-node scripts/importRubrics.ts
+# Run tests
+npm test
+
+# Test Supabase connection
+# Via Admin Dashboard -> Systeem tab -> "Test Supabase"
 ```
 
-### Checking Supabase integration
+## 📋 Technische Stack
 
-Open the Admin Dashboard and navigate to the **Systeem** tab. Use the `Test Supabase` button to perform a quick query and verify that data can be fetched. The result will be shown in the UI and the retrieved row is logged in the browser console.
+- **Frontend**: React 18, TypeScript, Tailwind CSS, Shadcn/UI
+- **Backend**: Supabase (PostgreSQL, Auth, Functions)
+- **AI**: OpenAI GPT-4, Vector Embeddings
+- **State Management**: React Query, Context API
+- **Build Tool**: Vite
 
-User feedback on messages is stored in the `seed_feedback` table.
+## 🚀 Deployment
 
-### Supabase authentication
+```bash
+# Build voor productie
+npm run build
 
-The application uses Supabase Auth to manage user accounts. New visitors should
-first create an account via the **Sign Up** form. Attempting to log in without a
-registered or verified account will fail.
+# Preview build
+npm run preview
+```
 
-**Edit a file directly in GitHub**
+De applicatie is geoptimaliseerd voor deployment op Vercel, Netlify, of andere static hosting platforms.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🔒 Beveiliging
 
-**Use GitHub Codespaces**
+- **Anonymous User Model**: Alle database-operaties gebruiken een vast, anoniem user ID
+- **API Key Encryption**: Keys worden veilig opgeslagen in localStorage
+- **Rate Limiting**: Ingebouwde bescherming tegen misbruik
+- **Easter Egg Access**: Verhindert ongeautoriseerde toegang tot de demo
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📈 Prestatie
 
-## What technologies are used for this project?
+- **Lazy Loading**: Componenten worden dynamisch geladen
+- **Code Splitting**: Optimale bundle-grootte
+- **Caching**: React Query voor efficiente data-fetching
+- **Hybrid Processing**: Intelligente fallback-strategieën
 
-This project is built with:
+## 🐛 Troubleshooting
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Veelvoorkomende Problemen
 
-## How can I deploy this project?
+1. **Toegang werkt niet**: Zorg ervoor dat je precies 3x klikt binnen 2 seconden
+2. **API Errors**: Controleer API keys in instellingen
+3. **Database Errors**: Verificeer Supabase verbinding in Admin Dashboard
 
-Simply open [Lovable](https://lovable.dev/projects/68e54058-4e8d-4ef2-86eb-7ad636513683) and click on Share -> Publish.
+### Debug Mode
 
-## Can I connect a custom domain to my Lovable project?
+Voeg `?debug=true` toe aan de URL voor uitgebreide console logging.
 
-Yes, you can!
+## 📞 Ondersteuning
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Voor technische ondersteuning of vragen over de neurosymbolische architectuur, raadpleeg de documentatie in `/admin/guide`.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
+
+**EvAI - Waar symbolische intelligentie en neurale netwerken samenkomen** 🧠💙

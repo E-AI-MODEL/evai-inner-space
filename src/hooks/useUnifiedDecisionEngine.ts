@@ -4,6 +4,7 @@ import { NeurosymbolicDecision, ProcessingContext, UnifiedResponse } from '@/typ
 import { useAdvancedSeedMatcher } from './useAdvancedSeedMatcher';
 import { useOpenAI } from './useOpenAI';
 import { useSymbolicEngine } from './useSymbolicEngine';
+import { useVectorEmbeddings } from './useVectorEmbeddings';
 
 export function useUnifiedDecisionEngine() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -12,6 +13,7 @@ export function useUnifiedDecisionEngine() {
   const { matchAdvancedSeed } = useAdvancedSeedMatcher();
   const { detectEmotion } = useOpenAI();
   const { processSymbolic } = useSymbolicEngine();
+  const { searchSimilarEmbeddings } = useVectorEmbeddings();
 
   const processInput = useCallback(async (
     context: ProcessingContext,
@@ -23,147 +25,112 @@ export function useUnifiedDecisionEngine() {
     const componentsUsed: string[] = [];
 
     try {
-      // Phase 1: Symbolic Pattern Matching (fastest, most accurate for known patterns)
-      let symbolicResult = null;
-      try {
-        componentsUsed.push('Symbolic Engine');
-        symbolicResult = await processSymbolic(context.userInput, context.conversationHistory);
-        
-        if (symbolicResult && symbolicResult.confidence > 0.8) {
-          const processingTime = Date.now() - startTime;
-          const decision: NeurosymbolicDecision = {
-            type: 'symbolic',
-            confidence: symbolicResult.confidence,
-            reasoning: [`High-confidence symbolic match: ${symbolicResult.pattern}`],
-            source: 'symbolic_engine',
-            processingTime,
-            metadata: {
-              processingTime,
-              fallbackUsed: false,
-              priority: 'high',
-              componentsUsed
-            }
-          };
-          
-          setLastDecision(decision);
-          return {
-            content: symbolicResult.response,
-            emotion: symbolicResult.emotion,
-            confidence: symbolicResult.confidence,
-            label: symbolicResult.label,
-            reasoning: `Symbolic pattern match: ${symbolicResult.pattern}`,
-            symbolicInferences: symbolicResult.inferences || [],
-            metadata: {
-              processingPath: 'symbolic',
-              totalProcessingTime: processingTime,
-              componentsUsed
-            }
-          };
-        }
-      } catch (error) {
-        console.warn('Symbolic processing failed, continuing with neural:', error);
-      }
+      console.log('🧠 Starting unified neurosymbolic processing...');
 
-      // Phase 2: Advanced Seed Matching (database lookup with embeddings)
-      let seedResult = null;
-      try {
-        componentsUsed.push('Advanced Seed Matcher');
-        seedResult = await matchAdvancedSeed(context.userInput, apiKey);
-        
-        if (seedResult && seedResult.confidence > 0.7) {
-          const processingTime = Date.now() - startTime;
-          const decision: NeurosymbolicDecision = {
-            type: 'hybrid',
-            confidence: seedResult.confidence,
-            reasoning: [`Advanced seed match: ${seedResult.emotion}`, `Similarity: ${seedResult.confidence}`],
-            source: 'advanced_seed_engine',
-            processingTime,
-            metadata: {
-              processingTime,
-              fallbackUsed: false,
-              priority: 'medium',
-              componentsUsed
-            }
-          };
-          
-          setLastDecision(decision);
-          return {
-            content: seedResult.response,
-            emotion: seedResult.emotion,
-            confidence: seedResult.confidence,
-            label: seedResult.label || 'Valideren',
-            reasoning: `Advanced seed match: ${seedResult.emotion}`,
-            symbolicInferences: [`🌱 Seed: ${seedResult.emotion}`, `🎯 Confidence: ${Math.round(seedResult.confidence * 100)}%`],
-            metadata: {
-              processingPath: 'hybrid',
-              totalProcessingTime: processingTime,
-              componentsUsed
-            }
-          };
-        }
-      } catch (error) {
-        console.warn('Advanced seed matching failed, continuing with neural:', error);
-      }
+      // Phase 1: Parallel processing of all engines
+      const [symbolicResult, seedResult, vectorResult] = await Promise.allSettled([
+        processSymbolic?.(context.userInput, context.conversationHistory).catch(() => null),
+        matchAdvancedSeed?.(context.userInput, apiKey).catch(() => null),
+        searchSimilarEmbeddings?.(context.userInput, localStorage.getItem('vector-api-key') || '').catch(() => null)
+      ]);
 
-      // Phase 3: Neural Processing (OpenAI fallback)
-      if (!apiKey) {
-        throw new Error('No suitable processing method available - API key required for neural processing');
-      }
+      // Collect results
+      const symbolic = symbolicResult.status === 'fulfilled' ? symbolicResult.value : null;
+      const seed = seedResult.status === 'fulfilled' ? seedResult.value : null;
+      const vector = vectorResult.status === 'fulfilled' ? vectorResult.value : null;
 
-      componentsUsed.push('Neural Engine (OpenAI)');
-      const neuralResult = await detectEmotion(
-        context.userInput, 
-        apiKey, 
-        undefined, 
-        context.conversationHistory
-      );
+      if (symbolic) componentsUsed.push('Symbolic Engine');
+      if (seed) componentsUsed.push('Advanced Seed Matcher');
+      if (vector) componentsUsed.push('Vector Search');
+
+      // Phase 2: Hybrid decision making with weighted scoring
+      let finalResult: UnifiedResponse;
+      let processingPath: 'symbolic' | 'hybrid' | 'neural' = 'neural';
+
+      // Calculate confidence scores
+      const symbolicScore = symbolic?.confidence || 0;
+      const seedScore = seed?.confidence || 0;
+      const vectorScore = vector?.length ? 0.6 : 0;
+
+      console.log('📊 Engine scores:', { symbolicScore, seedScore, vectorScore });
+
+      // Weighted hybrid decision
+      if (symbolicScore > 0.8 || (symbolicScore > 0.6 && seedScore > 0.7)) {
+        // High confidence symbolic or combined symbolic+seed
+        processingPath = symbolic && seed ? 'hybrid' : 'symbolic';
+        finalResult = {
+          content: symbolic?.response || seed?.response || 'Ik begrijp je gevoel.',
+          emotion: symbolic?.emotion || seed?.emotion || 'begrip',
+          confidence: Math.max(symbolicScore, seedScore),
+          label: symbolic?.label || seed?.label || 'Valideren',
+          reasoning: `Hybride beslissing: Symbolisch (${Math.round(symbolicScore * 100)}%) + Seeds (${Math.round(seedScore * 100)}%)`,
+          symbolicInferences: [
+            `🎯 Methode: ${processingPath}`,
+            `🧠 Symbolisch: ${Math.round(symbolicScore * 100)}%`,
+            `🌱 Seeds: ${Math.round(seedScore * 100)}%`,
+            `🔍 Vector: ${Math.round(vectorScore * 100)}%`
+          ],
+          metadata: {
+            processingPath,
+            totalProcessingTime: Date.now() - startTime,
+            componentsUsed
+          }
+        };
+      } else {
+        // Fallback to neural with context from other engines
+        componentsUsed.push('Neural Engine (OpenAI)');
+        const neuralResult = await detectEmotion(
+          context.userInput, 
+          apiKey || '', 
+          undefined, 
+          context.conversationHistory
+        );
+
+        // Enhance neural result with symbolic insights
+        const enhancedInferences = [
+          ...neuralResult.symbolicInferences || [],
+          symbolic ? `🔗 Symbolisch: ${symbolic.emotion}` : '',
+          seed ? `🌱 Seed: ${seed.emotion}` : '',
+          vector?.length ? `🔍 Vector matches: ${vector.length}` : ''
+        ].filter(Boolean);
+
+        finalResult = {
+          content: neuralResult.response,
+          emotion: neuralResult.emotion,
+          confidence: neuralResult.confidence,
+          label: neuralResult.label || 'Valideren',
+          reasoning: `Neurale analyse verrijkt met ${componentsUsed.length - 1} andere bronnen`,
+          symbolicInferences: enhancedInferences,
+          metadata: {
+            processingPath: 'neural',
+            totalProcessingTime: Date.now() - startTime,
+            componentsUsed
+          }
+        };
+      }
 
       const processingTime = Date.now() - startTime;
       const decision: NeurosymbolicDecision = {
-        type: 'neural',
-        confidence: neuralResult.confidence,
-        reasoning: [neuralResult.reasoning || 'Neural network processing'],
-        source: 'openai_engine',
+        type: processingPath,
+        confidence: finalResult.confidence,
+        reasoning: [finalResult.reasoning],
+        source: 'unified_decision_engine',
         processingTime,
         metadata: {
           processingTime,
-          fallbackUsed: true,
-          priority: 'low',
+          fallbackUsed: processingPath === 'neural',
+          priority: processingPath === 'symbolic' ? 'high' : processingPath === 'hybrid' ? 'medium' : 'low',
           componentsUsed
         }
       };
       
       setLastDecision(decision);
+      console.log(`✅ Unified processing complete: ${processingPath} (${processingTime}ms)`);
       
-      // Try secondary analysis if available
-      let secondaryInsights: string[] | undefined;
-      if (apiKey2) {
-        try {
-          componentsUsed.push('Secondary Analysis');
-          // Secondary analysis would go here - placeholder for now
-          secondaryInsights = ['Secondary analysis placeholder'];
-        } catch (error) {
-          console.warn('Secondary analysis failed:', error);
-        }
-      }
-
-      return {
-        content: neuralResult.response,
-        emotion: neuralResult.emotion,
-        confidence: neuralResult.confidence,
-        label: neuralResult.label || 'Valideren',
-        reasoning: neuralResult.reasoning || 'Neural processing',
-        symbolicInferences: neuralResult.symbolicInferences || [],
-        secondaryInsights,
-        metadata: {
-          processingPath: 'neural',
-          totalProcessingTime: processingTime,
-          componentsUsed
-        }
-      };
+      return finalResult;
 
     } catch (error) {
-      console.error('Unified decision engine failed:', error);
+      console.error('🔴 Unified decision engine failed:', error);
       
       const processingTime = Date.now() - startTime;
       const errorDecision: NeurosymbolicDecision = {
@@ -198,13 +165,12 @@ export function useUnifiedDecisionEngine() {
     } finally {
       setIsProcessing(false);
     }
-  }, [matchAdvancedSeed, detectEmotion, processSymbolic]);
+  }, [matchAdvancedSeed, detectEmotion, processSymbolic, searchSimilarEmbeddings]);
 
   const getDecisionAnalytics = useCallback(() => {
     return {
       lastDecision,
       isProcessing,
-      // Add more analytics as needed
     };
   }, [lastDecision, isProcessing]);
 

@@ -1,7 +1,9 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { BarChart, Minimize2, Maximize2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import RubricsEngineStatusIndicator from './RubricsEngineStatusIndicator';
 import { Message } from '../../types';
 
@@ -23,26 +25,30 @@ const RubricsToggleControl: React.FC<RubricsToggleControlProps> = ({
   onModeChange
 }) => {
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        onClick={onToggle}
-        disabled={disabled}
-        variant="outline"
-        size="sm"
-        className={`
-          flex items-center gap-2 px-3 py-2 transition-all duration-200
-          ${isActive 
-            ? 'bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-300' 
-            : 'bg-gray-50 hover:bg-gray-100 text-gray-600 border-gray-200'
-          }
-        `}
-        aria-label={`EvAI 5.6 Analyse ${isActive ? 'uitschakelen' : 'inschakelen'}`}
-      >
-        <BarChart size={16} />
-        <span className="hidden sm:inline text-xs font-medium">
-          {isActive ? 'Analyse Aan' : 'Analyse Uit'}
-        </span>
-      </Button>
+    <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        <BarChart 
+          size={18} 
+          className={`transition-colors ${isActive ? 'text-green-600' : 'text-gray-400'}`} 
+        />
+        <div className="flex items-center gap-2">
+          <Label 
+            htmlFor="analytics-switch" 
+            className={`text-sm font-medium cursor-pointer transition-colors ${
+              isActive ? 'text-green-800' : 'text-gray-600'
+            }`}
+          >
+            EvAI 5.6 Analyse
+          </Label>
+          <Switch
+            id="analytics-switch"
+            checked={isActive}
+            onCheckedChange={onToggle}
+            disabled={disabled}
+            className="data-[state=checked]:bg-green-600"
+          />
+        </div>
+      </div>
       
       {/* Mode toggle button - only show when analytics is active and we have mode control */}
       {isActive && onModeChange && messages.length > 3 && (

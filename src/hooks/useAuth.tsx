@@ -10,50 +10,57 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, options?: any) => Promise<void>;
+  isAuthorized: boolean;
+  authorize: () => void;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Single user constant
-const SINGLE_USER: User = {
+// Fixed anonymous super-user for all Supabase operations
+const ANONYMOUS_SUPER_USER: User = {
   id: '00000000-0000-0000-0000-000000000001',
-  email: 'single-user@evai.app',
-  user_metadata: { full_name: 'EvAI Single User' }
+  email: 'anonymous@evai.app',
+  user_metadata: { full_name: 'EvAI Anonymous User' }
 };
 
+const AUTHORIZATION_KEY = 'evai-authorized';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(SINGLE_USER);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    // Always set the single user as logged in
-    setUser(SINGLE_USER);
+    // Check if user was previously authorized
+    const wasAuthorized = localStorage.getItem(AUTHORIZATION_KEY) === 'true';
+    
+    if (wasAuthorized) {
+      setIsAuthorized(true);
+      setUser(ANONYMOUS_SUPER_USER);
+    }
+    
     setLoading(false);
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    // Mock sign in - always succeeds
-    setUser(SINGLE_USER);
-  };
-
-  const signUp = async (email: string, password: string, options?: any) => {
-    // Mock sign up - always succeeds
-    setUser(SINGLE_USER);
+  const authorize = () => {
+    console.log('🎯 Easter egg activated - User authorized!');
+    localStorage.setItem(AUTHORIZATION_KEY, 'true');
+    setIsAuthorized(true);
+    setUser(ANONYMOUS_SUPER_USER);
   };
 
   const signOut = async () => {
-    // Mock sign out - but immediately sign back in
-    setUser(SINGLE_USER);
+    localStorage.removeItem(AUTHORIZATION_KEY);
+    setIsAuthorized(false);
+    setUser(null);
   };
 
   const value = {
     user,
     loading,
-    signIn,
-    signUp,
+    isAuthorized,
+    authorize,
     signOut,
   };
 
