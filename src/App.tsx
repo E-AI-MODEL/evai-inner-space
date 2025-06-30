@@ -1,48 +1,22 @@
 
-import { Suspense, lazy, useState } from "react";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/useAuth";
-import TopBar from "./components/TopBar";
-import SettingsSheet from "./components/SettingsSheet";
-import ProtectedRoute from "./components/ProtectedRoute";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 const Index = lazy(() => import("./pages/Index"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminGuide = lazy(() => import("./pages/AdminGuide"));
 const TestPage = lazy(() => import("./pages/TestPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 
 const queryClient = new QueryClient();
 
-function ProtectedLayout() {
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-
-  const saveApiKey = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem("openai-api-key", apiKey.trim());
-      setSettingsOpen(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col min-h-screen">
-      <TopBar onSettingsClick={() => setSettingsOpen(true)} />
-      <SettingsSheet
-        isOpen={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        apiKey={apiKey}
-        onApiKeyChange={setApiKey}
-        onApiKeySave={saveApiKey}
-      />
-      <Outlet />
-    </div>
-  );
-}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -54,11 +28,13 @@ const App = () => (
           <Suspense fallback={<div>Loading...</div>}>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route element={<ProtectedRoute><ProtectedLayout /></ProtectedRoute>}>
-                <Route path="admin" element={<AdminDashboard />} />
-                <Route path="admin/guide" element={<AdminGuide />} />
-                <Route path="test" element={<TestPage />} />
+              {/* Beveiligde Admin Routes */}
+              <Route element={<AdminProtectedRoute />}> 
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/guide" element={<AdminGuide />} />
               </Route>
+              <Route path="/test" element={<TestPage />} />
+              <Route path="/access-denied" element={<AccessDenied />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

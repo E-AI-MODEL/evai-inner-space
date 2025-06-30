@@ -6,7 +6,7 @@ const IntroAnimation = ({ onFinished }: { onFinished: () => void }) => {
   const [animationState, setAnimationState] = useState('in');
   const [clickCount, setClickCount] = useState(0);
   const [lastClickTime, setLastClickTime] = useState(0);
-  const { authorize } = useAuth();
+  const { authorizeChat } = useAuth();
 
   const handleHeartClick = () => {
     const now = Date.now();
@@ -23,7 +23,7 @@ const IntroAnimation = ({ onFinished }: { onFinished: () => void }) => {
     // Easter egg: 3 clicks within 2 seconds activates access
     if (clickCount >= 2) {
       console.log('🎉 Easter egg activated!');
-      authorize();
+      authorizeChat();
       
       // Start fade out immediately
       setAnimationState('out');

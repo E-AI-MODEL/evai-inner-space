@@ -8,11 +8,9 @@ import { Brain, Database, Activity, Settings, TrendingUp, AlertTriangle, CheckCi
 import { useSeeds } from '../hooks/useSeeds';
 import { testSupabaseConnection } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import AdminAuth from '../components/admin/AdminAuth';
 import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
 
 const AdminDashboard = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const { toast } = useToast();
   const { data: seeds = [] } = useSeeds();
@@ -65,9 +63,6 @@ const AdminDashboard = () => {
     refetchInterval: 30000 // Refresh every 30 seconds
   });
 
-  if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
-  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
