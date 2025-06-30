@@ -1,5 +1,7 @@
 
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 
 interface SeedMatchResult {
   emotion: string;
@@ -20,38 +22,32 @@ export function useAdvancedSeedMatcher() {
     try {
       console.log('🌱 Matching advanced seeds for:', input.substring(0, 50));
       
-      // Mock advanced seed matching
-      // In real implementation, this would query the emotion_seeds table
-      const mockSeeds = [
-        {
-          emotion: 'stress',
-          triggers: ['stress', 'onder druk', 'overweldigd'],
-          response: 'Het klinkt alsof je veel op je bordje hebt. Laten we samen kijken hoe we dit kunnen aanpakken.',
-          confidence: 0.9,
-          label: 'Valideren' as const
-        },
-        {
-          emotion: 'eenzaamheid',
-          triggers: ['alleen', 'eenzaam', 'niemand'],
-          response: 'Eenzaamheid kan heel pijnlijk zijn. Je bent niet de enige die dit voelt.',
-          confidence: 0.85,
-          label: 'Valideren' as const
-        }
-      ];
+      const { data, error } = await supabase
+        .from("emotion_seeds")
+        .select("emotion, label, response, meta")
+        .eq("active", true);
 
-      const inputLower = input.toLowerCase();
-      for (const seed of mockSeeds) {
-        for (const trigger of seed.triggers) {
-          if (inputLower.includes(trigger)) {
-            console.log(`✅ Advanced seed match: ${seed.emotion}`);
+      if (error) {
+        console.error("❌ Supabase seed fetch error:", error);
+        return null;
+      }
+
+const inputLower = input.toLowerCase();
+      for (const row of (data as Database['public']['Tables']['emotion_seeds']['Row'][] | null) || []) {
+        const meta = (row.meta as any) || {};
+        const triggers: string[] = meta.triggers || [];
+        for (const trigger of triggers) {
+          if (inputLower.includes(trigger.toLowerCase())) {
+            console.log(`✅ Advanced seed match: ${row.emotion}`);
             return {
-              emotion: seed.emotion,
-              response: seed.response,
-              confidence: seed.confidence,
-              label: seed.label
+              emotion: row.emotion,
+              response: (row.response as any)?.nl || '',
+              confidence: meta.confidence || 0.8,
+              label: (row.label as SeedMatchResult['label']) || 'Valideren'
             };
           }
         }
+      
       }
 
       console.log('❌ No advanced seed matches found');
