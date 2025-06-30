@@ -2,6 +2,14 @@
 import { useState } from 'react';
 import { ChatHistoryItem } from '@/types/core';
 
+export interface SymbolicRule {
+  pattern: RegExp;
+  emotion: string;
+  response: string;
+  confidence: number;
+  label: 'Valideren' | 'Reflectievraag' | 'Suggestie';
+}
+
 interface SymbolicResult {
   emotion: string;
   response: string;

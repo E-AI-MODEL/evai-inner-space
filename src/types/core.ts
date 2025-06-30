@@ -3,6 +3,7 @@ export interface ProcessingContext {
   userInput: string;
   conversationHistory?: ChatHistoryItem[];
   sessionId?: string;
+  sessionMetadata?: Record<string, any>;
   metadata?: Record<string, any>;
 }
 
@@ -18,6 +19,13 @@ export interface UnifiedResponse {
     processingPath: 'symbolic' | 'hybrid' | 'neural' | 'error';
     totalProcessingTime: number;
     componentsUsed: string[];
+    apiCollaboration?: {
+      api1Used: boolean;
+      api2Used: boolean;
+      vectorApiUsed: boolean;
+      seedGenerated: boolean;
+      secondaryAnalysis: boolean;
+    };
   };
 }
 
@@ -32,6 +40,13 @@ export interface NeurosymbolicDecision {
     fallbackUsed: boolean;
     priority: 'high' | 'medium' | 'low';
     componentsUsed: string[];
+    apiCollaboration?: {
+      api1Used: boolean;
+      api2Used: boolean;
+      vectorApiUsed: boolean;
+      seedGenerated: boolean;
+      secondaryAnalysis: boolean;
+    };
   };
 }
 
@@ -39,4 +54,5 @@ export interface ChatHistoryItem {
   role: 'user' | 'assistant';
   content: string;
   from?: string;
+  timestamp?: Date;
 }
