@@ -65,6 +65,15 @@ De applicatie gebruikt een drielaagse besluitvormingsarchitectuur:
 2. **Advanced Seed Matcher**: Database-gebaseerde emotie-matching met embeddings
 3. **Neural Engine**: OpenAI GPT-modellen voor complexe tekstverwerking
 
+### Regisseur-Stem Pipeline
+
+1. **API 2 - Regisseur** analyseert het bericht op basis van rubrieken en seeds
+   en genereert een gestructureerde `StrategicBriefing` in JSON.
+2. **API 1 - Stem** krijgt deze briefing als verborgen instructie en formuleert
+   het uiteindelijke antwoord voor de gebruiker.
+3. De briefing wordt opgeslagen in de metadata zodat het Admin Dashboard en de
+   AI Transparency tooltip de ruwe analyse kunnen tonen.
+
 ### Zelflerend Mechaniek
 
 - **Feedback Loop**: Duimpje omhoog/omlaag wordt opgeslagen en gebruikt voor optimalisatie
