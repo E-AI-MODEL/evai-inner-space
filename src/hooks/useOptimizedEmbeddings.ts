@@ -2,8 +2,25 @@
 import { useState } from 'react';
 import { useVectorEmbeddings } from './useVectorEmbeddings';
 
+interface EmbeddingConfig {
+  enabled: boolean;
+  throttleMs: number;
+  minInputLength: number;
+  maxDailyEmbeddings: number;
+  skipSimilar: boolean;
+}
+
 export function useOptimizedEmbeddings() {
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [config, setConfig] = useState<EmbeddingConfig>({
+    enabled: true,
+    throttleMs: 5000,
+    minInputLength: 10,
+    maxDailyEmbeddings: 100,
+    skipSimilar: true
+  });
+  const [dailyCount, setDailyCount] = useState(0);
+  
   const { searchSimilarEmbeddings, processSeedBatch, isProcessing } = useVectorEmbeddings();
 
   const processAndStore = async (
@@ -38,10 +55,26 @@ export function useOptimizedEmbeddings() {
     return await searchSimilarEmbeddings(query, apiKey, threshold);
   };
 
+  const updateConfig = (newConfig: EmbeddingConfig) => {
+    setConfig(newConfig);
+  };
+
+  const resetDailyCount = () => {
+    setDailyCount(0);
+  };
+
+  const embeddingsRemaining = config.maxDailyEmbeddings - dailyCount;
+
   return {
     processAndStore,
     searchSimilar,
     processSeedBatch,
-    isProcessing: isProcessing || isOptimizing
+    isProcessing: isProcessing || isOptimizing,
+    config,
+    updateConfig,
+    dailyCount,
+    maxDailyEmbeddings: config.maxDailyEmbeddings,
+    embeddingsRemaining,
+    resetDailyCount
   };
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,7 +38,7 @@ const AdminDashboard = () => {
       // Mock analytics data - in production this would fetch from Supabase
       return {
         totalSeeds: seeds.length,
-        activeSeeds: seeds.filter(s => s.active).length,
+        activeSeeds: seeds.filter(s => s.isActive).length,
         totalConversations: 150,
         avgConfidence: 0.82,
         weeklyGrowth: 12.5,

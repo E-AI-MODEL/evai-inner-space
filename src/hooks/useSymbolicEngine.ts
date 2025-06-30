@@ -1,13 +1,17 @@
 
 import { useState } from 'react';
 import { ChatHistoryItem } from '@/types/core';
+import { Message } from '../types';
 
 export interface SymbolicRule {
-  pattern: RegExp;
-  emotion: string;
-  response: string;
-  confidence: number;
-  label: 'Valideren' | 'Reflectievraag' | 'Suggestie';
+  name: string;
+  description: string;
+  pattern?: RegExp;
+  emotion?: string;
+  response?: string;
+  confidence?: number;
+  label?: 'Valideren' | 'Reflectievraag' | 'Suggestie';
+  check: (messages: Message[], latest: Message) => string | null;
 }
 
 interface SymbolicResult {

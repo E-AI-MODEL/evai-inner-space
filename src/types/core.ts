@@ -5,6 +5,7 @@ export interface ProcessingContext {
   sessionId?: string;
   sessionMetadata?: Record<string, any>;
   metadata?: Record<string, any>;
+  timestamp?: Date;
 }
 
 export interface UnifiedResponse {
