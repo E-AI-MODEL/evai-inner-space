@@ -4,8 +4,8 @@ import { NeurosymbolicDecision, ProcessingContext, UnifiedResponse } from '@/typ
 import { useAdvancedSeedMatcher } from './useAdvancedSeedMatcher';
 import type { StrategicBriefing } from '@/types';
 import { useOpenAI } from './useOpenAI';
-import { useSymbolicEngine } from './useSymbolicEngine';
-import { useVectorEmbeddings } from './useVectorEmbeddings';
+import { useOpenAISecondary } from './useOpenAISecondary';
+import { useEvAI56Rubrics } from './useEvAI56Rubrics';
 
 export function useUnifiedDecisionEngine() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -13,8 +13,8 @@ export function useUnifiedDecisionEngine() {
   
   const { matchAdvancedSeed } = useAdvancedSeedMatcher();
   const { detectEmotion } = useOpenAI();
-  const { processSymbolic } = useSymbolicEngine();
-  const { searchSimilarEmbeddings } = useVectorEmbeddings();
+  const { createStrategicBriefing } = useOpenAISecondary();
+  const { assessMessage } = useEvAI56Rubrics();
 
   const processInput = useCallback(async (
     context: ProcessingContext,
@@ -26,109 +26,82 @@ export function useUnifiedDecisionEngine() {
     const componentsUsed: string[] = [];
 
     try {
-      console.log('🧠 Starting unified neurosymbolic processing...');
+      console.log('🧠 Starting unified processing...');
 
-      // Phase 1: Parallel processing of all engines
-      const [symbolicResult, seedResult, vectorResult] = await Promise.allSettled([
-        processSymbolic?.(context.userInput, context.conversationHistory).catch(() => null),
-        matchAdvancedSeed?.(context.userInput, apiKey).catch(() => null),
-        searchSimilarEmbeddings?.(context.userInput, localStorage.getItem('vector-api-key') || '').catch(() => null)
+      // Run rubric assessment and seed matching in parallel
+      const [assessments, seed] = await Promise.all([
+        Promise.resolve(assessMessage(context.userInput)),
+        matchAdvancedSeed?.(context.userInput, apiKey).catch(() => null)
       ]);
 
-      // Collect results
-      const symbolic = symbolicResult.status === 'fulfilled' ? symbolicResult.value : null;
-      const seed = seedResult.status === 'fulfilled' ? seedResult.value : null;
-      const vector = vectorResult.status === 'fulfilled' ? vectorResult.value : null;
-
-      if (symbolic) componentsUsed.push('Symbolic Engine');
+      if (assessments.length) componentsUsed.push('Rubrics');
       if (seed) componentsUsed.push('Advanced Seed Matcher');
-      if (vector) componentsUsed.push('Vector Search');
 
-      // Phase 2: Hybrid decision making with weighted scoring
-      let finalResult: UnifiedResponse;
-      let processingPath: 'symbolic' | 'hybrid' | 'neural' = 'neural';
-
-      // Calculate confidence scores
-      const symbolicScore = symbolic?.confidence || 0;
-      const seedScore = seed?.confidence || 0;
-      const vectorScore = vector?.length ? 0.6 : 0;
-
-      console.log('📊 Engine scores:', { symbolicScore, seedScore, vectorScore });
-
-      // Weighted hybrid decision
-      if (symbolicScore > 0.8 || (symbolicScore > 0.6 && seedScore > 0.7)) {
-        // High confidence symbolic or combined symbolic+seed
-        processingPath = symbolic && seed ? 'hybrid' : 'symbolic';
-        finalResult = {
-          content: symbolic?.response || seed?.response || 'Ik begrijp je gevoel.',
-          emotion: symbolic?.emotion || seed?.emotion || 'begrip',
-          confidence: Math.max(symbolicScore, seedScore),
-          label: symbolic?.label || seed?.label || 'Valideren',
-          reasoning: `Hybride beslissing: Symbolisch (${Math.round(symbolicScore * 100)}%) + Seeds (${Math.round(seedScore * 100)}%)`,
-          symbolicInferences: [
-            `🎯 Methode: ${processingPath}`,
-            `🧠 Symbolisch: ${Math.round(symbolicScore * 100)}%`,
-            `🌱 Seeds: ${Math.round(seedScore * 100)}%`,
-            `🔍 Vector: ${Math.round(vectorScore * 100)}%`
-          ],
-          metadata: {
-            processingPath,
-            totalProcessingTime: Date.now() - startTime,
-            componentsUsed
-          }
-        };
-      } else {
-        // Fallback to neural with context from other engines
-        componentsUsed.push('Neural Engine (OpenAI)');
-        const neuralResult = await detectEmotion(
-          context.userInput, 
-          apiKey || '', 
-          undefined, 
-          context.conversationHistory
-        );
-
-        // Enhance neural result with symbolic insights
-        const enhancedInferences = [
-          ...neuralResult.symbolicInferences || [],
-          symbolic ? `🔗 Symbolisch: ${symbolic.emotion}` : '',
-          seed ? `🌱 Seed: ${seed.emotion}` : '',
-          vector?.length ? `🔍 Vector matches: ${vector.length}` : ''
-        ].filter(Boolean);
-
-        finalResult = {
-          content: neuralResult.response,
-          emotion: neuralResult.emotion,
-          confidence: neuralResult.confidence,
-          label: neuralResult.label || 'Valideren',
-          reasoning: `Neurale analyse verrijkt met ${componentsUsed.length - 1} andere bronnen`,
-          symbolicInferences: enhancedInferences,
-          metadata: {
-            processingPath: 'neural',
-            totalProcessingTime: Date.now() - startTime,
-            componentsUsed
-          }
-        };
+      // Generate strategic briefing using API 2
+      let briefing: StrategicBriefing | null = null;
+      if (apiKey2?.trim()) {
+        try {
+          briefing = await createStrategicBriefing(
+            context.userInput,
+            assessments.map(a => a.rubricId),
+            seed?.emotion || null,
+            apiKey2
+          );
+          if (briefing) componentsUsed.push('Strategic Briefing');
+        } catch (err) {
+          console.warn('⚠️ Strategic briefing failed', err);
+        }
       }
+
+      // Build final prompt for API 1
+      const finalPrompt = briefing
+        ? `Doel: ${briefing.goal}\nContext: ${briefing.context}\nKernpunten: ${briefing.keyPoints.join(', ')}\n\nGebruiker: ${context.userInput}`
+        : context.userInput;
+
+      // Obtain neural response
+      componentsUsed.push('Neural Engine (OpenAI)');
+      const neuralResult = await detectEmotion(
+        finalPrompt,
+        apiKey || '',
+        undefined,
+        context.conversationHistory
+      );
+
+      const finalResult: UnifiedResponse = {
+        content: neuralResult.response,
+        emotion: neuralResult.emotion,
+        confidence: neuralResult.confidence,
+        label: neuralResult.label || 'Valideren',
+        reasoning: neuralResult.reasoning || 'Neurale analyse',
+        symbolicInferences: neuralResult.symbolicInferences || [],
+        metadata: {
+          processingPath: 'neural',
+          totalProcessingTime: Date.now() - startTime,
+          componentsUsed
+        }
+      };
 
       const processingTime = Date.now() - startTime;
       const decision: NeurosymbolicDecision = {
-        type: processingPath,
+        type: 'neural',
         confidence: finalResult.confidence,
         reasoning: [finalResult.reasoning],
         source: 'unified_decision_engine',
         processingTime,
         metadata: {
           processingTime,
-          fallbackUsed: processingPath === 'neural',
-          priority: processingPath === 'symbolic' ? 'high' : processingPath === 'hybrid' ? 'medium' : 'low',
+          fallbackUsed: false,
+          priority: 'medium',
           componentsUsed
         }
       };
-      
+
       setLastDecision(decision);
-      console.log(`✅ Unified processing complete: ${processingPath} (${processingTime}ms)`);
-      
+      console.log(`✅ Unified processing complete (${processingTime}ms)`);
+
       return finalResult;
+
+
 
     } catch (error) {
       console.error('🔴 Unified decision engine failed:', error);
@@ -166,7 +139,7 @@ export function useUnifiedDecisionEngine() {
     } finally {
       setIsProcessing(false);
     }
-  }, [matchAdvancedSeed, detectEmotion, processSymbolic, searchSimilarEmbeddings]);
+  }, [matchAdvancedSeed, detectEmotion, createStrategicBriefing, assessMessage]);
 
   const getDecisionAnalytics = useCallback(() => {
     return {
