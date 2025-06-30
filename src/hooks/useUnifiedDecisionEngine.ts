@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { NeurosymbolicDecision, ProcessingContext, UnifiedResponse } from '@/types/core';
 import { useAdvancedSeedMatcher } from './useAdvancedSeedMatcher';
+import type { StrategicBriefing } from '@/types';
 import { useOpenAI } from './useOpenAI';
 import { useSymbolicEngine } from './useSymbolicEngine';
 import { useVectorEmbeddings } from './useVectorEmbeddings';
