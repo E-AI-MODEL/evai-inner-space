@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { ChatHistoryItem } from '../types';
 import { OPENAI_MODEL } from '../openaiConfig';
+import { incrementApiUsage } from '@/utils/apiUsageTracker';
 
 export interface EmotionDetection {
   emotion: string;
@@ -29,6 +30,7 @@ export function useOpenAI() {
 
     setIsLoading(true);
     console.log('🤖 OpenAI emotion detection starting...');
+    incrementApiUsage('openai1');
 
     try {
       const contextHistory = history?.slice(-5) || [];

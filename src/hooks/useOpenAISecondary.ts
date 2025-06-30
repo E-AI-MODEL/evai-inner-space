@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { OPENAI_MODEL } from '../openaiConfig';
 import type { StrategicBriefing } from '../types';
+import { incrementApiUsage } from '@/utils/apiUsageTracker';
 
 export function useOpenAISecondary() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -14,6 +15,7 @@ export function useOpenAISecondary() {
     if (!apiKey?.trim()) return null;
 
     setIsAnalyzing(true);
+    incrementApiUsage('openai2');
     try {
       const prompt = `Maak een strategische briefing voor een therapeutische AI op basis van de volgende gegevens:\n` +
         `Gebruiker input: "${userInput}"\n` +

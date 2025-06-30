@@ -1,10 +1,13 @@
 
+import { incrementApiUsage } from '@/utils/apiUsageTracker';
+
 export async function generateEmbedding(text: string, apiKey: string): Promise<number[]> {
   if (!apiKey?.trim()) {
     throw new Error('API key is required for generating embeddings');
   }
 
   try {
+    incrementApiUsage('vector');
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {

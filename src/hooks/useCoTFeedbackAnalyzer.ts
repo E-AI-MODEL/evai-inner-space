@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Message } from '../types';
 import { useEvAI56Rubrics } from './useEvAI56Rubrics';
 import { OPENAI_MODEL } from '../openaiConfig';
+import { incrementApiUsage } from '@/utils/apiUsageTracker';
 
 export interface CoTFeedbackPattern {
   emotion: string;
@@ -101,6 +102,7 @@ Focus op:
 - Concrete verbeteringen gebaseerd op rubric scores
 - Patronen tussen emoties en rubric categorieën`;
 
+      incrementApiUsage('openai2');
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -173,6 +175,7 @@ ${evai56Rubrics.map(r => `${r.id}: ${r.interventions.join(', ')}`).join('\n')}
 
 Geef een JSON array terug met specifieke, rubrics-gevalideerde verbeteringen:
 ["verbetering1", "verbetering2", "verbetering3"]`;
+      incrementApiUsage("openai2");
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
