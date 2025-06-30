@@ -22,7 +22,7 @@ export type Database = {
           seed_generated: boolean | null
           session_id: string | null
           success: boolean | null
-          user_id: string | null
+          user_id: string
           vector_api_used: boolean | null
           workflow_type: string
         }
@@ -38,7 +38,7 @@ export type Database = {
           seed_generated?: boolean | null
           session_id?: string | null
           success?: boolean | null
-          user_id?: string | null
+          user_id?: string
           vector_api_used?: boolean | null
           workflow_type: string
         }
@@ -54,7 +54,7 @@ export type Database = {
           seed_generated?: boolean | null
           session_id?: string | null
           success?: boolean | null
-          user_id?: string | null
+          user_id?: string
           vector_api_used?: boolean | null
           workflow_type?: string
         }
@@ -73,7 +73,7 @@ export type Database = {
           processing_time_ms: number | null
           rubrics_analysis: Json | null
           symbolic_matches: Json | null
-          user_id: string | null
+          user_id: string
           user_input: string
           workflow_version: string | null
         }
@@ -89,7 +89,7 @@ export type Database = {
           processing_time_ms?: number | null
           rubrics_analysis?: Json | null
           symbolic_matches?: Json | null
-          user_id?: string | null
+          user_id?: string
           user_input: string
           workflow_version?: string | null
         }
@@ -105,7 +105,7 @@ export type Database = {
           processing_time_ms?: number | null
           rubrics_analysis?: Json | null
           symbolic_matches?: Json | null
-          user_id?: string | null
+          user_id?: string
           user_input?: string
           workflow_version?: string | null
         }
@@ -122,7 +122,7 @@ export type Database = {
           meta: Json | null
           response: Json | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
           weight: number | null
         }
         Insert: {
@@ -135,7 +135,7 @@ export type Database = {
           meta?: Json | null
           response?: Json | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           weight?: number | null
         }
         Update: {
@@ -148,7 +148,7 @@ export type Database = {
           meta?: Json | null
           response?: Json | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           weight?: number | null
         }
         Relationships: []
@@ -190,7 +190,7 @@ export type Database = {
           learning_impact: number | null
           new_seeds_generated: number | null
           trigger_type: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           actions_taken?: Json | null
@@ -201,7 +201,7 @@ export type Database = {
           learning_impact?: number | null
           new_seeds_generated?: number | null
           trigger_type: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           actions_taken?: Json | null
@@ -212,7 +212,7 @@ export type Database = {
           learning_impact?: number | null
           new_seeds_generated?: number | null
           trigger_type?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -248,7 +248,7 @@ export type Database = {
           rubric_id: string
           triggers: Json | null
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           confidence_level?: string | null
@@ -263,7 +263,7 @@ export type Database = {
           rubric_id: string
           triggers?: Json | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           confidence_level?: string | null
@@ -278,7 +278,7 @@ export type Database = {
           rubric_id?: string
           triggers?: Json | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -289,7 +289,7 @@ export type Database = {
           notes: string | null
           rating: string | null
           seed_id: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -297,7 +297,7 @@ export type Database = {
           notes?: string | null
           rating?: string | null
           seed_id?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           created_at?: string | null
@@ -305,7 +305,7 @@ export type Database = {
           notes?: string | null
           rating?: string | null
           seed_id?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -354,21 +354,21 @@ export type Database = {
           id: string
           key: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
           value: string
         }
         Insert: {
           id?: string
           key: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           value: string
         }
         Update: {
           id?: string
           key?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
           value?: string
         }
         Relationships: []
@@ -387,7 +387,7 @@ export type Database = {
           triggers: string[] | null
           updated_at: string | null
           usage_count: number | null
-          user_id: string | null
+          user_id: string
           vector_embedding: string | null
         }
         Insert: {
@@ -403,7 +403,7 @@ export type Database = {
           triggers?: string[] | null
           updated_at?: string | null
           usage_count?: number | null
-          user_id?: string | null
+          user_id?: string
           vector_embedding?: string | null
         }
         Update: {
@@ -419,7 +419,7 @@ export type Database = {
           triggers?: string[] | null
           updated_at?: string | null
           usage_count?: number | null
-          user_id?: string | null
+          user_id?: string
           vector_embedding?: string | null
         }
         Relationships: []
@@ -434,7 +434,7 @@ export type Database = {
           id: string
           metadata: Json | null
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           content_id: string
@@ -445,7 +445,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           content_id?: string
@@ -456,7 +456,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -493,6 +493,10 @@ export type Database = {
         Args: { setting_key: string; default_value?: string }
         Returns: string
       }
+      get_single_user_setting: {
+        Args: { setting_key: string; default_value?: string }
+        Returns: string
+      }
       get_user_setting: {
         Args: { setting_key: string; default_value?: string }
         Returns: string
@@ -502,16 +506,26 @@ export type Database = {
         Returns: undefined
       }
       log_evai_workflow: {
-        Args: {
-          p_user_id: string
-          p_conversation_id: string
-          p_workflow_type: string
-          p_api_collaboration: Json
-          p_rubrics_data?: Json
-          p_processing_time?: number
-          p_success?: boolean
-          p_error_details?: Json
-        }
+        Args:
+          | {
+              p_conversation_id: string
+              p_workflow_type: string
+              p_api_collaboration: Json
+              p_rubrics_data?: Json
+              p_processing_time?: number
+              p_success?: boolean
+              p_error_details?: Json
+            }
+          | {
+              p_user_id: string
+              p_conversation_id: string
+              p_workflow_type: string
+              p_api_collaboration: Json
+              p_rubrics_data?: Json
+              p_processing_time?: number
+              p_success?: boolean
+              p_error_details?: Json
+            }
         Returns: string
       }
       log_hybrid_decision: {
@@ -538,13 +552,20 @@ export type Database = {
         Returns: string
       }
       search_unified_knowledge: {
-        Args: {
-          query_text: string
-          query_embedding: string
-          user_uuid: string
-          similarity_threshold?: number
-          max_results?: number
-        }
+        Args:
+          | {
+              query_text: string
+              query_embedding: string
+              similarity_threshold?: number
+              max_results?: number
+            }
+          | {
+              query_text: string
+              query_embedding: string
+              user_uuid: string
+              similarity_threshold?: number
+              max_results?: number
+            }
         Returns: {
           id: string
           content_type: string
@@ -559,6 +580,10 @@ export type Database = {
         Args:
           | Record<PropertyKey, never>
           | { setting_key: string; setting_value: string }
+        Returns: undefined
+      }
+      update_single_user_setting: {
+        Args: { setting_key: string; setting_value: string }
         Returns: undefined
       }
       update_user_setting: {

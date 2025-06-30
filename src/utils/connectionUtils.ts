@@ -28,16 +28,9 @@ export const checkAuthConnection = async () => {
   try {
     console.log('🔍 Testing Supabase auth...');
     
-    // Test auth connection
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
-    if (error) {
-      console.error('🔴 Supabase auth error:', error.message);
-      return false;
-    } else {
-      console.log('✅ Supabase auth accessible');
-      return true;
-    }
+    // Since we're using single-user mode, always return true
+    console.log('✅ Single-user mode - auth not required');
+    return true;
   } catch (error) {
     console.error('🔴 Supabase auth failed with exception:', error);
     return false;
@@ -59,7 +52,7 @@ export const performFullSystemCheck = async () => {
   
   const results = {
     supabase: false,
-    auth: false,
+    auth: true, // Always true in single-user mode
     openaiApi1: false,
     openaiApi2: false,
     vectorApi: false
@@ -67,9 +60,6 @@ export const performFullSystemCheck = async () => {
 
   // Check Supabase database connection
   results.supabase = await checkSupabaseConnection();
-  
-  // Check Supabase auth
-  results.auth = await checkAuthConnection();
   
   // Check API keys
   const openaiKey1 = localStorage.getItem('openai-api-key');

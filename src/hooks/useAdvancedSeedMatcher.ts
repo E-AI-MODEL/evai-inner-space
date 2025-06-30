@@ -13,6 +13,9 @@ interface AdvancedSeedMatch {
   metadata: Record<string, any>;
 }
 
+// Single user ID constant
+const SINGLE_USER_ID = '00000000-0000-0000-0000-000000000001';
+
 export function useAdvancedSeedMatcher() {
   const [isMatching, setIsMatching] = useState(false);
 
@@ -69,39 +72,35 @@ export function useAdvancedSeedMatcher() {
       if (apiKey?.trim()) {
         try {
           const queryEmbedding = await generateEmbedding(userInput, apiKey);
-          const { data: { user } } = await supabase.auth.getUser();
+          const embeddingString = `[${queryEmbedding.join(',')}]`;
           
-          if (user) {
-            const embeddingString = `[${queryEmbedding.join(',')}]`;
-            const { data: vectorMatches, error: vectorError } = await supabase.rpc(
-              'search_unified_knowledge',
-              {
-                query_text: userInput,
-                query_embedding: embeddingString,
-                user_uuid: user.id,
-                similarity_threshold: threshold,
-                max_results: 3
-              }
-            );
-
-            if (vectorError) {
-              console.warn('Vector search failed:', vectorError);
-            } else if (vectorMatches && vectorMatches.length > 0) {
-              const bestMatch = vectorMatches[0];
-              const metadata = typeof bestMatch.metadata === 'object' && bestMatch.metadata
-                ? bestMatch.metadata as Record<string, any>
-                : {};
-                
-              return {
-                id: bestMatch.id,
-                emotion: bestMatch.emotion,
-                response: bestMatch.response_text || '',
-                confidence: bestMatch.similarity_score,
-                label: 'Valideren',
-                triggers: metadata.triggers || [],
-                metadata
-              };
+          const { data: vectorMatches, error: vectorError } = await supabase.rpc(
+            'search_unified_knowledge',
+            {
+              query_text: userInput,
+              query_embedding: embeddingString,
+              similarity_threshold: threshold,
+              max_results: 3
             }
+          );
+
+          if (vectorError) {
+            console.warn('Vector search failed:', vectorError);
+          } else if (vectorMatches && vectorMatches.length > 0) {
+            const bestMatch = vectorMatches[0];
+            const metadata = typeof bestMatch.metadata === 'object' && bestMatch.metadata
+              ? bestMatch.metadata as Record<string, any>
+              : {};
+              
+            return {
+              id: bestMatch.id,
+              emotion: bestMatch.emotion,
+              response: bestMatch.response_text || '',
+              confidence: bestMatch.similarity_score,
+              label: 'Valideren',
+              triggers: metadata.triggers || [],
+              metadata
+            };
           }
         } catch (embeddingError) {
           console.warn('Vector embedding search failed:', embeddingError);

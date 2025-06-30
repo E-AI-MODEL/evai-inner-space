@@ -1,7 +1,6 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
 
 export interface RubricAssessment {
   rubricId: string;
@@ -20,6 +19,9 @@ export interface EnhancedRubricResult {
   processingMode: 'strict' | 'balanced' | 'flexible';
   timestamp: Date;
 }
+
+// Single user ID constant
+const SINGLE_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 // Core EvAI 5.6 Rubrics with enhanced scoring
 const EVAI_56_RUBRICS = {
@@ -67,7 +69,6 @@ const EVAI_56_RUBRICS = {
 
 export function useEnhancedEvAI56Rubrics() {
   const [isProcessing, setIsProcessing] = useState(false);
-  const { user } = useAuth();
 
   const assessMessage = useCallback((content: string, processingMode: 'strict' | 'balanced' | 'flexible' = 'balanced'): RubricAssessment[] => {
     const assessments: RubricAssessment[] = [];
@@ -158,11 +159,9 @@ export function useEnhancedEvAI56Rubrics() {
     assessment: RubricAssessment,
     conversationId?: string
   ): Promise<void> => {
-    if (!user) return;
-
     try {
       await supabase.from('rubrics_assessments').insert({
-        user_id: user.id,
+        user_id: SINGLE_USER_ID,
         conversation_id: conversationId || crypto.randomUUID(),
         message_content: messageContent,
         rubric_id: assessment.rubricId,
@@ -178,7 +177,7 @@ export function useEnhancedEvAI56Rubrics() {
     } catch (error) {
       console.error('❌ Failed to log assessment:', error);
     }
-  }, [user]);
+  }, []);
 
   const performEnhancedAssessment = useCallback(async (
     content: string,
