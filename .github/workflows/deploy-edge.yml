@@ -1,0 +1,16 @@
+name: Deploy Edge Functions
+
+on:
+  push:
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy-edge.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+      - run: supabase functions deploy generate-embedding-worker --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+      - run: supabase functions deploy fine-tune-nightly --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
