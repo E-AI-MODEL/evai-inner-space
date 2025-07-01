@@ -94,6 +94,9 @@ Toegankelijk via `/admin` - bevat:
 - **Analytics**: Prestatiemetrics en usage patterns
 - **Configuration**: API key management en systeem-instellingen
 
+Zodra je via het easter egg mechanisme toegang hebt tot de chat, verschijnt er rechtsboven een
+zichtbare **Admin** link in de navigatiebalk. Deze leidt naar het dashboard op `/admin`.
+
 ## 🔧 Development
 
 ### Belangrijke Componenten
