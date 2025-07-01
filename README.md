@@ -23,10 +23,16 @@ Dit mechanisme beveiligt de demo zonder complexe authenticatie.
 ## 🛠️ Setup Instructies
 
 ### 1. Environment Variabelen
+Gebruik het meegeleverde `.env.example` als basis en maak een `.env` bestand aan met tenminste:
 
-Maak een `.env` bestand aan met:
+```
+VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
+VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
+SUPABASE_URL=<YOUR_SUPABASE_URL>
+SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
+```
 
-> Supabase URL & anon key are stored in src/lib/supabaseClient.ts
+De frontend leest `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY` uit `import.meta.env`, de server gebruikt `SUPABASE_URL` en `SUPABASE_ANON_KEY`.
 
 ### 2. API Keys Configuratie
 
