@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Brain, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,7 +12,7 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
   const navigate = useNavigate();
-  const { authorizeAdmin } = useAuth();
+  const { authorizeAdmin, isAuthorized, isAdminAuthorized } = useAuth();
   const [adminClickCount, setAdminClickCount] = useState(0);
 
   const handleLogoClick = () => {
@@ -44,7 +44,23 @@ const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
           <h1 className="text-xl font-bold text-gray-800">EvAI Bèta Chat</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onSettingsClick} className="text-gray-600 hover:text-gray-800">
+          {(isAuthorized || isAdminAuthorized) && (
+            <Link to="/admin">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-gray-800"
+              >
+                Admin
+              </Button>
+            </Link>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onSettingsClick}
+            className="text-gray-600 hover:text-gray-800"
+          >
             <Settings className="h-4 w-4" />
           </Button>
         </div>
