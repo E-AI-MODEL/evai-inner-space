@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -95,7 +96,7 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }
               <p className="text-sm text-muted-foreground">Totaal Gesprekken</p>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">{Math.round((analytics?.avgConfidence || 0) * 100)}%</div>
+              <div className="text-2xl font-bold">{Math.round((Number(analytics?.avgConfidence) || 0) * 100)}%</div>
               <p className="text-sm text-muted-foreground">Gemiddeld Vertrouwen</p>
             </div>
             <div className="text-center">
@@ -128,7 +129,7 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }
                       variant="secondary" 
                       className={emotionColors[item.emotion as keyof typeof emotionColors] || 'bg-gray-100 text-gray-800'}
                     >
-                      {item.emotion} ({Math.round((item.confidence || 0) * 100)}%)
+                      {item.emotion} ({Math.round(((Number(item.confidence) || 0) * 100))})%
                     </Badge>
                   ))}
                 </div>
