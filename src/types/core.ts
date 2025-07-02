@@ -20,6 +20,7 @@ export interface UnifiedResponse {
     processingPath: 'symbolic' | 'hybrid' | 'neural' | 'error';
     totalProcessingTime: number;
     componentsUsed: string[];
+    fallback?: boolean; // ADDED: Optional fallback property
     apiCollaboration?: {
       api1Used: boolean;
       api2Used: boolean;

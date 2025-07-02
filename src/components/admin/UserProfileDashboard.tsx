@@ -56,7 +56,7 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }
     if (!analytics?.rubricHeatmap) return 'Laag';
     
     const totalRisk = Object.values(analytics.rubricHeatmap).reduce((sum: number, score: any) => {
-      return sum + (Number(score) || 0);
+      return sum + (Number(score) || 0); // FIXED: Ensure numeric conversion with fallback
     }, 0);
     const avgRisk = totalRisk / Object.keys(analytics.rubricHeatmap).length;
     
