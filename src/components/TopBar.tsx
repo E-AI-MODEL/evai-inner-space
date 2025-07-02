@@ -1,10 +1,8 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Brain, Settings } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/components/ui/sonner";
 
 interface TopBarProps {
   onSettingsClick: () => void;
@@ -12,24 +10,9 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
   const navigate = useNavigate();
-  const { authorizeAdmin } = useAuth();
-  const [adminClickCount, setAdminClickCount] = useState(0);
 
   const handleLogoClick = () => {
-    const newCount = adminClickCount + 1;
-    setAdminClickCount(newCount);
-
-    if (newCount >= 5) {
-      authorizeAdmin();
-      toast.success("Admin Toegang Geactiveerd!", {
-        description: "Je kunt nu naar /admin navigeren.",
-      });
-      setAdminClickCount(0);
-    } else if (newCount > 2) {
-      toast.info(`Nog ${5 - newCount} klik(s) voor admin modus...`);
-    }
-
-    setTimeout(() => setAdminClickCount(0), 2000);
+    navigate('/admin');
   };
 
   return (
@@ -38,10 +21,10 @@ const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
         <div
           className="flex items-center gap-2 cursor-pointer"
           onClick={handleLogoClick}
-          title="EvAI Logo"
+          title="Klik om naar Admin Dashboard te gaan"
         >
           <Brain className="h-6 w-6 text-blue-600" />
-          <h1 className="text-xl font-bold text-gray-800">EvAI Bèta Chat</h1>
+          <h1 className="text-xl font-bold text-gray-800">EvAI Neurosymbolische Chat</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onSettingsClick} className="text-gray-600 hover:text-gray-800">

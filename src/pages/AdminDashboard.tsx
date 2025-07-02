@@ -1,19 +1,22 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Brain, Database, Activity, Settings, TrendingUp, AlertTriangle, CheckCircle, Users, BarChart3, Zap } from 'lucide-react';
+import { Brain, Database, Activity, Settings, TrendingUp, AlertTriangle, CheckCircle, Users, BarChart3, Zap, User } from 'lucide-react';
 import { useSeeds } from '../hooks/useSeeds';
 import { testSupabaseConnection } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { ANONYMOUS_SUPER_USER } from '../hooks/useAuth';
 import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '../components/ConfigurationPanel';
 import LiveEventLog from '../components/admin/LiveEventLog';
 import SystemHealthCheck from '../components/admin/SystemHealthCheck';
 import SystemStatusOverview from '../components/admin/SystemStatusOverview';
 import SystemStatusDetails from '../components/admin/SystemStatusDetails';
+import UserProfileDashboard from '../components/admin/UserProfileDashboard';
 import { ConnectionStatus } from '../types/connectionStatus';
 
 const AdminDashboard = () => {
@@ -56,65 +59,97 @@ const AdminDashboard = () => {
     });
   }, [supabaseStatus, seeds]);
 
-  // Query for admin analytics
+  // Query for single user analytics
   const { data: analytics } = useQuery({
-    queryKey: ['admin-analytics'],
+    queryKey: ['single-user-analytics'],
     queryFn: async () => {
+      const userId = ANONYMOUS_SUPER_USER.id;
+
+      // Seeds data
       const { data: seedRows, error: seedErr } = await supabase
         .from('emotion_seeds')
-        .select('id, active');
+        .select('id, active, emotion, meta, created_at')
+        .eq('user_id', userId);
 
       if (seedErr) throw seedErr;
 
-      const { data: logRows, error: logErr } = await supabase
-        .from('api_collaboration_logs')
-        .select('success, processing_time_ms, api1_used, api2_used, vector_api_used, created_at')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (logErr) throw logErr;
-
+      // Decision logs
       const { data: decisions, error: decErr } = await supabase
         .from('decision_logs')
-        .select('confidence_score, created_at')
+        .select('confidence_score, created_at, hybrid_decision, user_input, final_response')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100);
 
       if (decErr) throw decErr;
 
-      const { data: feedbackRows } = await supabase
+      // Feedback data
+      const { data: feedbackRows, error: feedErr } = await supabase
         .from('seed_feedback')
-        .select('rating');
+        .select('rating, created_at, seed_id')
+        .eq('user_id', userId);
 
+      if (feedErr) throw feedErr;
+
+      // Rubric assessments
+      const { data: rubricRows, error: rubErr } = await supabase
+        .from('rubrics_assessments')
+        .select('rubric_id, overall_score, risk_score, protective_score, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (rubErr) throw rubErr;
+
+      // API collaboration logs
+      const { data: apiLogs, error: apiErr } = await supabase
+        .from('api_collaboration_logs')
+        .select('success, processing_time_ms, api1_used, api2_used, vector_api_used, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (apiErr) throw apiErr;
+
+      // Calculate analytics
       const totalSeeds = seedRows?.length || 0;
       const activeSeeds = seedRows?.filter(s => s.active).length || 0;
-
       const totalConversations = decisions?.length || 0;
       const avgConfidence = decisions && decisions.length > 0
         ? decisions.reduce((sum, d) => sum + (d.confidence_score || 0), 0) / decisions.length
         : 0;
 
+      // Weekly growth calculation
       const now = new Date();
       const lastWeek = new Date(now);
       lastWeek.setDate(now.getDate() - 7);
-      const previousWeek = new Date(now);
-      previousWeek.setDate(now.getDate() - 14);
-      const lastWeekCount = decisions.filter(d => new Date(d.created_at) >= lastWeek).length;
-      const prevWeekCount = decisions.filter(d => new Date(d.created_at) >= previousWeek && new Date(d.created_at) < lastWeek).length;
-      const weeklyGrowth = prevWeekCount ? ((lastWeekCount - prevWeekCount) / prevWeekCount) * 100 : lastWeekCount * 100;
+      const lastWeekCount = decisions?.filter(d => new Date(d.created_at) >= lastWeek).length || 0;
+      const weeklyGrowth = lastWeekCount;
 
-      const successes = logRows.filter(l => l.success).length;
-      const successRate = logRows.length > 0 ? (successes / logRows.length) * 100 : 100;
-      const avgResponseTime = logRows.length > 0
-        ? Math.round(logRows.reduce((sum, l) => sum + (l.processing_time_ms || 0), 0) / logRows.length)
+      // Performance metrics
+      const successes = apiLogs?.filter(l => l.success).length || 0;
+      const successRate = apiLogs && apiLogs.length > 0 ? (successes / apiLogs.length) * 100 : 100;
+      const avgResponseTime = apiLogs && apiLogs.length > 0
+        ? Math.round(apiLogs.reduce((sum, l) => sum + (l.processing_time_ms || 0), 0) / apiLogs.length)
         : 0;
-      const openaiCount = logRows.filter(l => l.api1_used || l.api2_used).length;
-      const vectorCount = logRows.filter(l => l.vector_api_used).length;
-      const supabaseCount = logRows.length;
 
-      const pos = feedbackRows?.filter(f => f.rating === 'up').length || 0;
+      // Feedback analysis
+      const positiveFeedback = feedbackRows?.filter(f => f.rating === 'up').length || 0;
       const totalFeedback = feedbackRows?.length || 0;
-      const userSatisfaction = totalFeedback > 0 ? +(pos / totalFeedback * 5).toFixed(1) : 0;
+      const userSatisfaction = totalFeedback > 0 ? +(positiveFeedback / totalFeedback * 5).toFixed(1) : 0;
+
+      // Emotion timeline (last 7 days)
+      const emotionTimeline = decisions?.slice(0, 20).map(d => ({
+        date: new Date(d.created_at).toLocaleDateString('nl-NL'),
+        emotion: d.hybrid_decision?.emotion || 'onbekend',
+        confidence: d.confidence_score || 0
+      })) || [];
+
+      // Rubric heatmap
+      const rubricHeatmap = rubricRows?.reduce((acc, r) => {
+        acc[r.rubric_id] = (acc[r.rubric_id] || 0) + r.overall_score;
+        return acc;
+      }, {} as Record<string, number>) || {};
 
       return {
         totalSeeds,
@@ -123,27 +158,24 @@ const AdminDashboard = () => {
         avgConfidence,
         weeklyGrowth,
         systemHealth: successRate > 90 ? 'excellent' : 'warning',
-        apiUsage: {
-          openai: openaiCount,
-          vector: vectorCount,
-          supabase: supabaseCount
-        },
-        recentActivity: decisions.slice(0, 4).map(d => ({
-          action: 'AI Response',
-          time: d.created_at ? new Date(d.created_at).toLocaleTimeString('nl-NL') : '',
-          status: 'success'
-        })),
         performanceMetrics: {
           avgResponseTime,
           successRate,
           errorRate: 100 - successRate,
           userSatisfaction
-        }
+        },
+        emotionTimeline,
+        rubricHeatmap,
+        recentDecisions: decisions?.slice(0, 5).map(d => ({
+          input: d.user_input?.substring(0, 50) + '...',
+          response: d.final_response?.substring(0, 50) + '...',
+          confidence: d.confidence_score || 0,
+          time: new Date(d.created_at).toLocaleTimeString('nl-NL')
+        })) || []
       };
     },
     refetchInterval: 30000 // Refresh every 30 seconds
   });
-
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -168,10 +200,10 @@ const AdminDashboard = () => {
       <div className="flex items-center justify-between space-y-2">
         <div>
           <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
-            EvAI Admin Dashboard
+            EvAI Neurosymbolische Dashboard
           </h2>
           <p className="text-muted-foreground">
-            Beheer je neurosymbolische AI systeem en monitor de prestaties
+            Single-user neurosymbolische AI systeem - monitor, configureer en profileer
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -185,13 +217,18 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="profile" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="profile">Gebruikersprofiel</TabsTrigger>
           <TabsTrigger value="overview">Overzicht</TabsTrigger>
           <TabsTrigger value="seeds">Seeds Beheer</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="settings">Instellingen</TabsTrigger>
+          <TabsTrigger value="settings">Configuratie</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="profile" className="space-y-4">
+          <UserProfileDashboard analytics={analytics} />
+        </TabsContent>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -216,7 +253,7 @@ const AdminDashboard = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{analytics?.totalConversations || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  Deze week +{analytics?.weeklyGrowth || 0}%
+                  Deze week: {analytics?.weeklyGrowth || 0}
                 </p>
               </CardContent>
             </Card>
@@ -231,7 +268,7 @@ const AdminDashboard = () => {
                   {Math.round((analytics?.avgConfidence || 0) * 100)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Zeer hoog niveau
+                  {analytics?.avgConfidence > 0.8 ? 'Zeer hoog' : 'Gemiddeld'} niveau
                 </p>
               </CardContent>
             </Card>
@@ -242,67 +279,21 @@ const AdminDashboard = () => {
                 <Zap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {analytics?.systemHealth === 'excellent' ? 'Uitstekend' : 'Goed'}
+                <div className="text-2xl font-bold">
+                  {Math.round(analytics?.performanceMetrics?.successRate || 0)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Alle systemen operationeel
+                  {analytics?.systemHealth === 'excellent' ? 'Uitstekend' : 'Waarschuwing'}
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Recente Activiteit</CardTitle>
-                <CardDescription>
-                  Laatste gebeurtenissen in het systeem
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {analytics?.recentActivity?.map((activity, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className={`h-2 w-2 rounded-full ${
-                          activity.status === 'success' ? 'bg-green-500' :
-                          activity.status === 'info' ? 'bg-blue-500' : 'bg-yellow-500'
-                        }`} />
-                        <span className="text-sm font-medium">{activity.action}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{activity.time}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>API Gebruik</CardTitle>
-                <CardDescription>
-                  Deze maand
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">OpenAI</span>
-                    <span className="font-bold">{analytics?.apiUsage?.openai || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Vector DB</span>
-                    <span className="font-bold">{analytics?.apiUsage?.vector || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Supabase</span>
-                    <span className="font-bold">{analytics?.apiUsage?.supabase || 0}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <SystemStatusOverview
+            openAiActive={connectionStatus.openaiApi1 === 'configured'}
+            openAi2Active={connectionStatus.openaiApi2 === 'configured'}
+            vectorActive={connectionStatus.vectorApi === 'configured'}
+          />
         </TabsContent>
 
         <TabsContent value="seeds" className="space-y-4">
@@ -311,72 +302,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="analytics" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Prestatie Metriek
-                </CardTitle>
-                <CardDescription>
-                  Systeem prestaties en betrouwbaarheid
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Gem. Response Tijd</span>
-                    <Badge variant="outline" className="text-green-600">
-                      {analytics?.performanceMetrics?.avgResponseTime || 0}ms
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Slaagpercentage</span>
-                    <Badge variant="outline" className="text-green-600">
-                      {analytics?.performanceMetrics?.successRate || 0}%
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Foutpercentage</span>
-                    <Badge variant="outline" className="text-yellow-600">
-                      {analytics?.performanceMetrics?.errorRate || 0}%
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Gebruikerstevredenheid</span>
-                    <Badge variant="outline" className="text-green-600">
-                      {analytics?.performanceMetrics?.userSatisfaction || 0}/5
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Systeem Status</CardTitle>
-                <CardDescription>
-                  Overzicht van gekoppelde services
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <SystemStatusOverview
-                  openAiActive={connectionStatus.openaiApi1 === 'configured'}
-                  openAi2Active={connectionStatus.openaiApi2 === 'configured'}
-                  vectorActive={connectionStatus.vectorApi === 'configured'}
-                />
-                <SystemStatusDetails
-                  status={connectionStatus}
-                  seedsCount={seeds.length}
-                  activeSeedsCount={seeds.filter(s => s.isActive).length}
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
             <SystemHealthCheck />
             <LiveEventLog />
           </div>
+          <SystemStatusDetails />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">

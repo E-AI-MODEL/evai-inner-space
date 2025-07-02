@@ -1,14 +1,12 @@
+
 import { createContext, useContext, useEffect, useState } from 'react';
 
 interface User { id: string; email: string; }
 
 export const ANONYMOUS_SUPER_USER: User = {
   id: '00000000-0000-0000-0000-000000000001',
-  email: 'evai_superuser@local.host',
+  email: 'evai_single_user@system.local',
 };
-
-const CHAT_AUTH_KEY = 'evai_chat_authorized';
-const ADMIN_AUTH_KEY = 'evai_admin_authorized';
 
 interface AuthContextType {
   user: User | null;
@@ -22,44 +20,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isAdminAuthorized, setIsAdminAuthorized] = useState(false);
+  const [user] = useState<User>(ANONYMOUS_SUPER_USER); // Altijd de single user
+  const [loading, setLoading] = useState(false); // Geen loading meer nodig
+  const [isAuthorized] = useState(true); // Altijd geautoriseerd
+  const [isAdminAuthorized] = useState(true); // Altijd admin geautoriseerd
 
   useEffect(() => {
-    try {
-      const chatAuth = localStorage.getItem(CHAT_AUTH_KEY) === 'true';
-      const adminAuth = localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
-
-      if (chatAuth) {
-        setIsAuthorized(true);
-        setUser(ANONYMOUS_SUPER_USER);
-      }
-      if (adminAuth) {
-        setIsAdminAuthorized(true);
-        if (!chatAuth) setUser(ANONYMOUS_SUPER_USER);
-      }
-    } catch (e) {
-      console.error("Could not access localStorage", e);
-    }
+    // Single user model - geen authenticatie nodig
     setLoading(false);
   }, []);
 
   const authorizeChat = () => {
-    try {
-      localStorage.setItem(CHAT_AUTH_KEY, 'true');
-    } catch (e) { console.error("Could not write to localStorage", e); }
-    setIsAuthorized(true);
-    if (!user) setUser(ANONYMOUS_SUPER_USER);
+    // Geen actie nodig - altijd geautoriseerd
   };
 
   const authorizeAdmin = () => {
-    try {
-      localStorage.setItem(ADMIN_AUTH_KEY, 'true');
-    } catch (e) { console.error("Could not write to localStorage", e); }
-    setIsAdminAuthorized(true);
-    if (!user) setUser(ANONYMOUS_SUPER_USER);
+    // Geen actie nodig - altijd geautoriseerd
   };
   
   const value = { user, loading, isAuthorized, isAdminAuthorized, authorizeChat, authorizeAdmin };
