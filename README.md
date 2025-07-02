@@ -23,16 +23,15 @@ Dit mechanisme beveiligt de demo zonder complexe authenticatie.
 ## 🛠️ Setup Instructies
 
 ### 1. Environment Variabelen
-Gebruik het meegeleverde `.env.example` als basis en maak een `.env` bestand aan met tenminste:
 
-```
-VITE_SUPABASE_URL=<YOUR_SUPABASE_URL>
-VITE_SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
-SUPABASE_URL=<YOUR_SUPABASE_URL>
-SUPABASE_ANON_KEY=<YOUR_SUPABASE_ANON_KEY>
-```
+Maak een `.env` bestand aan met:
 
-De frontend leest `VITE_SUPABASE_URL` en `VITE_SUPABASE_ANON_KEY` uit `import.meta.env`, de server gebruikt `SUPABASE_URL` en `SUPABASE_ANON_KEY`.
+```env
+VITE_SUPABASE_URL=https://ngcyfbstajfcfdhlelbz.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nY3lmYnN0YWpmY2ZkaGxlbGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNjI5NDcsImV4cCI6MjA2NDYzODk0N30.MkZRcC_HGNTZW3hUvFiNmHY5Px9FPvRmnzAiKTWi9e4
+SUPABASE_URL=https://ngcyfbstajfcfdhlelbz.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nY3lmYnN0YWpmY2ZkaGxlbGJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNjI5NDcsImV4cCI6MjA2NDYzODk0N30.MkZRcC_HGNTZW3hUvFiNmHY5Px9FPvRmnzAiKTWi9e4
+```
 
 ### 2. API Keys Configuratie
 
@@ -99,9 +98,6 @@ Toegankelijk via `/admin` - bevat:
 - **Seed Management**: Beheer emotionele response-patronen
 - **Analytics**: Prestatiemetrics en usage patterns
 - **Configuration**: API key management en systeem-instellingen
-
-Zodra je via het easter egg mechanisme toegang hebt tot de chat, verschijnt er rechtsboven een
-zichtbare **Admin** link in de navigatiebalk. Deze leidt naar het dashboard op `/admin`.
 
 ## 🔧 Development
 
