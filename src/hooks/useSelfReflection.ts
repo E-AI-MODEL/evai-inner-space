@@ -95,13 +95,9 @@ export function useSelfReflection() {
           .from('emotion_seeds')
           .update({ 
             weight: 0.5, // Verlaag weight
-            meta: supabase.raw(`
-              jsonb_set(
-                COALESCE(meta, '{}'),
-                '{negativeFeeback}',
-                (COALESCE((meta->>'negativeFeedback')::int, 0) + 1)::text::jsonb
-              )
-            `)
+            meta: {
+              negativeFeedback: 1 // Gebruik direct object ipv raw SQL
+            }
           })
           .eq('id', context.seedId);
 

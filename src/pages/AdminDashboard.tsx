@@ -19,6 +19,11 @@ import SystemStatusDetails from '../components/admin/SystemStatusDetails';
 import UserProfileDashboard from '../components/admin/UserProfileDashboard';
 import { ConnectionStatus } from '../types/connectionStatus';
 
+interface HybridDecisionData {
+  emotion?: string;
+  [key: string]: any;
+}
+
 const AdminDashboard = () => {
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const { toast } = useToast();
@@ -139,11 +144,14 @@ const AdminDashboard = () => {
       const userSatisfaction = totalFeedback > 0 ? +(positiveFeedback / totalFeedback * 5).toFixed(1) : 0;
 
       // Emotion timeline (last 7 days)
-      const emotionTimeline = decisions?.slice(0, 20).map(d => ({
-        date: new Date(d.created_at).toLocaleDateString('nl-NL'),
-        emotion: d.hybrid_decision?.emotion || 'onbekend',
-        confidence: d.confidence_score || 0
-      })) || [];
+      const emotionTimeline = decisions?.slice(0, 20).map(d => {
+        const hybridDecision = d.hybrid_decision as HybridDecisionData;
+        return {
+          date: new Date(d.created_at).toLocaleDateString('nl-NL'),
+          emotion: hybridDecision?.emotion || 'onbekend',
+          confidence: d.confidence_score || 0
+        };
+      }) || [];
 
       // Rubric heatmap
       const rubricHeatmap = rubricRows?.reduce((acc, r) => {
@@ -268,7 +276,7 @@ const AdminDashboard = () => {
                   {Math.round((analytics?.avgConfidence || 0) * 100)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {analytics?.avgConfidence > 0.8 ? 'Zeer hoog' : 'Gemiddeld'} niveau
+                  {(analytics?.avgConfidence || 0) > 0.8 ? 'Zeer hoog' : 'Gemiddeld'} niveau
                 </p>
               </CardContent>
             </Card>
@@ -305,7 +313,11 @@ const AdminDashboard = () => {
             <SystemHealthCheck />
             <LiveEventLog />
           </div>
-          <SystemStatusDetails />
+          <SystemStatusDetails
+            status={connectionStatus}
+            seedsCount={analytics?.totalSeeds || 0}
+            activeSeedsCount={analytics?.activeSeeds || 0}
+          />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">

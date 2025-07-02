@@ -99,7 +99,8 @@ export function useUnifiedDecisionEngine() {
             metadata: {
               processingPath: 'hybrid',
               totalProcessingTime: Date.now() - startTime,
-              componentsUsed: [...componentsUsed, 'Hybrid Decision Engine']
+              componentsUsed: [...componentsUsed, 'Hybrid Decision Engine'],
+              fallback: false
             }
           };
         } else {
@@ -123,9 +124,10 @@ export function useUnifiedDecisionEngine() {
           reasoning: neuralResult.reasoning || 'Neurale analyse',
           symbolicInferences: neuralResult.symbolicInferences || [],
           metadata: {
-            processingPath: 'neural_fallback',
+            processingPath: 'neural',
             totalProcessingTime: Date.now() - startTime,
-            componentsUsed
+            componentsUsed,
+            fallback: true
           }
         };
       }
@@ -148,7 +150,7 @@ export function useUnifiedDecisionEngine() {
         processingTime,
         metadata: {
           processingTime,
-          fallbackUsed: finalResponse.metadata.processingPath === 'neural_fallback',
+          fallbackUsed: finalResponse.metadata.fallback || false,
           priority: finalResponse.confidence > 0.8 ? 'high' : 'medium',
           componentsUsed
         }
@@ -189,7 +191,8 @@ export function useUnifiedDecisionEngine() {
         metadata: {
           processingPath: 'error',
           totalProcessingTime: processingTime,
-          componentsUsed: ['Error Handler']
+          componentsUsed: ['Error Handler'],
+          fallback: true
         }
       };
     } finally {

@@ -27,13 +27,6 @@ const Index = () => {
   };
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const saveApiKey = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem("openai-api-key", apiKey.trim());
-      setSettingsOpen(false);
-    }
-  };
 
   const messageRefs = useRef(new Map<string, HTMLDivElement | null>());
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -111,9 +104,6 @@ const Index = () => {
         <SettingsSheet
           isOpen={settingsOpen}
           onOpenChange={setSettingsOpen}
-          apiKey={apiKey}
-          onApiKeyChange={setApiKey}
-          onApiKeySave={saveApiKey}
         />
         <div className={`flex-1 flex flex-col ${isMobile ? '' : ''}`}
         >

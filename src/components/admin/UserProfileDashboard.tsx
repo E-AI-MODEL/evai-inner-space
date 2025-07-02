@@ -55,7 +55,9 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }
   const getRubricRiskLevel = () => {
     if (!analytics?.rubricHeatmap) return 'Laag';
     
-    const totalRisk = Object.values(analytics.rubricHeatmap).reduce((sum: number, score: any) => sum + score, 0);
+    const totalRisk = Object.values(analytics.rubricHeatmap).reduce((sum: number, score: any) => {
+      return sum + (Number(score) || 0);
+    }, 0);
     const avgRisk = totalRisk / Object.keys(analytics.rubricHeatmap).length;
     
     if (avgRisk > 3) return 'Hoog';
@@ -124,7 +126,7 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }
                       variant="secondary" 
                       className={emotionColors[item.emotion as keyof typeof emotionColors] || 'bg-gray-100 text-gray-800'}
                     >
-                      {item.emotion} ({Math.round(item.confidence * 100)}%)
+                      {item.emotion} ({Math.round((item.confidence || 0) * 100)}%)
                     </Badge>
                   ))}
                 </div>
@@ -153,14 +155,14 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }
               <div className="space-y-2">
                 <h4 className="text-sm font-medium">Meest Getriggerde Rubrics</h4>
                 {analytics?.rubricHeatmap && Object.entries(analytics.rubricHeatmap)
-                  .sort(([,a], [,b]) => (b as number) - (a as number))
+                  .sort(([,a], [,b]) => (Number(b) || 0) - (Number(a) || 0))
                   .slice(0, 5)
                   .map(([rubric, score]) => (
                     <div key={rubric} className="flex items-center justify-between">
                       <span className="text-sm capitalize">{rubric.replace('-', ' ')}</span>
                       <div className="flex items-center gap-2">
-                        <Progress value={(score as number) * 20} className="w-16" />
-                        <span className="text-xs">{Math.round(score as number * 10)/10}</span>
+                        <Progress value={(Number(score) || 0) * 20} className="w-16" />
+                        <span className="text-xs">{Math.round((Number(score) || 0) * 10)/10}</span>
                       </div>
                     </div>
                   ))}
@@ -221,7 +223,7 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-muted-foreground">{decision.time}</span>
                     <Badge variant="outline" className="text-xs">
-                      {Math.round(decision.confidence * 100)}%
+                      {Math.round((decision.confidence || 0) * 100)}%
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-1">{decision.input}</p>
