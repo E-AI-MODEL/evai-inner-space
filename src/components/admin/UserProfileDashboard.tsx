@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -58,7 +57,10 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }
     const totalRisk = Object.values(analytics.rubricHeatmap).reduce((sum: number, score: any) => {
       return sum + (Number(score) || 0); // FIXED: Ensure numeric conversion with fallback
     }, 0);
-    const avgRisk = totalRisk / Object.keys(analytics.rubricHeatmap).length;
+    
+    // FIXED: Ensure safe division operation
+    const rubricKeys = Object.keys(analytics.rubricHeatmap);
+    const avgRisk = rubricKeys.length > 0 ? totalRisk / rubricKeys.length : 0;
     
     if (avgRisk > 3) return 'Hoog';
     if (avgRisk > 1.5) return 'Gemiddeld';
