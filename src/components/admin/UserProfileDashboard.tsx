@@ -20,6 +20,58 @@ interface UserProfileDashboardProps {
 }
 
 const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }) => {
+  // Definieer een interface voor de geaccumuleerde statistieken
+  interface UserStats {
+    totalProcessingTime: number;
+    totalConfidence: number;
+    likeCount: number;
+    dislikeCount: number;
+    messageCount: number;
+  }
+
+  // Gebruik één enkele .reduce() om alle statistieken in één keer te berekenen.
+  // Dit is efficiënter en type-veiliger.
+  const initialStats: UserStats = {
+    totalProcessingTime: 0,
+    totalConfidence: 0,
+    likeCount: 0,
+    dislikeCount: 0,
+    messageCount: 0,
+  };
+
+  const decisionLogs = analytics?.decisionLogs || [];
+  const stats: UserStats = decisionLogs.reduce((accumulator: UserStats, log: any) => {
+    // Converteer elke waarde veilig naar een getal, met 0 als fallback.
+    accumulator.totalProcessingTime += Number(log.processing_time_ms) || 0;
+    accumulator.totalConfidence += Number(log.confidence_score) || 0;
+    
+    // Controleer feedback veilig.
+    // We nemen aan dat feedback in een 'metadata' of vergelijkbaar veld staat.
+    // Pas 'log.feedback_rating' aan indien de eigenschap anders heet.
+    if (log.feedback_rating === 'like') {
+      accumulator.likeCount += 1;
+    } else if (log.feedback_rating === 'dislike') {
+      accumulator.dislikeCount += 1;
+    }
+    
+    accumulator.messageCount += 1;
+    
+    return accumulator;
+  }, initialStats);
+
+  // Bereken de gemiddelden en percentages na de loop, met een check voor delen door nul.
+  const averageProcessingTime = stats.messageCount > 0
+    ? Math.round(stats.totalProcessingTime / stats.messageCount)
+    : 0;
+    
+  const averageConfidence = stats.messageCount > 0
+    ? Math.round((stats.totalConfidence / stats.messageCount) * 100)
+    : 0;
+
+  const userSatisfaction = (stats.likeCount + stats.dislikeCount) > 0
+    ? Math.round((stats.likeCount / (stats.likeCount + stats.dislikeCount)) * 100)
+    : 0;
+
   const emotionColors = {
     'angst': 'bg-red-100 text-red-800',
     'verdriet': 'bg-blue-100 text-blue-800',
@@ -61,7 +113,7 @@ const UserProfileDashboard: React.FC<UserProfileDashboardProps> = ({ analytics }
     
     // FIXED: Ensure safe division operation
     const rubricKeys = Object.keys(analytics.rubricHeatmap);
-    const avgRisk = rubricKeys.length > 0 ? totalRisk / rubricKeys.length : 0;
+    const avgRisk = rubricKeys.length > 0 ? Number(totalRisk) / Number(rubricKeys.length) : 0;
     
     if (avgRisk > 3) return 'Hoog';
     if (avgRisk > 1.5) return 'Gemiddeld';
