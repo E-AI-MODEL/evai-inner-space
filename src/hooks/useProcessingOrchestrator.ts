@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { ProcessingContext, UnifiedResponse } from '@/types/core';
-import { useUnifiedDecisionEngine } from './useUnifiedDecisionEngine';
+import { useUnifiedDecisionCore, DecisionResult } from './useUnifiedDecisionCore';
 
 interface ProcessingStats {
   totalRequests: number;
@@ -18,7 +18,7 @@ export function useProcessingOrchestrator() {
     lastProcessingTime: 0
   });
 
-  const { processInput, isProcessing, lastDecision } = useUnifiedDecisionEngine();
+  const { makeUnifiedDecision, isProcessing } = useUnifiedDecisionCore();
 
   const orchestrateProcessing = useCallback(async (
     userInput: string,
@@ -26,52 +26,55 @@ export function useProcessingOrchestrator() {
     apiKey?: string,
     apiKey2?: string
   ): Promise<UnifiedResponse> => {
-    const startTime = Date.now();
-    
+      const startTime = Date.now();
+      
     try {
-      const context: ProcessingContext = {
-        userInput,
-        conversationHistory,
-        sessionMetadata: {
-          sessionId: `session_${Date.now()}`,
-          totalMessages: conversationHistory.length + 1,
-          averageResponseTime: stats.averageProcessingTime,
-          lastActivity: new Date()
-        },
-        timestamp: new Date()
+        const vectorApiKey = localStorage.getItem('vector-api-key') || apiKey;
+        
+        const decisionResult: DecisionResult | null = await makeUnifiedDecision(
+            userInput,
+            apiKey,
+            vectorApiKey,
+            {}, // context for disliked labels etc.
+            conversationHistory
+        );
+
+        if (!decisionResult) {
+            throw new Error("Unified Decision Core returned no result.");
+        }
+
+        const processingTime = Date.now() - startTime;
+        setStats(prev => ({
+          totalRequests: prev.totalRequests + 1,
+          averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
+          successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
+          lastProcessingTime: processingTime,
+        }));
+
+        return {
+          content: decisionResult.response,
+          emotion: decisionResult.emotion,
+          confidence: decisionResult.confidence,
+          label: decisionResult.label,
+          reasoning: decisionResult.reasoning,
+          symbolicInferences: decisionResult.symbolicInferences,
+          metadata: {
+              processingPath: 'hybrid',
+              totalProcessingTime: processingTime,
+              componentsUsed: [`Unified Core (${decisionResult.sources.length} sources)`],
+              fallback: false
+          }
       };
-
-      const result = await processInput(context, apiKey, apiKey2);
-      const processingTime = Date.now() - startTime;
-
-      // Update stats
-      setStats(prev => ({
-        totalRequests: prev.totalRequests + 1,
-        averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
-        successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
-        lastProcessingTime: processingTime
-      }));
-
-      return result;
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      
-      // Update stats with failure
-      setStats(prev => ({
-        totalRequests: prev.totalRequests + 1,
-        averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
-        successRate: ((prev.successRate * prev.totalRequests + 0) / (prev.totalRequests + 1)),
-        lastProcessingTime: processingTime
-      }));
-
+      console.error("Orchestration error:", error);
       throw error;
     }
-  }, [processInput, stats]);
+  }, [makeUnifiedDecision, stats]);
 
   return {
     orchestrateProcessing,
     isProcessing,
-    stats,
-    lastDecision
+    stats
   };
 }

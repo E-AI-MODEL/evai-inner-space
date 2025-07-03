@@ -17,8 +17,8 @@ De applicatie gebruikt een uniek "easter egg" toegangsmechanisme:
 1. Open de applicatie - je ziet de intro-animatie met het 💙 hart-icoon
 2. Klik **3 keer snel** op het hart-icoon (binnen 2 seconden)
 3. De toegang wordt geactiveerd en je krijgt toegang tot de chat
-
-Dit mechanisme beveiligt de demo zonder complexe authenticatie.
+ 
+Dit mechanisme dient als een interactieve startknop voor de demo.
 
 ## 🛠️ Setup Instructies
 

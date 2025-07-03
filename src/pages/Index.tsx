@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import SidebarEmotionHistory from "../components/SidebarEmotionHistory";
 import InputBar from "../components/InputBar";
-import { Drawer, DrawerContent, DrawerTrigger } from "../components/ui/drawer";
 import { useIsMobile } from "../hooks/use-mobile";
 import IntroAnimation from "../components/IntroAnimation";
 import { getEmotionVisuals } from "../lib/emotion-visuals";
@@ -11,18 +10,18 @@ import ChatView from "../components/ChatView";
 import DraggableEmotionHistoryButton from "../components/DraggableEmotionHistoryButton";
 import MobileUIFixes from "../components/MobileUIFixes";
 import TopBar from "../components/TopBar";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import SettingsSheet from "../components/SettingsSheet";
 import { useAuth } from "../hooks/useAuth";
 
 const Index = () => {
-  const { isAuthorized, authorizeChat } = useAuth();
+  const { isAuthorized, authorizeChat, loading } = useAuth();
   const [showIntro, setShowIntro] = useState(!isAuthorized);
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const isMobile = useIsMobile();
 
   const handleFinishedIntro = () => {
-    authorizeChat();
     setShowIntro(false);
   };
 
@@ -50,7 +49,7 @@ const Index = () => {
     }
   }, [messages, isProcessing]);
 
-  if (showIntro) {
+  if (showIntro && !isAuthorized) {
     return <IntroAnimation onFinished={handleFinishedIntro} />;
   }
 

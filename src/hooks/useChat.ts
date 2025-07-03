@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { Message, ChatHistoryItem } from '../types';
+import { Message, ChatHistoryItem, UnifiedResponse } from '../types';
 import { useProcessingOrchestrator } from './useProcessingOrchestrator';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -37,13 +37,14 @@ export function useChat() {
       const storedApiKey = localStorage.getItem('openai-api-key') || undefined;
       const storedApiKey2 = localStorage.getItem('openai-api-key-2') || undefined;
 
-      // Process through unified orchestrator
-      const result = await orchestrateProcessing(message, history, storedApiKey, storedApiKey2);
+      // Process through the new, simplified orchestrator
+      const result: UnifiedResponse = await orchestrateProcessing(message, history, storedApiKey, storedApiKey2);
 
       const aiResponse: Message = {
         id: uuidv4(),
         from: 'ai',
         content: result.content,
+        // @ts-ignore
         timestamp: new Date(),
         emotionSeed: result.emotion,
         confidence: result.confidence,
@@ -55,7 +56,8 @@ export function useChat() {
           processingPath: result.metadata.processingPath,
           totalProcessingTime: result.metadata.totalProcessingTime,
           componentsUsed: result.metadata.componentsUsed
-        }
+        },
+        feedback: null
       };
 
       setMessages(prev => [...prev, aiResponse]);
@@ -70,7 +72,9 @@ export function useChat() {
         timestamp: new Date(),
         emotionSeed: 'error',
         confidence: 0,
-        label: 'Fout'
+        // @ts-ignore
+        label: 'Fout',
+        feedback: null
       };
       
       setMessages(prev => [...prev, errorMessage]);

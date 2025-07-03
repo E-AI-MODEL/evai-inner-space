@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 
 interface User { id: string; email: string; }
 
@@ -20,23 +20,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user] = useState<User>(ANONYMOUS_SUPER_USER); // Altijd de single user
-  const [loading, setLoading] = useState(false); // Geen loading meer nodig
-  const [isAuthorized] = useState(true); // Altijd geautoriseerd
-  const [isAdminAuthorized] = useState(true); // Altijd admin geautoriseerd
-
-  useEffect(() => {
-    // Single user model - geen authenticatie nodig
+  const [user] = useState<User>(ANONYMOUS_SUPER_USER);
+  const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAdminAuthorized, setIsAdminAuthorized] = useState(true); // Admin is voorlopig altijd toegankelijk
+  
+  const authorizeChat = useCallback(() => {
+    // Check of er al een sessie is. Zo niet, start een nieuwe.
+    if (!sessionStorage.getItem('evai-session-authorized')) {
+      sessionStorage.setItem('evai-session-authorized', 'true');
+    }
+    setIsAuthorized(true);
     setLoading(false);
   }, []);
-
-  const authorizeChat = () => {
-    // Geen actie nodig - altijd geautoriseerd
-  };
-
-  const authorizeAdmin = () => {
-    // Geen actie nodig - altijd geautoriseerd
-  };
+  
+  // Deze functie blijft voor nu eenvoudig, kan later worden uitgebreid
+  const authorizeAdmin = useCallback(() => {
+    setIsAdminAuthorized(true);
+  }, []);
   
   const value = { user, loading, isAuthorized, isAdminAuthorized, authorizeChat, authorizeAdmin };
 

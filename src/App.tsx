@@ -25,7 +25,6 @@ const App = () => (
           <Suspense fallback={<div>Loading...</div>}>
             <Routes>
               <Route path="/" element={<Index />} />
-              {/* Direct toegang tot Admin Routes - geen beveiligde routes meer */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/guide" element={<AdminGuide />} />
               <Route path="/test" element={<TestPage />} />
