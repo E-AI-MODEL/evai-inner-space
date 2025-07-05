@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Key, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Key, Check, X, TestTube } from 'lucide-react';
+import { testOpenAIApiKey, testOpenAIChat } from '@/utils/apiKeyTester';
 
 interface ApiKeyInputProps {
   label: string;
@@ -31,24 +32,66 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
   const [showKey, setShowKey] = useState(false);
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [isTesting, setIsTesting] = useState(false);
+  const [testResults, setTestResults] = useState<string>('');
 
   const handleSave = async () => {
     if (value.trim()) {
       localStorage.setItem(storageKey, value.trim());
-      
-      if (testConnection) {
-        setIsTesting(true);
-        try {
-          const valid = await testConnection();
-          setIsValid(valid);
-        } catch (error) {
-          setIsValid(false);
-        } finally {
-          setIsTesting(false);
-        }
-      }
-      
       onSave?.();
+    }
+  };
+
+  const handleAdvancedTest = async () => {
+    if (!value.trim()) {
+      setTestResults('❌ Please enter an API key first');
+      return;
+    }
+
+    setIsTesting(true);
+    setTestResults('🧪 Testing API key...');
+    
+    try {
+      // Test 1: Basic validation and model access
+      console.log('🧪 Running basic API key validation...');
+      const basicTest = await testOpenAIApiKey(value.trim());
+      
+      if (!basicTest.isValid) {
+        setIsValid(false);
+        setTestResults(`❌ Basic test failed: ${basicTest.error}`);
+        return;
+      }
+
+      setTestResults(`✅ Basic test passed (${basicTest.responseTime}ms)\n🧪 Testing chat completion...`);
+
+      // Test 2: Chat completion test
+      console.log('🧪 Running chat completion test...');
+      const chatTest = await testOpenAIChat(value.trim());
+      
+      if (!chatTest.isValid) {
+        setIsValid(false);
+        setTestResults(prev => `${prev}\n❌ Chat test failed: ${chatTest.error}`);
+        return;
+      }
+
+      // All tests passed
+      setIsValid(true);
+      setTestResults(
+        `✅ All tests passed!\n` +
+        `📊 Response time: ${basicTest.responseTime}ms + ${chatTest.responseTime}ms\n` +
+        `🤖 Model: ${chatTest.model}\n` +
+        `💬 Test response: ${chatTest.details?.response || 'Success'}`
+      );
+
+      // Auto-save if tests pass
+      localStorage.setItem(storageKey, value.trim());
+      onSave?.();
+
+    } catch (error) {
+      console.error('🔴 Advanced test error:', error);
+      setIsValid(false);
+      setTestResults(`❌ Test error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -56,6 +99,7 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
     localStorage.removeItem(storageKey);
     onChange('');
     setIsValid(null);
+    setTestResults('');
   };
 
   const getStatusIcon = () => {
@@ -98,7 +142,16 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
         </div>
         
         <Button onClick={handleSave} disabled={!value.trim() || isTesting}>
-          {isTesting ? 'Test...' : 'Opslaan'}
+          Opslaan
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          onClick={handleAdvancedTest} 
+          disabled={!value.trim() || isTesting}
+          title="Advanced API key testing"
+        >
+          <TestTube className="h-4 w-4" />
         </Button>
         
         {value && (
@@ -108,16 +161,14 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
         )}
       </div>
       
-      {isValid === false && (
-        <p className="text-xs text-red-600">
-          API key test gefaald. Controleer of de key correct is.
-        </p>
-      )}
-      
-      {isValid === true && (
-        <p className="text-xs text-green-600">
-          API key succesvol gevalideerd.
-        </p>
+      {testResults && (
+        <div className={`text-xs p-3 rounded border ${
+          isValid === true ? 'bg-green-50 border-green-200 text-green-800' :
+          isValid === false ? 'bg-red-50 border-red-200 text-red-800' :
+          'bg-blue-50 border-blue-200 text-blue-800'
+        }`}>
+          <pre className="whitespace-pre-wrap font-mono">{testResults}</pre>
+        </div>
       )}
     </div>
   );
