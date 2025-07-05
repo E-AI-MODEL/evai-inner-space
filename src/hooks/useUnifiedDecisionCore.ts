@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { generateEmbedding } from '../lib/embeddingUtils';
 import { EmotionDetection } from './useOpenAI';
@@ -29,6 +29,83 @@ export interface DecisionResult {
 
 export function useUnifiedDecisionCore() {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [knowledgeStats, setKnowledgeStats] = useState({
+    total: 0,
+    seeds: 0,
+    embeddings: 0,
+    patterns: 0,
+    insights: 0
+  });
+
+  // Auto-load knowledge stats on initialization
+  useEffect(() => {
+    loadKnowledgeStats();
+  }, []);
+
+  const loadKnowledgeStats = async () => {
+    try {
+      console.log('📊 Loading unified knowledge stats...');
+      
+      const { data, error } = await supabase
+        .from('unified_knowledge')
+        .select('content_type, active')
+        .eq('user_id', '00000000-0000-0000-0000-000000000001')
+        .eq('active', true);
+
+      if (error) {
+        console.error('❌ Failed to load knowledge stats:', error);
+        return;
+      }
+
+      const stats = data.reduce((acc, item) => {
+        acc.total++;
+        if (item.content_type === 'seed') acc.seeds++;
+        else if (item.content_type === 'embedding') acc.embeddings++;
+        else if (item.content_type === 'pattern') acc.patterns++;
+        else if (item.content_type === 'insight') acc.insights++;
+        return acc;
+      }, { total: 0, seeds: 0, embeddings: 0, patterns: 0, insights: 0 });
+
+      console.log('📊 Knowledge stats loaded:', stats);
+      setKnowledgeStats(stats);
+    } catch (error) {
+      console.error('🔴 Error loading knowledge stats:', error);
+    }
+  };
+
+  const autoConsolidateIfNeeded = async (): Promise<boolean> => {
+    try {
+      // Check if we have any unified knowledge
+      if (knowledgeStats.total === 0) {
+        console.log('🔄 No unified knowledge found, attempting auto-consolidation...');
+        
+        // Check if we have legacy seeds to migrate
+        const { data: legacySeeds, error: seedError } = await supabase
+          .from('emotion_seeds')
+          .select('id')
+          .eq('active', true)
+          .limit(1);
+
+        if (seedError) {
+          console.error('❌ Error checking legacy seeds:', seedError);
+          return false;
+        }
+
+        if (legacySeeds && legacySeeds.length > 0) {
+          console.log('🚀 Found legacy seeds, triggering consolidation...');
+          const success = await consolidateKnowledge();
+          if (success) {
+            await loadKnowledgeStats();
+            return true;
+          }
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('🔴 Auto-consolidation error:', error);
+      return false;
+    }
+  };
 
   const searchUnifiedKnowledge = async (
     query: string,
@@ -37,6 +114,9 @@ export function useUnifiedDecisionCore() {
   ): Promise<UnifiedKnowledgeItem[]> => {
     try {
       console.log('🔍 Searching unified knowledge for:', query.substring(0, 50));
+      
+      // Auto-consolidate if no knowledge exists
+      await autoConsolidateIfNeeded();
       
       // Generate embedding if vector API key is available
       let queryEmbedding: number[] | null = null;
@@ -48,17 +128,10 @@ export function useUnifiedDecisionCore() {
         }
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.warn('⚠️ No authenticated user for knowledge search');
-        return [];
-      }
-
       // Call the unified search function
       const { data, error } = await supabase.rpc('search_unified_knowledge', {
         query_text: query,
         query_embedding: queryEmbedding ? `[${queryEmbedding.join(',')}]` : null,
-        user_uuid: user.id,
         similarity_threshold: 0.7,
         max_results: maxResults
       });
@@ -292,6 +365,7 @@ export function useUnifiedDecisionCore() {
       }
       
       console.log('✅ Knowledge consolidation completed');
+      await loadKnowledgeStats(); // Refresh stats after consolidation
       return true;
     } catch (error) {
       console.error('🔴 Knowledge consolidation error:', error);
@@ -303,6 +377,8 @@ export function useUnifiedDecisionCore() {
     makeUnifiedDecision,
     searchUnifiedKnowledge,
     consolidateKnowledge,
+    loadKnowledgeStats,
+    knowledgeStats,
     isProcessing
   };
 }

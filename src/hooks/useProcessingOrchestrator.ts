@@ -22,7 +22,7 @@ export function useProcessingOrchestrator() {
     errorCount: 0
   });
 
-  const { makeUnifiedDecision, isProcessing } = useUnifiedDecisionCore();
+  const { makeUnifiedDecision, isProcessing, knowledgeStats } = useUnifiedDecisionCore();
 
   const orchestrateProcessing = useCallback(async (
     userInput: string,
@@ -32,6 +32,7 @@ export function useProcessingOrchestrator() {
   ): Promise<UnifiedResponse> => {
     console.log('🎼 Processing orchestration starting...');
     console.log('📊 Current stats:', stats);
+    console.log('🧠 Knowledge stats:', knowledgeStats);
     console.log('🔑 API Key 1 available:', !!apiKey);
     console.log('🔑 API Key 2 available:', !!apiKey2);
     
@@ -52,6 +53,8 @@ export function useProcessingOrchestrator() {
       const vectorApiKey = localStorage.getItem('vector-api-key') || apiKey;
       
       console.log('🧠 Calling Unified Decision Core...');
+      console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
+      
       const decisionResult: DecisionResult | null = await makeUnifiedDecision(
         userInput,
         apiKey,
@@ -88,7 +91,10 @@ export function useProcessingOrchestrator() {
         metadata: {
           processingPath: 'hybrid',
           totalProcessingTime: processingTime,
-          componentsUsed: [`Unified Core (${decisionResult.sources.length} sources)`],
+          componentsUsed: [
+            `Unified Core (${decisionResult.sources.length} sources)`,
+            `Knowledge Base: ${knowledgeStats.total} items`
+          ],
           fallback: false,
           apiCollaboration: {
             api1Used: !!apiKey,
@@ -128,11 +134,12 @@ export function useProcessingOrchestrator() {
         throw new Error(`Er ging iets mis tijdens de verwerking: ${errorMessage}`);
       }
     }
-  }, [makeUnifiedDecision]);
+  }, [makeUnifiedDecision, knowledgeStats]);
 
   return {
     orchestrateProcessing,
     isProcessing,
-    stats
+    stats,
+    knowledgeStats
   };
 }
