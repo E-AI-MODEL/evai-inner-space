@@ -562,6 +562,12 @@ export type Database = {
           | {
               query_text: string
               query_embedding: string
+              similarity_threshold?: number
+              max_results?: number
+            }
+          | {
+              query_text: string
+              query_embedding: string
               user_uuid: string
               similarity_threshold?: number
               max_results?: number
