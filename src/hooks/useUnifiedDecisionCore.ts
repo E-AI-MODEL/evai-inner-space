@@ -39,6 +39,7 @@ export function useUnifiedDecisionCore() {
 
   // Auto-load knowledge stats on initialization
   useEffect(() => {
+    console.log('🚀 UnifiedDecisionCore initializing...');
     loadKnowledgeStats();
   }, []);
 
