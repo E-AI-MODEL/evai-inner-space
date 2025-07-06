@@ -8,10 +8,14 @@ export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   
+  console.log('🔄 useChat hook initialized');
   const { orchestrateProcessing, isProcessing, stats } = useProcessingOrchestrator();
 
   const onSend = useCallback(async (message: string) => {
+    console.log('📤 useChat onSend called with message:', message);
+    console.log('📊 isProcessing state:', isProcessing);
     if (!message.trim() || isProcessing) {
+      console.log('❌ Message blocked - empty or processing');
       return;
     }
 
@@ -36,9 +40,14 @@ export function useChat() {
 
       const storedApiKey = localStorage.getItem('openai-api-key') || undefined;
       const storedApiKey2 = localStorage.getItem('openai-api-key-2') || undefined;
+      
+      console.log('🔑 API Keys found - Primary:', !!storedApiKey, 'Secondary:', !!storedApiKey2);
+      console.log('📋 History length:', history.length);
 
       // Process through the new, simplified orchestrator
+      console.log('🎼 Calling orchestrateProcessing...');
       const result: UnifiedResponse = await orchestrateProcessing(message, history, storedApiKey, storedApiKey2);
+      console.log('✅ orchestrateProcessing returned result:', result);
 
       const aiResponse: Message = {
         id: uuidv4(),

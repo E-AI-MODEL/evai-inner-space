@@ -31,6 +31,8 @@ export function useProcessingOrchestrator() {
     apiKey2?: string
   ): Promise<UnifiedResponse> => {
     console.log('🎼 Processing orchestration starting...');
+    console.log('📝 User input:', userInput.substring(0, 50) + '...');
+    console.log('📚 Conversation history length:', conversationHistory?.length || 0);
     console.log('📊 Current stats:', stats);
     console.log('🧠 Knowledge stats:', knowledgeStats);
     console.log('🔑 API Key 1 available:', !!apiKey);

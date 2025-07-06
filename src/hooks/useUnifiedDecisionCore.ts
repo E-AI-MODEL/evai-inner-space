@@ -170,7 +170,14 @@ export function useUnifiedDecisionCore() {
     },
     history?: ChatHistoryItem[]
   ): Promise<DecisionResult | null> => {
-    if (!input?.trim()) return null;
+    console.log('🧠 makeUnifiedDecision called with input:', input.substring(0, 50) + '...');
+    console.log('🔑 API keys provided - apiKey:', !!apiKey, 'vectorApiKey:', !!vectorApiKey);
+    console.log('📊 Knowledge stats at start:', knowledgeStats);
+    
+    if (!input?.trim()) {
+      console.log('❌ Empty input provided to makeUnifiedDecision');
+      return null;
+    }
 
     setIsProcessing(true);
     console.log('🧠 Unified Decision Core processing:', input.substring(0, 50));
