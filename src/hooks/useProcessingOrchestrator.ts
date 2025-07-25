@@ -53,6 +53,7 @@ export function useProcessingOrchestrator() {
       }
 
       const vectorApiKey = localStorage.getItem('vector-api-key') || apiKey;
+      const googleApiKey = localStorage.getItem('google-api-key') || '';
       
       console.log('🧠 Calling Unified Decision Core...');
       console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
@@ -61,7 +62,8 @@ export function useProcessingOrchestrator() {
         userInput,
         apiKey,
         vectorApiKey,
-        {}, // context for disliked labels etc.
+        googleApiKey,
+        undefined, // context for disliked labels etc.
         conversationHistory
       );
 
@@ -102,6 +104,7 @@ export function useProcessingOrchestrator() {
             api1Used: !!apiKey,
             api2Used: !!apiKey2,
             vectorApiUsed: !!vectorApiKey,
+            googleApiUsed: !!googleApiKey,
             seedGenerated: false,
             secondaryAnalysis: false
           }
