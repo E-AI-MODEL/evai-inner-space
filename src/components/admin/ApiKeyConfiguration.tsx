@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import ApiKeyInput from '../shared/ApiKeyInput';
 import GoogleApiKeyConfiguration from './GoogleApiKeyConfiguration';
-import ApiKeyDiscoveryPanel from './ApiKeyDiscoveryPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Key, Settings } from 'lucide-react';
+import { Key, Settings, Shield, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ApiKeyConfigurationProps {
   apiKey: string;
@@ -33,108 +33,120 @@ const ApiKeyConfiguration: React.FC<ApiKeyConfigurationProps> = ({
   handleVectorApiKeySave,
   onGoogleApiKeyUpdate,
 }) => {
-  const [discoveryMode, setDiscoveryMode] = useState(false);
-
-  const handleApiKeyFound = (provider: string, foundKey: string) => {
-    console.log('🔑 API key found for provider:', provider);
+  const validateApiKey = (key: string) => {
+    if (!key?.trim()) return { status: 'missing', color: 'destructive', message: 'Not configured' };
     
-    switch (provider) {
-      case 'openai':
-        onApiKeyChange(foundKey);
-        onApiKeySave();
-        break;
-      case 'google':
-        onGoogleApiKeyUpdate?.(foundKey);
-        break;
-      case 'vector':
-        setVectorApiKey(foundKey);
-        handleVectorApiKeySave();
-        break;
-      default:
-        console.log('Unknown provider:', provider);
+    if (key.includes('demo') || key.includes('test') || key.includes('mock') || key.includes('dev')) {
+      return { status: 'invalid', color: 'destructive', message: 'Mock/test key (not allowed)' };
     }
+    
+    if (!key.startsWith('sk-')) {
+      return { status: 'invalid', color: 'destructive', message: 'Invalid format' };
+    }
+    
+    return { status: 'valid', color: 'default', message: 'Valid production key' };
   };
 
-  const getKeyStatus = (key: string) => {
-    if (!key?.trim()) return { status: 'missing', color: 'destructive' };
-    if (key.includes('demo') || key.includes('test') || key.includes('mock')) {
-      return { status: 'mock', color: 'secondary' };
-    }
-    return { status: 'configured', color: 'default' };
-  };
+  const primaryKeyStatus = validateApiKey(apiKey);
+  const secondaryKeyStatus = validateApiKey(openAiKey2);
+  const vectorKeyStatus = validateApiKey(vectorApiKey);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-gray-800">API Configuration - EvAI 2.0</h3>
+        <h3 className="font-medium text-gray-800">API Configuration - Production Mode</h3>
         <Badge variant="outline" className="flex items-center gap-1">
-          <Search className="h-3 w-3" />
-          Auto-Discovery Enabled
+          <Shield className="h-3 w-3" />
+          Production Only
         </Badge>
       </div>
 
-      <Tabs defaultValue="manual" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="manual" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Handmatige Configuratie
-          </TabsTrigger>
-          <TabsTrigger value="discovery" className="flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            Automatische Discovery
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Production Mode:</strong> Only real API keys are accepted. Mock, test, or demo keys are automatically rejected.
+        </AlertDescription>
+      </Alert>
+
+      <Tabs defaultValue="keys" className="w-full">
+        <TabsList className="grid w-full grid-cols-1">
+          <TabsTrigger value="keys" className="flex items-center gap-2">
+            <Key className="h-4 w-4" />
+            API Keys Configuration
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="manual" className="space-y-4">
+        <TabsContent value="keys" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
-                API Keys
+                Production API Keys
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <ApiKeyInput
-                    label="OpenAI API Key (Primary)"
-                    placeholder="sk-..."
-                    storageKey="openai-api-key"
-                    value={apiKey}
-                    onChange={onApiKeyChange}
-                    onSave={onApiKeySave}
-                  />
-                  <Badge variant={getKeyStatus(apiKey).color as any}>
-                    {getKeyStatus(apiKey).status}
-                  </Badge>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ApiKeyInput
+                      label="OpenAI API Key (Primary) *"
+                      placeholder="sk-... (Required for core functionality)"
+                      storageKey="openai-api-key"
+                      value={apiKey}
+                      onChange={onApiKeyChange}
+                      onSave={onApiKeySave}
+                    />
+                    <Badge variant={primaryKeyStatus.color as any}>
+                      {primaryKeyStatus.message}
+                    </Badge>
+                  </div>
+                  {primaryKeyStatus.status === 'invalid' && (
+                    <p className="text-sm text-red-600">
+                      This API key is not valid for production use. Please provide a real OpenAI API key.
+                    </p>
+                  )}
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <ApiKeyInput
-                    label="OpenAI API Key (Secondary)"
-                    placeholder="sk-..."
-                    storageKey="openai-api-key-2"
-                    value={openAiKey2}
-                    onChange={setOpenAiKey2}
-                    onSave={handleOpenAiKey2Save}
-                  />
-                  <Badge variant={getKeyStatus(openAiKey2).color as any}>
-                    {getKeyStatus(openAiKey2).status}
-                  </Badge>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ApiKeyInput
+                      label="OpenAI API Key (Secondary)"
+                      placeholder="sk-... (Optional backup key)"
+                      storageKey="openai-api-key-2"
+                      value={openAiKey2}
+                      onChange={setOpenAiKey2}
+                      onSave={handleOpenAiKey2Save}
+                    />
+                    <Badge variant={secondaryKeyStatus.color as any}>
+                      {secondaryKeyStatus.message}
+                    </Badge>
+                  </div>
+                  {secondaryKeyStatus.status === 'invalid' && openAiKey2 && (
+                    <p className="text-sm text-red-600">
+                      This secondary API key is not valid for production use.
+                    </p>
+                  )}
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <ApiKeyInput
-                    label="Vector API Key"
-                    placeholder="Optional"
-                    storageKey="vector-api-key"
-                    value={vectorApiKey}
-                    onChange={setVectorApiKey}
-                    onSave={handleVectorApiKeySave}
-                  />
-                  <Badge variant={getKeyStatus(vectorApiKey).color as any}>
-                    {getKeyStatus(vectorApiKey).status}
-                  </Badge>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ApiKeyInput
+                      label="Vector API Key"
+                      placeholder="sk-... (Optional for enhanced embeddings)"
+                      storageKey="vector-api-key"
+                      value={vectorApiKey}
+                      onChange={setVectorApiKey}
+                      onSave={handleVectorApiKeySave}
+                    />
+                    <Badge variant={vectorKeyStatus.color as any}>
+                      {vectorKeyStatus.message}
+                    </Badge>
+                  </div>
+                  {vectorKeyStatus.status === 'invalid' && vectorApiKey && (
+                    <p className="text-sm text-red-600">
+                      This vector API key is not valid for production use.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -142,20 +154,16 @@ const ApiKeyConfiguration: React.FC<ApiKeyConfigurationProps> = ({
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="discovery" className="space-y-4">
-          <ApiKeyDiscoveryPanel onApiKeyFound={handleApiKeyFound} />
-        </TabsContent>
       </Tabs>
 
-      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h4 className="font-medium text-blue-900 mb-2">EvAI 2.0 Nieuwe Features:</h4>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Automatische API key discovery via webcrawling</li>
-          <li>• Mock API keys voor ontwikkeling en testing</li>
-          <li>• Geïntegreerde setup instructies</li>
-          <li>• Realtime key status monitoring</li>
-          <li>• Verbeterde foutafhandeling</li>
+      <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+        <h4 className="font-medium text-green-900 mb-2">Production Features Active:</h4>
+        <ul className="text-sm text-green-800 space-y-1">
+          <li>• Real-time API key validation</li>
+          <li>• Mock/test key rejection</li>
+          <li>• Secure database storage</li>
+          <li>• Production-grade error handling</li>
+          <li>• Professional chat experience</li>
         </ul>
       </div>
     </div>

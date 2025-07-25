@@ -8,12 +8,13 @@ export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   
-  console.log('🔄 useChat hook initialized');
+  console.log('🔄 useChat hook initialized - Production mode');
   const { orchestrateProcessing, isProcessing, stats } = useProcessingOrchestrator();
 
   const onSend = useCallback(async (message: string) => {
     console.log('📤 useChat onSend called with message:', message);
     console.log('📊 isProcessing state:', isProcessing);
+    
     if (!message.trim() || isProcessing) {
       console.log('❌ Message blocked - empty or processing');
       return;
@@ -38,14 +39,28 @@ export function useChat() {
         timestamp: msg.timestamp
       }));
 
+      // Get real API keys from localStorage
       const storedApiKey = localStorage.getItem('openai-api-key') || undefined;
       const storedApiKey2 = localStorage.getItem('openai-api-key-2') || undefined;
       
-      console.log('🔑 API Keys found - Primary:', !!storedApiKey, 'Secondary:', !!storedApiKey2);
+      // Validate API keys are real (not mock)
+      if (storedApiKey && (storedApiKey.includes('demo') || storedApiKey.includes('test') || storedApiKey.includes('mock'))) {
+        throw new Error('Mock API keys zijn niet toegestaan. Configureer een echte OpenAI API key.');
+      }
+      
+      if (storedApiKey2 && (storedApiKey2.includes('demo') || storedApiKey2.includes('test') || storedApiKey2.includes('mock'))) {
+        throw new Error('Mock API keys zijn niet toegestaan. Configureer een echte OpenAI API key.');
+      }
+
+      if (!storedApiKey || !storedApiKey.startsWith('sk-')) {
+        throw new Error('Geen geldige OpenAI API key gevonden. Configureer eerst je API key in de instellingen.');
+      }
+      
+      console.log('🔑 Using real API keys - Primary:', !!storedApiKey, 'Secondary:', !!storedApiKey2);
       console.log('📋 History length:', history.length);
 
-      // Process through the new, simplified orchestrator
-      console.log('🎼 Calling orchestrateProcessing...');
+      // Process through the orchestrator with real API keys
+      console.log('🎼 Calling orchestrateProcessing with real API keys...');
       const result: UnifiedResponse = await orchestrateProcessing(message, history, storedApiKey, storedApiKey2);
       console.log('✅ orchestrateProcessing returned result:', result);
 
@@ -53,7 +68,6 @@ export function useChat() {
         id: uuidv4(),
         from: 'ai',
         content: result.content,
-        // @ts-ignore
         timestamp: new Date(),
         emotionSeed: result.emotion,
         confidence: result.confidence,
@@ -77,11 +91,10 @@ export function useChat() {
       const errorMessage: Message = {
         id: uuidv4(),
         from: 'ai',
-        content: error instanceof Error ? error.message : 'Er ging iets mis. Probeer het opnieuw.',
+        content: error instanceof Error ? error.message : 'Er ging iets mis. Controleer je API configuratie.',
         timestamp: new Date(),
         emotionSeed: 'error',
         confidence: 0,
-        // @ts-ignore
         label: 'Fout',
         feedback: null
       };

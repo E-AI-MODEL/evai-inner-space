@@ -1,93 +1,67 @@
 
 import { useState, useEffect } from 'react';
-import { mockApiKeys, mockSeeds, mockConversations, getRandomMockApiKey } from '@/data/mockData';
 
 export function useMockDataManager() {
-  const [mockMode, setMockMode] = useState(() => {
-    return localStorage.getItem('evai-mock-mode') === 'true';
-  });
-
+  const [mockMode, setMockMode] = useState(false);
   const [activeMockKeys, setActiveMockKeys] = useState<Record<string, string>>({});
 
+  // Mock mode is permanently disabled for production
   useEffect(() => {
-    localStorage.setItem('evai-mock-mode', mockMode.toString());
+    setMockMode(false);
+    setActiveMockKeys({});
     
-    if (mockMode) {
-      // Activeer mock keys als mock mode aan staat
-      const mockKeys = {
-        openai: getRandomMockApiKey('openai'),
-        google: getRandomMockApiKey('google'),
-        anthropic: getRandomMockApiKey('anthropic'),
-        vector: getRandomMockApiKey('vector')
-      };
-      setActiveMockKeys(mockKeys);
-      
-      // Sla mock keys op in localStorage voor testing
-      Object.entries(mockKeys).forEach(([provider, key]) => {
-        localStorage.setItem(`mock-${provider}-key`, key);
-      });
-    } else {
-      // Verwijder mock keys als mock mode uit staat
-      setActiveMockKeys({});
-      Object.keys(mockApiKeys).forEach(provider => {
-        localStorage.removeItem(`mock-${provider}-key`);
-      });
-    }
-  }, [mockMode]);
+    // Remove any existing mock keys from localStorage
+    localStorage.removeItem('evai-mock-mode');
+    ['openai', 'google', 'anthropic', 'vector'].forEach(provider => {
+      localStorage.removeItem(`mock-${provider}-key`);
+    });
+  }, []);
 
   const toggleMockMode = () => {
-    setMockMode(!mockMode);
+    // Mock mode is disabled in production
+    console.log('Mock mode is disabled in production version');
   };
 
-  const getMockApiKey = (provider: keyof typeof mockApiKeys) => {
-    return activeMockKeys[provider] || getRandomMockApiKey(provider);
+  const getMockApiKey = (provider: string) => {
+    // Returns empty string in production - no mock keys
+    return '';
   };
 
   const isMockKey = (key: string) => {
+    // Check if key contains test/demo patterns
     return key.includes('demo') || key.includes('test') || key.includes('mock') || key.includes('dev');
   };
 
-  const getMockConversation = (index: number = 0) => {
-    return mockConversations[index] || mockConversations[0];
+  const getMockConversation = () => {
+    // Returns null in production - no mock conversations
+    return null;
   };
 
   const getMockSeeds = () => {
-    return mockSeeds;
+    // Returns empty array in production - no mock seeds
+    return [];
   };
 
   const simulateApiCall = async (provider: string, delay: number = 500) => {
-    // Simuleer API call met delay
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    if (mockMode) {
-      return {
-        success: true,
-        data: {
-          provider,
-          response: `Mock response from ${provider}`,
-          timestamp: new Date().toISOString()
-        },
-        mock: true
-      };
-    }
-    
-    throw new Error('Mock mode is disabled');
+    // No simulation in production - throw error
+    throw new Error('Mock API calls are disabled in production. Please configure real API keys.');
   };
 
   const getSystemStatus = () => {
     return {
-      mockMode,
-      activeMockKeys: Object.keys(activeMockKeys),
-      totalMockKeys: Object.keys(mockApiKeys).length,
-      mockConversations: mockConversations.length,
-      mockSeeds: mockSeeds.length
+      mockMode: false,
+      activeMockKeys: [],
+      totalMockKeys: 0,
+      mockConversations: 0,
+      mockSeeds: 0,
+      productionMode: true
     };
   };
 
   return {
-    mockMode,
+    mockMode: false,
     toggleMockMode,
-    activeMockKeys,
+    activeMockKeys: {},
     getMockApiKey,
     isMockKey,
     getMockConversation,

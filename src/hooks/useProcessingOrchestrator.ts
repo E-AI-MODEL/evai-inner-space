@@ -24,52 +24,71 @@ export function useProcessingOrchestrator() {
 
   const { makeUnifiedDecision, isProcessing, knowledgeStats } = useUnifiedDecisionCore();
 
+  const validateApiKey = (apiKey: string): boolean => {
+    if (!apiKey || !apiKey.trim()) return false;
+    if (!apiKey.startsWith('sk-')) return false;
+    if (apiKey.includes('demo') || apiKey.includes('test') || apiKey.includes('mock') || apiKey.includes('dev')) {
+      return false;
+    }
+    return true;
+  };
+
   const orchestrateProcessing = useCallback(async (
     userInput: string,
     conversationHistory: any[],
     apiKey?: string,
     apiKey2?: string
   ): Promise<UnifiedResponse> => {
-    console.log('🎼 Processing orchestration starting...');
+    console.log('🎼 Production orchestration starting...');
     console.log('📝 User input:', userInput.substring(0, 50) + '...');
     console.log('📚 Conversation history length:', conversationHistory?.length || 0);
     console.log('📊 Current stats:', stats);
     console.log('🧠 Knowledge stats:', knowledgeStats);
-    console.log('🔑 API Key 1 available:', !!apiKey);
-    console.log('🔑 API Key 2 available:', !!apiKey2);
     
     const startTime = Date.now();
     
     try {
-      // Pre-flight API key validation
-      if (apiKey) {
-        console.log('🧪 Pre-flight API key validation...');
-        const keyTest = await testOpenAIApiKey(apiKey);
-        if (!keyTest.isValid) {
-          console.error('❌ API Key validation failed:', keyTest.error);
-          throw new Error(`API Key validation failed: ${keyTest.error}`);
-        }
-        console.log('✅ API Key validation passed');
+      // Validate API keys are real
+      if (!validateApiKey(apiKey || '')) {
+        throw new Error('Geen geldige OpenAI API key gevonden. Configureer eerst een echte API key (geen mock/test keys).');
       }
+
+      if (apiKey2 && !validateApiKey(apiKey2)) {
+        console.warn('⚠️ Secondary API key is invalid, continuing with primary key only');
+      }
+
+      // Pre-flight API key validation
+      console.log('🧪 Validating API key functionality...');
+      const keyTest = await testOpenAIApiKey(apiKey!);
+      if (!keyTest.isValid) {
+        console.error('❌ API Key validation failed:', keyTest.error);
+        throw new Error(`API Key validatie mislukt: ${keyTest.error}`);
+      }
+      console.log('✅ API Key validation passed');
 
       const vectorApiKey = localStorage.getItem('vector-api-key') || apiKey;
       const googleApiKey = localStorage.getItem('google-api-key') || '';
       
-      console.log('🧠 Calling Unified Decision Core...');
+      // Validate vector API key if present
+      if (vectorApiKey && !validateApiKey(vectorApiKey)) {
+        console.warn('⚠️ Vector API key is invalid, falling back to primary key');
+      }
+      
+      console.log('🧠 Calling Unified Decision Core with validated keys...');
       console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
       
       const decisionResult: DecisionResult | null = await makeUnifiedDecision(
         userInput,
         apiKey,
-        vectorApiKey,
+        validateApiKey(vectorApiKey) ? vectorApiKey : apiKey,
         googleApiKey,
-        undefined, // context for disliked labels etc.
+        undefined,
         conversationHistory
       );
 
       if (!decisionResult) {
         console.error('❌ Unified Decision Core returned no result');
-        throw new Error("Unified Decision Core returned no result.");
+        throw new Error("Geen resultaat van de AI processing core. Controleer je API configuratie.");
       }
 
       const processingTime = Date.now() - startTime;
@@ -93,17 +112,18 @@ export function useProcessingOrchestrator() {
         reasoning: decisionResult.reasoning,
         symbolicInferences: decisionResult.symbolicInferences,
         metadata: {
-          processingPath: 'hybrid',
+          processingPath: 'production',
           totalProcessingTime: processingTime,
           componentsUsed: [
             `Unified Core (${decisionResult.sources.length} sources)`,
-            `Knowledge Base: ${knowledgeStats.total} items`
+            `Knowledge Base: ${knowledgeStats.total} items`,
+            'Production Mode: Real API Keys'
           ],
           fallback: false,
           apiCollaboration: {
             api1Used: !!apiKey,
-            api2Used: !!apiKey2,
-            vectorApiUsed: !!vectorApiKey,
+            api2Used: !!apiKey2 && validateApiKey(apiKey2),
+            vectorApiUsed: !!vectorApiKey && validateApiKey(vectorApiKey),
             googleApiUsed: !!googleApiKey,
             seedGenerated: false,
             secondaryAnalysis: false
@@ -114,7 +134,7 @@ export function useProcessingOrchestrator() {
       const processingTime = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
-      console.error('🔴 Orchestration error:', error);
+      console.error('🔴 Production orchestration error:', error);
       console.error('   Processing time before error:', processingTime + 'ms');
       console.error('   Error type:', error instanceof Error ? error.constructor.name : typeof error);
 
@@ -128,9 +148,9 @@ export function useProcessingOrchestrator() {
         lastError: errorMessage
       }));
 
-      // Enhanced error handling with fallback
+      // Enhanced error handling for production
       if (errorMessage.includes('API key') || errorMessage.includes('401')) {
-        throw new Error('API key probleem gedetecteerd. Controleer je OpenAI API key in de instellingen.');
+        throw new Error('API key probleem gedetecteerd. Controleer je OpenAI API key in de instellingen en zorg dat het een echte (geen mock) key is.');
       } else if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
         throw new Error('API limiet bereikt. Probeer het over een paar minuten opnieuw.');
       } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
