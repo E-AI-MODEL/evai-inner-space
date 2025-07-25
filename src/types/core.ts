@@ -20,11 +20,12 @@ export interface UnifiedResponse {
     processingPath: 'symbolic' | 'hybrid' | 'neural' | 'error';
     totalProcessingTime: number;
     componentsUsed: string[];
-    fallback?: boolean; // ADDED: Optional fallback property
+    fallback?: boolean;
     apiCollaboration?: {
       api1Used: boolean;
       api2Used: boolean;
       vectorApiUsed: boolean;
+      googleApiUsed: boolean;
       seedGenerated: boolean;
       secondaryAnalysis: boolean;
     };
@@ -46,6 +47,7 @@ export interface NeurosymbolicDecision {
       api1Used: boolean;
       api2Used: boolean;
       vectorApiUsed: boolean;
+      googleApiUsed: boolean;
       seedGenerated: boolean;
       secondaryAnalysis: boolean;
     };
