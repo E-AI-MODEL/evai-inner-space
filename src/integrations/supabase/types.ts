@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
+  }
   public: {
     Tables: {
       api_collaboration_logs: {
@@ -15,6 +20,7 @@ export type Database = {
           api2_used: boolean | null
           created_at: string
           error_details: Json | null
+          google_api_used: boolean | null
           id: string
           metadata: Json | null
           processing_time_ms: number | null
@@ -24,6 +30,7 @@ export type Database = {
           success: boolean | null
           user_id: string
           vector_api_used: boolean | null
+          version: string | null
           workflow_type: string
         }
         Insert: {
@@ -31,6 +38,7 @@ export type Database = {
           api2_used?: boolean | null
           created_at?: string
           error_details?: Json | null
+          google_api_used?: boolean | null
           id?: string
           metadata?: Json | null
           processing_time_ms?: number | null
@@ -40,6 +48,7 @@ export type Database = {
           success?: boolean | null
           user_id?: string
           vector_api_used?: boolean | null
+          version?: string | null
           workflow_type: string
         }
         Update: {
@@ -47,6 +56,7 @@ export type Database = {
           api2_used?: boolean | null
           created_at?: string
           error_details?: Json | null
+          google_api_used?: boolean | null
           id?: string
           metadata?: Json | null
           processing_time_ms?: number | null
@@ -56,6 +66,7 @@ export type Database = {
           success?: boolean | null
           user_id?: string
           vector_api_used?: boolean | null
+          version?: string | null
           workflow_type?: string
         }
         Relationships: []
@@ -351,6 +362,7 @@ export type Database = {
       }
       settings: {
         Row: {
+          category: string | null
           id: string
           key: string
           updated_at: string | null
@@ -358,6 +370,7 @@ export type Database = {
           value: string
         }
         Insert: {
+          category?: string | null
           id?: string
           key: string
           updated_at?: string | null
@@ -365,6 +378,7 @@ export type Database = {
           value: string
         }
         Update: {
+          category?: string | null
           id?: string
           key?: string
           updated_at?: string | null
@@ -384,6 +398,7 @@ export type Database = {
           last_used: string | null
           metadata: Json | null
           response_text: string | null
+          search_vector: unknown | null
           triggers: string[] | null
           updated_at: string | null
           usage_count: number | null
@@ -400,6 +415,7 @@ export type Database = {
           last_used?: string | null
           metadata?: Json | null
           response_text?: string | null
+          search_vector?: unknown | null
           triggers?: string[] | null
           updated_at?: string | null
           usage_count?: number | null
@@ -416,6 +432,7 @@ export type Database = {
           last_used?: string | null
           metadata?: Json | null
           response_text?: string | null
+          search_vector?: unknown | null
           triggers?: string[] | null
           updated_at?: string | null
           usage_count?: number | null
@@ -488,6 +505,10 @@ export type Database = {
           similarity_score: number
           metadata: Json
         }[]
+      }
+      get_google_api_key: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_setting: {
         Args: { setting_key: string; default_value?: string }
@@ -582,6 +603,10 @@ export type Database = {
           metadata: Json
         }[]
       }
+      update_google_api_key: {
+        Args: { api_key: string }
+        Returns: undefined
+      }
       update_setting: {
         Args:
           | Record<PropertyKey, never>
@@ -606,21 +631,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -638,14 +667,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -661,14 +692,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -684,14 +717,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -699,14 +734,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never

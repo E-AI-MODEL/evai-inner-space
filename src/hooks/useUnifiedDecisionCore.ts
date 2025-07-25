@@ -37,9 +37,8 @@ export function useUnifiedDecisionCore() {
     insights: 0
   });
 
-  // Auto-load knowledge stats on initialization
   useEffect(() => {
-    console.log('🚀 UnifiedDecisionCore initializing...');
+    console.log('🚀 UnifiedDecisionCore v2.0 initializing...');
     loadKnowledgeStats();
   }, []);
 
@@ -76,11 +75,9 @@ export function useUnifiedDecisionCore() {
 
   const autoConsolidateIfNeeded = async (): Promise<boolean> => {
     try {
-      // Check if we have any unified knowledge
       if (knowledgeStats.total === 0) {
         console.log('🔄 No unified knowledge found, attempting auto-consolidation...');
         
-        // Check if we have legacy seeds to migrate
         const { data: legacySeeds, error: seedError } = await supabase
           .from('emotion_seeds')
           .select('id')
@@ -114,12 +111,10 @@ export function useUnifiedDecisionCore() {
     maxResults: number = 10
   ): Promise<UnifiedKnowledgeItem[]> => {
     try {
-      console.log('🔍 Searching unified knowledge for:', query.substring(0, 50));
+      console.log('🔍 Searching unified knowledge v2.0 for:', query.substring(0, 50));
       
-      // Auto-consolidate if no knowledge exists
       await autoConsolidateIfNeeded();
       
-      // Generate embedding if vector API key is available
       let queryEmbedding: number[] | null = null;
       if (vectorApiKey?.trim()) {
         try {
@@ -129,7 +124,6 @@ export function useUnifiedDecisionCore() {
         }
       }
 
-      // Call the unified search function
       const { data, error } = await supabase.rpc('search_unified_knowledge', {
         query_text: query,
         query_embedding: queryEmbedding ? `[${queryEmbedding.join(',')}]` : null,
@@ -164,15 +158,15 @@ export function useUnifiedDecisionCore() {
     input: string,
     apiKey?: string,
     vectorApiKey?: string,
+    googleApiKey?: string,
     context?: {
       dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie";
       secondaryInsights?: string[];
     },
     history?: ChatHistoryItem[]
   ): Promise<DecisionResult | null> => {
-    console.log('🧠 makeUnifiedDecision called with input:', input.substring(0, 50) + '...');
-    console.log('🔑 API keys provided - apiKey:', !!apiKey, 'vectorApiKey:', !!vectorApiKey);
-    console.log('📊 Knowledge stats at start:', knowledgeStats);
+    console.log('🧠 makeUnifiedDecision v2.0 called with input:', input.substring(0, 50) + '...');
+    console.log('🔑 API keys provided - primary:', !!apiKey, 'vector:', !!vectorApiKey, 'google:', !!googleApiKey);
     
     if (!input?.trim()) {
       console.log('❌ Empty input provided to makeUnifiedDecision');
@@ -180,31 +174,24 @@ export function useUnifiedDecisionCore() {
     }
 
     setIsProcessing(true);
-    console.log('🧠 Unified Decision Core processing:', input.substring(0, 50));
+    console.log('🧠 Unified Decision Core v2.0 processing:', input.substring(0, 50));
 
     try {
-      // Step 1: Search unified knowledge base
       const knowledgeItems = await searchUnifiedKnowledge(input, vectorApiKey, 15);
-      
-      // Step 2: Analyze and rank knowledge sources
       const rankedSources = rankKnowledgeSources(knowledgeItems, input, context);
-      
-      // Step 3: Generate unified decision
-      const decision = await generateUnifiedDecision(
-        input, 
-        rankedSources, 
-        context, 
-        history
-      );
+      const decision = await generateUnifiedDecision(input, rankedSources, context, history);
 
-      // Step 4: Log decision for learning
-      await logUnifiedDecision(input, rankedSources, decision);
+      // Log decision with v2.0 metadata
+      await logUnifiedDecision(input, rankedSources, decision, {
+        googleApiUsed: !!googleApiKey,
+        version: '2.0'
+      });
 
-      console.log('✅ Unified decision complete:', decision?.emotion);
+      console.log('✅ Unified decision v2.0 complete:', decision?.emotion);
       return decision;
 
     } catch (error) {
-      console.error('🔴 Unified decision core error:', error);
+      console.error('🔴 Unified decision core v2.0 error:', error);
       return null;
     } finally {
       setIsProcessing(false);
@@ -220,36 +207,31 @@ export function useUnifiedDecisionCore() {
       .map(source => {
         let score = source.confidence_score || 0;
         
-        // Boost for exact emotion matches
         if (source.emotion && input.toLowerCase().includes(source.emotion.toLowerCase())) {
           score += 0.3;
         }
         
-        // Boost for trigger word matches
         if (source.triggers?.some(trigger => 
           input.toLowerCase().includes(trigger.toLowerCase())
         )) {
           score += 0.2;
         }
         
-        // Boost for similarity score
         if (source.similarity_score) {
           score += source.similarity_score * 0.3;
         }
         
-        // Boost for usage count (popular responses)
         const usageCount = source.metadata?.usageCount || 0;
         score += Math.min(usageCount * 0.01, 0.1);
         
-        // Apply context filters
         if (context?.dislikedLabel && source.metadata?.label === context.dislikedLabel) {
-          score *= 0.3; // Reduce score for disliked labels
+          score *= 0.3;
         }
         
         return { ...source, confidence_score: score };
       })
       .sort((a, b) => b.confidence_score - a.confidence_score)
-      .slice(0, 5); // Top 5 sources
+      .slice(0, 5);
   };
 
   const generateUnifiedDecision = async (
@@ -265,17 +247,14 @@ export function useUnifiedDecisionCore() {
     const bestSource = sources[0];
     const otherSources = sources.slice(1, 3);
 
-    // Determine response type based on content and context
     let label: "Valideren" | "Reflectievraag" | "Suggestie" = "Valideren";
     let responseType = bestSource.metadata?.type || 'validation';
     
     if (context?.dislikedLabel) {
-      // Avoid disliked label, choose alternative
       if (context.dislikedLabel === "Valideren") label = "Reflectievraag";
       else if (context.dislikedLabel === "Reflectievraag") label = "Suggestie";
       else label = "Valideren";
     } else {
-      // Map response type to label
       switch (responseType) {
         case 'reflection': label = "Reflectievraag"; break;
         case 'suggestion': label = "Suggestie"; break;
@@ -283,7 +262,6 @@ export function useUnifiedDecisionCore() {
       }
     }
 
-    // Create reasoning
     const reasoning = [
       `Hoofdbron: ${bestSource.emotion} (vertrouwen: ${Math.round(bestSource.confidence_score * 100)}%)`,
       otherSources.length > 0 ? `Ondersteunende bronnen: ${otherSources.map(s => s.emotion).join(', ')}` : '',
@@ -291,12 +269,12 @@ export function useUnifiedDecisionCore() {
       context?.dislikedLabel ? `Vermeden label: ${context.dislikedLabel}` : ''
     ].filter(Boolean).join('. ');
 
-    // Create symbolic inferences
     const symbolicInferences = [
       `🎯 Hoofdemotie: ${bestSource.emotion}`,
       `📊 Vertrouwen: ${Math.round(bestSource.confidence_score * 100)}%`,
       `🔗 Bronnen: ${sources.length} gevonden`,
       `💡 Type: ${label}`,
+      `🚀 EvAI v2.0 Enhanced`,
       ...sources.slice(0, 2).map(s => `• ${s.emotion} (${Math.round(s.confidence_score * 100)}%)`)
     ];
 
@@ -308,20 +286,20 @@ export function useUnifiedDecisionCore() {
       sources,
       label,
       symbolicInferences,
-      meta: `Unified Decision Core: ${sources.length} bronnen geanalyseerd`
+      meta: `Unified Decision Core v2.0: ${sources.length} bronnen geanalyseerd`
     };
   };
 
   const logUnifiedDecision = async (
     input: string,
     sources: UnifiedKnowledgeItem[],
-    decision: DecisionResult | null
+    decision: DecisionResult | null,
+    metadata: { googleApiUsed?: boolean; version?: string } = {}
   ) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || !decision) return;
 
-      // Convert sources to plain objects for JSON serialization
       const symbolicMatches = sources
         .filter(s => s.content_type === 'seed')
         .map(s => ({
@@ -340,22 +318,24 @@ export function useUnifiedDecisionCore() {
           type: s.content_type
         }));
 
-      await supabase.rpc('log_hybrid_decision', {
-        p_user_id: user.id,
-        p_user_input: input,
-        p_symbolic_matches: symbolicMatches,
-        p_neural_similarities: neuralSimilarities,
-        p_hybrid_decision: {
-          method: 'unified_core',
-          emotion: decision.emotion,
-          confidence: decision.confidence,
-          sources_count: sources.length
-        },
-        p_final_response: decision.response,
-        p_confidence_score: decision.confidence
+      // Log with enhanced v2.0 metadata
+      const apiCollaboration = {
+        api1Used: true,
+        api2Used: false,
+        vectorApiUsed: sources.some(s => s.similarity_score),
+        googleApiUsed: metadata.googleApiUsed || false,
+        version: metadata.version || '2.0'
+      };
+
+      await supabase.rpc('log_evai_workflow', {
+        p_conversation_id: 'unified-decision-' + Date.now(),
+        p_workflow_type: 'unified_decision_v2',
+        p_api_collaboration: apiCollaboration,
+        p_success: true,
+        p_processing_time: 0
       });
 
-      console.log('📝 Unified decision logged successfully');
+      console.log('📝 Unified decision v2.0 logged successfully');
     } catch (error) {
       console.error('❌ Failed to log unified decision:', error);
     }
@@ -363,7 +343,7 @@ export function useUnifiedDecisionCore() {
 
   const consolidateKnowledge = async (): Promise<boolean> => {
     try {
-      console.log('🔄 Starting knowledge consolidation...');
+      console.log('🔄 Starting knowledge consolidation v2.0...');
       
       const { error } = await supabase.rpc('consolidate_knowledge');
       
@@ -372,8 +352,8 @@ export function useUnifiedDecisionCore() {
         return false;
       }
       
-      console.log('✅ Knowledge consolidation completed');
-      await loadKnowledgeStats(); // Refresh stats after consolidation
+      console.log('✅ Knowledge consolidation v2.0 completed');
+      await loadKnowledgeStats();
       return true;
     } catch (error) {
       console.error('🔴 Knowledge consolidation error:', error);
