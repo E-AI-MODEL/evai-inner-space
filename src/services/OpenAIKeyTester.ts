@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export interface SupabaseOpenAIKeyTestResult {
   ok: boolean;
   status?: number;
@@ -8,10 +10,9 @@ export interface SupabaseOpenAIKeyTestResult {
 
 export async function testSupabaseOpenAIKey(): Promise<SupabaseOpenAIKeyTestResult> {
   try {
-    const url = `${location.origin}/functions/v1/test-openai-key`;
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-    const data = (await res.json()) as SupabaseOpenAIKeyTestResult;
-    return data;
+    const { data, error } = await supabase.functions.invoke('test-openai-key', { body: {} });
+    if (error) return { ok: false, error: error.message };
+    return data as SupabaseOpenAIKeyTestResult;
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }

@@ -1,1 +1,4 @@
-project_id = "your-project-id"
+project_id = "ngcyfbstajfcfdhlelbz"
+
+[functions.test-openai-key]
+verify_jwt = false
