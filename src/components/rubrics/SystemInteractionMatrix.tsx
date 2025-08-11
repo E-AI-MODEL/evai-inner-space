@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Activity, Database, Zap, Brain } from 'lucide-react';
+import { getStatusColor as getStatusColorGeneric } from '@/utils/statusUtils';
 
 interface SystemInteractionMatrixProps {
   messageCount: number;
@@ -41,12 +42,12 @@ const SystemInteractionMatrix: React.FC<SystemInteractionMatrixProps> = ({ messa
     }
   ];
 
-  const getStatusColor = (status: string) => {
+  const mapToHealth = (status: string): 'healthy' | 'warning' | 'error' => {
     switch (status) {
-      case 'online': return 'bg-green-100 text-green-800 border-green-200';
-      case 'warning': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'offline': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'online': return 'healthy';
+      case 'warning': return 'warning';
+      case 'offline': return 'error';
+      default: return 'warning';
     }
   };
 
@@ -78,7 +79,7 @@ const SystemInteractionMatrix: React.FC<SystemInteractionMatrixProps> = ({ messa
                 </div>
                 <span className="text-sm font-medium text-gray-800">{system.name}</span>
               </div>
-              <Badge variant="outline" className={`text-xs ${getStatusColor(system.status)}`}>
+              <Badge variant="outline" className={`text-xs border ${getStatusColorGeneric(mapToHealth(system.status))}`}>
                 {system.status}
               </Badge>
             </div>

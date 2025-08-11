@@ -5,7 +5,7 @@ interface DraggableEmotionHistoryButtonProps {
   onOpen: () => void;
 }
 
-const DraggableEmotionHistoryButton: React.FC<DraggableEmotionHistoryButtonProps> = ({ onOpen }) => {
+const DraggableEmotionHistoryButton = React.forwardRef<HTMLButtonElement, DraggableEmotionHistoryButtonProps>(({ onOpen }, ref) => {
   const [position, setPosition] = useState(() => {
     // Load saved position from localStorage or use default
     const saved = localStorage.getItem('emotion-history-button-position');
@@ -14,16 +14,26 @@ const DraggableEmotionHistoryButton: React.FC<DraggableEmotionHistoryButtonProps
   
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const internalRef = useRef<HTMLButtonElement>(null);
+
+  // Merge external ref from Radix asChild with internal ref
+  const setRefs = useCallback((node: HTMLButtonElement | null) => {
+    internalRef.current = node as HTMLButtonElement | null;
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref && 'current' in (ref as any)) {
+      (ref as any).current = node;
+    }
+  }, [ref]);
 
   const savePosition = useCallback((newPosition: { x: number; y: number }) => {
     localStorage.setItem('emotion-history-button-position', JSON.stringify(newPosition));
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!buttonRef.current) return;
+    if (!internalRef.current) return;
     
-    const rect = buttonRef.current.getBoundingClientRect();
+    const rect = internalRef.current.getBoundingClientRect();
     setDragOffset({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
@@ -33,9 +43,9 @@ const DraggableEmotionHistoryButton: React.FC<DraggableEmotionHistoryButtonProps
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (!buttonRef.current) return;
+    if (!internalRef.current) return;
     
-    const rect = buttonRef.current.getBoundingClientRect();
+    const rect = internalRef.current.getBoundingClientRect();
     const touch = e.touches[0];
     setDragOffset({
       x: touch.clientX - rect.left,
@@ -105,7 +115,7 @@ const DraggableEmotionHistoryButton: React.FC<DraggableEmotionHistoryButtonProps
 
   return (
     <button
-      ref={buttonRef}
+      ref={setRefs}
       type="button"
       aria-label="Toon emotiegeschiedenis (versleepbaar)"
       className={`md:hidden fixed z-40 p-3 rounded-full bg-white border border-zinc-200 shadow-lg hover:shadow-xl transition-shadow select-none ${
@@ -128,6 +138,8 @@ const DraggableEmotionHistoryButton: React.FC<DraggableEmotionHistoryButtonProps
       )}
     </button>
   );
-};
+});
+
+DraggableEmotionHistoryButton.displayName = 'DraggableEmotionHistoryButton';
 
 export default DraggableEmotionHistoryButton;

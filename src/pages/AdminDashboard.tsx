@@ -18,6 +18,8 @@ import SystemStatusOverview from '../components/admin/SystemStatusOverview';
 import SystemStatusDetails from '../components/admin/SystemStatusDetails';
 import UserProfileDashboard from '../components/admin/UserProfileDashboard';
 import { ConnectionStatus } from '../types/connectionStatus';
+import { Button } from '@/components/ui/button';
+import { getStatusIcon as getStatusIconGeneric, getStatusColor as getStatusColorGeneric } from '@/utils/statusUtils';
 
 interface HybridDecisionData {
   emotion?: string;
@@ -185,21 +187,13 @@ const AdminDashboard = () => {
     refetchInterval: 30000 // Refresh every 30 seconds
   });
 
-  const getStatusColor = (status: string) => {
+  // Map verbindingsstatus naar generieke gezondheid voor hergebruik van utils
+  const mapToHealth = (status: string): 'healthy' | 'warning' | 'error' => {
     switch (status) {
-      case 'connected': return 'text-green-600 bg-green-50';
-      case 'disconnected': return 'text-red-600 bg-red-50';
-      case 'connecting': return 'text-yellow-600 bg-yellow-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'connected': return <CheckCircle className="h-4 w-4" />;
-      case 'disconnected': return <AlertTriangle className="h-4 w-4" />;
-      case 'connecting': return <Activity className="h-4 w-4 animate-spin" />;
-      default: return <Activity className="h-4 w-4" />;
+      case 'connected': return 'healthy';
+      case 'connecting': return 'warning';
+      case 'disconnected': return 'error';
+      default: return 'warning';
     }
   };
 
@@ -215,13 +209,34 @@ const AdminDashboard = () => {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Badge variant="outline" className={`${getStatusColor(supabaseStatus)} border-current`}>
-            {getStatusIcon(supabaseStatus)}
+          <Badge variant="outline" className={`${getStatusColorGeneric(mapToHealth(supabaseStatus))} border`}>
+            {getStatusIconGeneric(mapToHealth(supabaseStatus))}
             <span className="ml-2 font-medium">
               Supabase {supabaseStatus === 'connected' ? 'Verbonden' : 
                       supabaseStatus === 'connecting' ? 'Verbinden...' : 'Offline'}
             </span>
           </Badge>
+          <Button variant="secondary" onClick={() => {
+            // Samenvattingen als toast tonen
+            toast({
+              title: 'Overzicht: Seeds',
+              description: `${analytics?.activeSeeds || 0} actief van ${analytics?.totalSeeds || 0} totaal`
+            });
+            toast({
+              title: 'Overzicht: Gesprekken',
+              description: `${analytics?.totalConversations || 0} gesprekken (deze week: ${analytics?.weeklyGrowth || 0})`
+            });
+            toast({
+              title: 'Overzicht: Vertrouwen',
+              description: `${Math.round((analytics?.avgConfidence || 0) * 100)}% gemiddeld`
+            });
+            toast({
+              title: 'Systeemgezondheid',
+              description: `${Math.round(analytics?.performanceMetrics?.successRate || 0)}% success rate`
+            });
+          }}>
+            Toon samenvattingen
+          </Button>
         </div>
       </div>
 
@@ -293,6 +308,31 @@ const AdminDashboard = () => {
                 <p className="text-xs text-muted-foreground">
                   {analytics?.systemHealth === 'excellent' ? 'Uitstekend' : 'Waarschuwing'}
                 </p>
+              </CardContent>
+            </Card>
+
+            {/* LLM Rollen overzicht */}
+            <Card className="lg:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">LLM Rollen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-md border p-3">
+                    <div className="font-medium mb-1">OpenAI Key 1</div>
+                    <p className="text-muted-foreground">Taken: Emotiedetectie, empathische respons</p>
+                    <p className="mt-1">
+                      Status: <span className="font-medium">{connectionStatus.openaiApi1 === 'configured' ? 'Geconfigureerd' : 'Ontbreekt'}</span>
+                    </p>
+                  </div>
+                  <div className="rounded-md border p-3">
+                    <div className="font-medium mb-1">OpenAI Key 2</div>
+                    <p className="text-muted-foreground">Taken: Strategische briefing, secundaire analyse</p>
+                    <p className="mt-1">
+                      Status: <span className="font-medium">{connectionStatus.openaiApi2 === 'configured' ? 'Geconfigureerd' : 'Ontbreekt'}</span>
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
