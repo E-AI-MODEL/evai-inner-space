@@ -112,7 +112,7 @@ export function useProcessingOrchestrator() {
         reasoning: decisionResult.reasoning,
         symbolicInferences: decisionResult.symbolicInferences,
         metadata: {
-          processingPath: 'production',
+          processingPath: 'hybrid',
           totalProcessingTime: processingTime,
           componentsUsed: [
             `Unified Core (${decisionResult.sources.length} sources)`,

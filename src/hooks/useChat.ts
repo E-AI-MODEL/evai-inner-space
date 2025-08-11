@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { Message, ChatHistoryItem, UnifiedResponse } from '../types';
 import { useProcessingOrchestrator } from './useProcessingOrchestrator';
 import { v4 as uuidv4 } from 'uuid';
+import { useSelfLearningManager } from './useSelfLearningManager';
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -10,6 +11,7 @@ export function useChat() {
   
   console.log('🔄 useChat hook initialized - Production mode');
   const { orchestrateProcessing, isProcessing, stats } = useProcessingOrchestrator();
+  const { analyzeTurn } = useSelfLearningManager();
 
   const onSend = useCallback(async (message: string) => {
     console.log('📤 useChat onSend called with message:', message);
@@ -84,6 +86,13 @@ export function useChat() {
       };
 
       setMessages(prev => [...prev, aiResponse]);
+
+      // Proactief zelflerend proces (fire-and-forget)
+      void analyzeTurn(
+        message,
+        result,
+        [...history, { role: 'user', content: message }]
+      );
 
     } catch (error) {
       console.error('Chat processing error:', error);
