@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 import { Database, TrendingUp, Users, Zap } from 'lucide-react';
 
@@ -20,6 +21,7 @@ import { ConnectionStatus } from '../types/connectionStatus';
 import { getStatusIcon as getStatusIconGeneric, getStatusColor as getStatusColorGeneric } from '@/utils/statusUtils';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AdminSidebar from '@/components/admin/AdminSidebar';
+import { testSupabaseOpenAIKey } from '@/services/OpenAIKeyTester';
 
 interface HybridDecisionData {
   emotion?: string;
@@ -29,6 +31,7 @@ interface HybridDecisionData {
 const AdminDashboard = () => {
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [activeTab, setActiveTab] = useState<'profile' | 'overview' | 'seeds' | 'analytics' | 'settings'>('overview');
+  const { toast } = useToast();
   
   const { data: seeds = [] } = useSeeds();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
@@ -66,6 +69,19 @@ const AdminDashboard = () => {
       seeds: seeds.length > 0 ? 'loaded' : 'error',
     });
   }, [supabaseStatus, seeds]);
+
+  // Test de in Supabase opgeslagen OPENAI_API_KEY via edge function en toon compacte melding
+  useEffect(() => {
+    if (supabaseStatus !== 'connected') return;
+    (async () => {
+      const res = await testSupabaseOpenAIKey();
+      if (res.ok) {
+        toast({ title: 'Supabase OpenAI key OK', description: res.model ? `Model: ${res.model}` : undefined });
+      } else {
+        toast({ title: 'Supabase OpenAI key ongeldig', description: res.error || 'Controle mislukt', variant: 'destructive' });
+      }
+    })();
+  }, [supabaseStatus, toast]);
 
   const { data: analytics } = useQuery({
     queryKey: ['single-user-analytics'],
