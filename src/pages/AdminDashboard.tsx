@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+
 import { Database, TrendingUp, Users, Zap } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+
 import { useSeeds } from '../hooks/useSeeds';
 import { testSupabaseConnection, supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -29,7 +29,7 @@ interface HybridDecisionData {
 const AdminDashboard = () => {
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [activeTab, setActiveTab] = useState<'profile' | 'overview' | 'seeds' | 'analytics' | 'settings'>('overview');
-  const { toast } = useToast();
+  
   const { data: seeds = [] } = useSeeds();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     supabase: 'checking',
@@ -200,17 +200,6 @@ const AdminDashboard = () => {
               Supabase {supabaseStatus === 'connected' ? 'Verbonden' : supabaseStatus === 'connecting' ? 'Verbinden...' : 'Offline'}
             </span>
           </Badge>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              toast({ title: 'Overzicht: Seeds', description: `${analytics?.activeSeeds || 0} actief van ${analytics?.totalSeeds || 0} totaal` });
-              toast({ title: 'Overzicht: Gesprekken', description: `${analytics?.totalConversations || 0} gesprekken (deze week: ${analytics?.weeklyGrowth || 0})` });
-              toast({ title: 'Overzicht: Vertrouwen', description: `${Math.round((analytics?.avgConfidence || 0) * 100)}% gemiddeld` });
-              toast({ title: 'Systeemgezondheid', description: `${Math.round(analytics?.performanceMetrics?.successRate || 0)}% success rate` });
-            }}
-          >
-            Toon samenvattingen
-          </Button>
         </div>
       </header>
 
