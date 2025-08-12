@@ -3,6 +3,8 @@ import { useState, useCallback } from 'react';
 import { ProcessingContext, UnifiedResponse } from '@/types/core';
 import { useUnifiedDecisionCore, DecisionResult } from './useUnifiedDecisionCore';
 import { testOpenAIApiKey } from '@/utils/apiKeyTester';
+import { supabase } from '@/integrations/supabase/client';
+import { OPENAI_MODEL } from '../openaiConfig';
 
 interface ProcessingStats {
   totalRequests: number;
@@ -91,8 +93,97 @@ export function useProcessingOrchestrator() {
       );
 
       if (!decisionResult) {
-        console.error('❌ Unified Decision Core returned no result');
-        throw new Error("Geen resultaat van de AI processing core. Controleer je API configuratie.");
+        console.warn('⚠️ Geen kennis-match gevonden — val terug op OpenAI via Edge Function');
+        try {
+          const messages = [
+            { role: 'system', content: 'Je bent een empathische therapeutische AI in het Nederlands. Geef antwoord als JSON met velden: emotion, confidence, response, reasoning, label, triggers (array).' },
+            { role: 'user', content: userInput }
+          ];
+
+          const { data, error } = await supabase.functions.invoke('openai-chat', {
+            body: {
+              model: OPENAI_MODEL,
+              messages,
+              temperature: 0.7,
+              max_tokens: 400,
+              response_format: { type: 'json_object' },
+              use_secondary: false
+            }
+          });
+
+          if (error) {
+            console.error('❌ OpenAI fallback edge error:', error);
+            throw new Error(error.message || 'OpenAI fallback mislukt');
+          }
+
+          const payload: any = data;
+          if (!payload?.ok) {
+            console.error('❌ OpenAI payload not ok:', payload);
+            const status = payload?.status;
+            const err = payload?.error || 'Onbekende fout';
+            if (String(err).toLowerCase().includes('insufficient_quota')) {
+              throw new Error('OpenAI-tegoed mogelijk op. Controleer je account/keys.');
+            }
+            throw new Error(`OpenAI fout: ${err}${status ? ` (status ${status})` : ''}`);
+          }
+
+          const content = payload.content as string;
+          let parsed: any = null;
+          try {
+            const match = content.match(/\{[\s\S]*\}/);
+            parsed = match ? JSON.parse(match[0]) : JSON.parse(content);
+          } catch {
+            parsed = null;
+          }
+
+          const responseText = parsed?.response || content;
+          const emotion = parsed?.emotion || 'neutral';
+          const confidence = Math.max(0.1, Math.min(1, parsed?.confidence ?? 0.6));
+          const label = parsed?.label || 'Valideren';
+          const reasoning = parsed?.reasoning || 'Neural fallback';
+          const symbolicInferences = [
+            `🧠 Neural fallback`,
+            `🎯 Emotie: ${emotion}`,
+            `📊 Vertrouwen: ${Math.round(confidence * 100)}%`
+          ];
+
+          const processingTime = Date.now() - startTime;
+          console.log(`✅ Fallback completed in ${processingTime}ms`);
+
+          // Update success stats (fallback)
+          setStats(prev => ({
+            totalRequests: prev.totalRequests + 1,
+            averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
+            successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
+            lastProcessingTime: processingTime,
+            errorCount: prev.errorCount,
+            lastError: undefined
+          }));
+
+          return {
+            content: responseText,
+            emotion,
+            confidence,
+            label,
+            reasoning,
+            symbolicInferences,
+            metadata: {
+              processingPath: 'neural',
+              totalProcessingTime: processingTime,
+              componentsUsed: [
+                'OpenAI via Edge Functions'
+              ],
+              fallback: true
+            }
+          } as UnifiedResponse;
+        } catch (fbErr) {
+          console.error('🔴 Fallback ook mislukt:', fbErr);
+          throw new Error(
+            fbErr instanceof Error
+              ? fbErr.message
+              : 'Geen resultaat en fallback mislukt.'
+          );
+        }
       }
 
       const processingTime = Date.now() - startTime;
