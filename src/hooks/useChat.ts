@@ -41,24 +41,24 @@ export function useChat() {
         timestamp: msg.timestamp
       }));
 
-      // Get real API keys from localStorage
+      // Get optional API keys from localStorage (not required when using Edge Functions)
       const storedApiKey = localStorage.getItem('openai-api-key') || undefined;
       const storedApiKey2 = localStorage.getItem('openai-api-key-2') || undefined;
       
-      // Validate API keys are real (not mock)
+      // If keys are present, ensure they are not obvious mock/test keys
       if (storedApiKey && (storedApiKey.includes('demo') || storedApiKey.includes('test') || storedApiKey.includes('mock'))) {
-        throw new Error('Mock API keys zijn niet toegestaan. Configureer een echte OpenAI API key.');
+        throw new Error('Mock API keys zijn niet toegestaan. Configureer een echte OpenAI API key of verwijder de mock key.');
       }
       
       if (storedApiKey2 && (storedApiKey2.includes('demo') || storedApiKey2.includes('test') || storedApiKey2.includes('mock'))) {
-        throw new Error('Mock API keys zijn niet toegestaan. Configureer een echte OpenAI API key.');
+        throw new Error('Mock API keys zijn niet toegestaan. Configureer een echte OpenAI API key of verwijder de mock key.');
       }
 
-      if (!storedApiKey || !storedApiKey.startsWith('sk-')) {
-        throw new Error('Geen geldige OpenAI API key gevonden. Configureer eerst je API key in de instellingen.');
+      if (!storedApiKey) {
+        console.log('🔐 Geen client key gevonden — doorgaan met server-side keys via Edge Functions');
       }
       
-      console.log('🔑 Using real API keys - Primary:', !!storedApiKey, 'Secondary:', !!storedApiKey2);
+      console.log('🔑 Using keys - Primary present:', !!storedApiKey, 'Secondary present:', !!storedApiKey2);
       console.log('📋 History length:', history.length);
 
       // Process through the orchestrator with real API keys

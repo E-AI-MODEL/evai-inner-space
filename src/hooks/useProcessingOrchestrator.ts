@@ -48,23 +48,27 @@ export function useProcessingOrchestrator() {
     const startTime = Date.now();
     
     try {
-      // Validate API keys are real
-      if (!validateApiKey(apiKey || '')) {
-        throw new Error('Geen geldige OpenAI API key gevonden. Configureer eerst een echte API key (geen mock/test keys).');
+      // Optional API key validation: if provided, ensure it's valid; else rely on server-side keys via Edge Functions
+      if (apiKey && !validateApiKey(apiKey)) {
+        throw new Error('OpenAI API key ongeldig. Verwijder of vervang in instellingen.');
       }
 
       if (apiKey2 && !validateApiKey(apiKey2)) {
-        console.warn('⚠️ Secondary API key is invalid, continuing with primary key only');
+        console.warn('⚠️ Secondary API key is invalid, continuing without it');
       }
 
-      // Pre-flight API key validation
-      console.log('🧪 Validating API key functionality...');
-      const keyTest = await testOpenAIApiKey(apiKey!);
-      if (!keyTest.isValid) {
-        console.error('❌ API Key validation failed:', keyTest.error);
-        throw new Error(`API Key validatie mislukt: ${keyTest.error}`);
+      if (apiKey) {
+        // Pre-flight API key validation
+        console.log('🧪 Validating API key functionality...');
+        const keyTest = await testOpenAIApiKey(apiKey);
+        if (!keyTest.isValid) {
+          console.error('❌ API Key validation failed:', keyTest.error);
+          throw new Error(`API Key validatie mislukt: ${keyTest.error}`);
+        }
+        console.log('✅ API Key validation passed');
+      } else {
+        console.log('🔐 No client API key provided — using server-side keys via Edge Functions');
       }
-      console.log('✅ API Key validation passed');
 
       const vectorApiKey = localStorage.getItem('vector-api-key') || apiKey;
       const googleApiKey = localStorage.getItem('google-api-key') || '';
@@ -117,7 +121,7 @@ export function useProcessingOrchestrator() {
           componentsUsed: [
             `Unified Core (${decisionResult.sources.length} sources)`,
             `Knowledge Base: ${knowledgeStats.total} items`,
-            'Production Mode: Real API Keys'
+            'OpenAI via Edge Functions'
           ],
           fallback: false,
           apiCollaboration: {
