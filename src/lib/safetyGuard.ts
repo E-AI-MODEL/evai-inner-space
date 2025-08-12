@@ -15,7 +15,7 @@ export interface SafetyResult {
 
 export async function checkPromptSafety(input: string): Promise<SafetyResult> {
   try {
-    incrementApiUsage('openai_safety');
+    incrementApiUsage('safety');
     const { data, error } = await supabase.functions.invoke('openai-safety', {
       body: { input }
     });
