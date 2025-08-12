@@ -1,32 +1,28 @@
 
 import { incrementApiUsage } from '@/utils/apiUsageTracker';
+import { supabase } from '@/integrations/supabase/client';
 
 export async function generateEmbedding(text: string, apiKey: string): Promise<number[]> {
-  if (!apiKey?.trim()) {
-    throw new Error('API key is required for generating embeddings');
+  if (!text?.trim()) {
+    throw new Error('Text is required for generating embeddings');
   }
 
   try {
     incrementApiUsage('vector');
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: text.substring(0, 8000), // Limit input length
-      }),
+    const { data, error } = await supabase.functions.invoke('openai-embedding', {
+      body: { input: text.substring(0, 8000), model: 'text-embedding-3-small' }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`OpenAI API error: ${response.status} - ${errorData?.error?.message || response.statusText}`);
+    if (error) {
+      throw new Error(`Embedding edge error: ${error.message}`);
     }
 
-    const data = await response.json();
-    return data.data[0].embedding;
+    const embedding = (data as any)?.embedding as number[] | undefined;
+    if (!embedding) {
+      throw new Error('No embedding returned from edge function');
+    }
+
+    return embedding;
   } catch (error) {
     console.error('❌ Failed to generate embedding:', error);
     throw error;

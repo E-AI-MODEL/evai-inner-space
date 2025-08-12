@@ -1,7 +1,9 @@
+
 import { useState } from 'react';
 import { OPENAI_MODEL } from '../openaiConfig';
 import type { StrategicBriefing } from '../types';
 import { incrementApiUsage } from '@/utils/apiUsageTracker';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useOpenAISecondary() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -10,41 +12,40 @@ export function useOpenAISecondary() {
     userInput: string,
     rubricAssessments: string[],
     seedMatch: string | null,
-    apiKey: string
+    apiKey: string // kept for compatibility, ignored since we now use backend
   ): Promise<StrategicBriefing | null> => {
-    if (!apiKey?.trim()) return null;
+    if (!userInput?.trim()) return null;
 
     setIsAnalyzing(true);
     incrementApiUsage('openai2');
     try {
-      const prompt = `Maak een strategische briefing voor een therapeutische AI op basis van de volgende gegevens:\n` +
-        `Gebruiker input: "${userInput}"\n` +
-        `Rubric beoordelingen: ${rubricAssessments.length ? rubricAssessments.join(', ') : 'geen'}\n` +
-        `Seed match: ${seedMatch || 'geen'}\n` +
-        `Geef je antwoord in JSON met de velden goal, context, keyPoints (array) en priority.`;
+      const prompt = `Maak een strategische briefing voor een therapeutische AI op basis van de volgende gegevens:
+Gebruiker input: "${userInput}"
+Rubric beoordelingen: ${rubricAssessments.length ? rubricAssessments.join(', ') : 'geen'}
+Seed match: ${seedMatch || 'geen'}
+Geef je antwoord in JSON met de velden goal, context, keyPoints (array) en priority.`;
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('openai-chat', {
+        body: {
           model: OPENAI_MODEL,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.4,
           max_tokens: 300,
-          response_format: { type: 'json_object' }
-        })
+          response_format: { type: 'json_object' },
+          use_secondary: true
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+      if (error) {
+        console.error('Strategic briefing generation failed (edge):', error);
+        return null;
       }
 
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-      if (!content) throw new Error('Geen content ontvangen');
+      const content = (data as any)?.content;
+      if (!content) {
+        console.error('Geen content ontvangen van edge function');
+        return null;
+      }
 
       const briefing = JSON.parse(content) as StrategicBriefing;
       if (!Array.isArray(briefing.keyPoints)) briefing.keyPoints = [];

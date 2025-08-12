@@ -21,8 +21,8 @@ export function useVectorEmbeddings() {
     threshold: number = 0.7,
     maxResults: number = 5
   ): Promise<SimilarityResult[]> => {
-    if (!apiKey?.trim()) {
-      console.log('⚠️ No vector API key provided');
+    if (!query?.trim()) {
+      console.log('⚠️ No query provided');
       return [];
     }
 
@@ -31,41 +31,37 @@ export function useVectorEmbeddings() {
     try {
       console.log('🔍 Searching vector embeddings for:', query.substring(0, 50));
       
-      // Generate embedding for query
+      // Generate embedding for query via backend
       incrementApiUsage('vector');
-      const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input: query,
-          model: 'text-embedding-3-small'
-        })
+      const { data, error } = await supabase.functions.invoke('openai-embedding', {
+        body: { input: query, model: 'text-embedding-3-small' }
       });
 
-      if (!embeddingResponse.ok) {
-        throw new Error(`Embedding API error: ${embeddingResponse.status}`);
+      if (error) {
+        console.error('❌ Embedding edge error:', error);
+        return [];
       }
 
-      const embeddingData = await embeddingResponse.json();
-      const queryEmbedding = embeddingData.data[0].embedding;
+      const queryEmbedding = (data as any)?.embedding;
+      if (!queryEmbedding) {
+        console.error('❌ No embedding returned from edge function');
+        return [];
+      }
 
       // Search similar embeddings using Supabase function
-      const { data, error } = await supabase.rpc('find_similar_embeddings', {
-        query_embedding: `[${queryEmbedding.join(',')}]`,
+      const { data: results, error: rpcError } = await supabase.rpc('find_similar_embeddings', {
+        query_embedding: `[${(queryEmbedding as number[]).join(',')}]`,
         similarity_threshold: threshold,
         max_results: maxResults
       });
 
-      if (error) {
-        console.error('❌ Supabase vector search error:', error);
+      if (rpcError) {
+        console.error('❌ Supabase vector search error:', rpcError);
         return [];
       }
 
-      console.log(`✅ Found ${data?.length || 0} vector matches`);
-      return data || [];
+      console.log(`✅ Found ${results?.length || 0} vector matches`);
+      return results || [];
 
     } catch (error) {
       console.error('🔴 Vector search error:', error);
@@ -86,43 +82,42 @@ export function useVectorEmbeddings() {
     try {
       for (const seed of seeds) {
         try {
-          // Generate embedding for seed
+          // Generate embedding for seed via backend
           incrementApiUsage('vector');
-          const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              input: seed.response?.nl || seed.emotion,
-              model: 'text-embedding-3-small'
-            })
+          const text = seed.response?.nl || seed.emotion;
+          const { data, error } = await supabase.functions.invoke('openai-embedding', {
+            body: { input: text, model: 'text-embedding-3-small' }
           });
 
-          if (!embeddingResponse.ok) {
-            throw new Error(`Embedding API error: ${embeddingResponse.status}`);
+          if (error) {
+            console.error('❌ Embedding edge error for seed:', seed.id, error);
+            failed++;
+            continue;
           }
 
-          const embeddingData = await embeddingResponse.json();
-          const embedding = embeddingData.data[0].embedding;
+          const embedding = (data as any)?.embedding;
+          if (!embedding) {
+            console.error('❌ No embedding returned for seed:', seed.id);
+            failed++;
+            continue;
+          }
 
           // Store in vector_embeddings table
-          const { error } = await supabase
+          const { error: upsertError } = await supabase
             .from('vector_embeddings')
             .upsert({
               content_id: seed.id,
               content_type: 'seed',
-              content_text: seed.response?.nl || seed.emotion,
-              embedding: `[${embedding.join(',')}]`,
+              content_text: text,
+              embedding: `[${(embedding as number[]).join(',')}]`,
               metadata: {
                 emotion: seed.emotion,
                 confidence: seed.meta?.confidence || 0.7
               }
             });
 
-          if (error) {
-            console.error('❌ Failed to store embedding:', error);
+          if (upsertError) {
+            console.error('❌ Failed to store embedding:', upsertError);
             failed++;
           } else {
             success++;

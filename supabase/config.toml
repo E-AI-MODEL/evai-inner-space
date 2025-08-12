@@ -1,4 +1,11 @@
+
 project_id = "ngcyfbstajfcfdhlelbz"
 
 [functions.test-openai-key]
+verify_jwt = false
+
+[functions.openai-chat]
+verify_jwt = false
+
+[functions.openai-embedding]
 verify_jwt = false
