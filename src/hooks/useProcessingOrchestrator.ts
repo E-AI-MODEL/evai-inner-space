@@ -80,6 +80,57 @@ export function useProcessingOrchestrator() {
         console.warn('⚠️ Vector API key is invalid, falling back to primary key');
       }
       
+      console.log('🚀 Calling evai-orchestrate first...');
+      try {
+        const hist = (conversationHistory || []).map((m: any) => ({ role: m.role || m.from || 'user', content: String(m.content || '') }));
+        const { data: orchData, error: orchErr } = await supabase.functions.invoke('evai-orchestrate', {
+          body: { userInput, history: hist.slice(-10) }
+        });
+
+        if (!orchErr && (orchData as any)?.ok && (orchData as any)?.response) {
+          const payload: any = orchData;
+          const res = payload.response;
+          const processingTime = payload?.meta?.processingTime || (Date.now() - startTime);
+
+          setStats(prev => ({
+            totalRequests: prev.totalRequests + 1,
+            averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
+            successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
+            lastProcessingTime: processingTime,
+            errorCount: prev.errorCount,
+            lastError: undefined
+          }));
+
+          return {
+            content: String(res.content || ''),
+            emotion: String(res.emotion || 'neutral'),
+            confidence: Math.max(0.1, Math.min(1, Number(res.confidence ?? 0.6))),
+            label: (res.label || 'Valideren') as any,
+            reasoning: String(res.reasoning || 'Neural orchestration'),
+            symbolicInferences: Array.isArray(res.symbolicInferences) ? res.symbolicInferences : [],
+            metadata: {
+              processingPath: 'neural',
+              totalProcessingTime: processingTime,
+              componentsUsed: Array.isArray(payload?.meta?.componentsUsed) ? payload.meta.componentsUsed : ['orchestrate'],
+              fallback: false,
+              apiCollaboration: {
+                api1Used: true,
+                api2Used: false,
+                vectorApiUsed: (payload?.meta?.componentsUsed || []).includes('embedding'),
+                googleApiUsed: false,
+                seedGenerated: false,
+                secondaryAnalysis: false
+              }
+            }
+          } as UnifiedResponse;
+        }
+        if (orchErr) {
+          console.warn('orchestrate edge error, falling back to unified core', orchErr);
+        }
+      } catch (e) {
+        console.warn('orchestrate call failed, continuing with unified core', e);
+      }
+
       console.log('🧠 Calling Unified Decision Core with validated keys...');
       console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
       

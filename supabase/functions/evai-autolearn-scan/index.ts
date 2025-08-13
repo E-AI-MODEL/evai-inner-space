@@ -46,6 +46,35 @@ serve(async (req) => {
 
     const lowConfidence = (decisions || []).filter(d => (d.confidence_score ?? 1) < 0.6);
 
+    // Try generate a compact seed for learning if low confidence detected
+    let seedsGenerated = 0;
+    try {
+      if (lowConfidence.length > 0) {
+        const first = lowConfidence[0];
+        const excerpt = (first.user_input || '').slice(0, 180);
+        const suggestion = `Ik hoor onzekerheid en twijfel. Klopt dat? Kun je iets meer vertellen over wat dit bij je oproept? (${excerpt})`;
+
+        const { error: seedErr } = await supabase.from('emotion_seeds').insert({
+          emotion: 'onzeker',
+          label: 'Reflectievraag',
+          response: { nl: suggestion },
+          meta: {
+            source: 'autolearn-scan',
+            reason: 'low_confidence',
+            confidence: 0.7,
+            triggers: ['onzeker', 'twijfel'],
+            sampled_input: excerpt
+          },
+          active: true
+        });
+
+        if (!seedErr) seedsGenerated = 1;
+        else console.warn('seed insert error', seedErr);
+      }
+    } catch (e) {
+      console.warn('seed generation skipped due to error', e);
+    }
+
     // Log summary reflection event
     const { error: logErr } = await supabase.rpc('log_reflection_event', {
       p_trigger_type: 'manual_scan',
@@ -55,7 +84,7 @@ serve(async (req) => {
         lowConfidenceCount: lowConfidence.length,
         sampledInputs: lowConfidence.slice(0, 5).map(d => d.user_input?.slice(0, 120)),
       },
-      p_new_seeds_generated: 0,
+      p_new_seeds_generated: seedsGenerated,
       p_learning_impact: Math.min(1, lowConfidence.length / Math.max(1, (decisions?.length || 1)))
     });
 
@@ -64,7 +93,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, scanned: decisions?.length || 0, lowConfidence: lowConfidence.length, version: '1.0.0' }),
+      JSON.stringify({ ok: true, scanned: decisions?.length || 0, lowConfidence: lowConfidence.length, seedsGenerated, version: '1.1.0' }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {

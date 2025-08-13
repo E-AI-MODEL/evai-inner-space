@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
 interface TimelineEvent {
@@ -19,6 +20,8 @@ interface TimelineEvent {
 const UnifiedActivityTimeline: React.FC = () => {
   const [events, setEvents] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<TimelineEvent | null>(null);
+  const [open, setOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -111,15 +114,26 @@ const UnifiedActivityTimeline: React.FC = () => {
                   {e.subtitle && (
                     <div className="text-sm text-muted-foreground mt-1">{e.subtitle}</div>
                   )}
-                  <Separator className="my-2" />
-                  <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
-                    {JSON.stringify(e.meta, null, 2)}
-                  </pre>
+                  <div className="flex items-center justify-end">
+                    <Button size="sm" variant="outline" onClick={() => { setSelected(e); setOpen(true); }}>
+                      Details
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </ScrollArea>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Event details</DialogTitle>
+            </DialogHeader>
+            <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+              {selected ? JSON.stringify(selected.meta, null, 2) : ''}
+            </pre>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

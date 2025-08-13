@@ -10,6 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 const AutonomyConsole: React.FC = () => {
   const { toast } = useToast();
   const [running, setRunning] = useState(false);
+  const [versions, setVersions] = useState<{ autolearn?: string; orchestrate?: string }>({});
+  const [pinging, setPinging] = useState(false);
 
   const runScan = useCallback(async () => {
     setRunning(true);
@@ -29,6 +31,27 @@ const AutonomyConsole: React.FC = () => {
       setRunning(false);
     }
   }, [toast]);
+  const ping = useCallback(async () => {
+    setPinging(true);
+    try {
+      const [scanRes, orchRes] = await Promise.all([
+        supabase.functions.invoke('evai-autolearn-scan', { body: { sinceMinutes: 1 } }),
+        supabase.functions.invoke('evai-orchestrate', { body: { ping: true } }),
+      ]);
+      setVersions({
+        autolearn: (scanRes.data as any)?.version || '-',
+        orchestrate: (orchRes.data as any)?.version || '-',
+      });
+    } catch (e) {
+      console.warn('Ping functies mislukt', e);
+    } finally {
+      setPinging(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    ping();
+  }, [ping]);
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -38,6 +61,11 @@ const AutonomyConsole: React.FC = () => {
             <CardTitle>Bediening</CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="outline">Console v1.0</Badge>
+              <Badge variant="secondary">Autolearn {versions.autolearn || '-'}</Badge>
+              <Badge variant="secondary">Orchestrate {versions.orchestrate || '-'}</Badge>
+              <Button size="sm" variant="outline" onClick={ping} disabled={pinging}>
+                {pinging ? 'Pingen…' : 'Ping'}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="flex items-center gap-2">
