@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -32,11 +32,6 @@ const ConfigurationPanel: React.FC = () => {
     debugMode: false
   });
 
-  const [apiKeys, setApiKeys] = useState({
-    openai: '',
-    openai2: '',
-    vector: ''
-  });
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -52,12 +47,6 @@ const ConfigurationPanel: React.FC = () => {
       }
     }
 
-    // Load API keys
-    setApiKeys({
-      openai: localStorage.getItem('openai-api-key') || '',
-      openai2: localStorage.getItem('openai-api-key-2') || '',
-      vector: localStorage.getItem('vector-api-key') || ''
-    });
   }, []);
 
   const handleSaveSettings = async () => {
@@ -66,11 +55,6 @@ const ConfigurationPanel: React.FC = () => {
     try {
       // Save configuration settings
       localStorage.setItem('evai-configuration', JSON.stringify(settings));
-      
-      // Save API keys
-      if (apiKeys.openai) localStorage.setItem('openai-api-key', apiKeys.openai);
-      if (apiKeys.openai2) localStorage.setItem('openai-api-key-2', apiKeys.openai2);
-      if (apiKeys.vector) localStorage.setItem('vector-api-key', apiKeys.vector);
       
       toast({
         title: "Instellingen opgeslagen",
@@ -263,55 +247,6 @@ const ConfigurationPanel: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* API Keys Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle>API Sleutels</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="openai-key">OpenAI API Sleutel (Primair)</Label>
-            <Input
-              id="openai-key"
-              type="password"
-              placeholder="sk-..."
-              value={apiKeys.openai}
-              onChange={(e) => setApiKeys(prev => ({ ...prev, openai: e.target.value }))}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Voor emotiedetectie en responsegeneratie
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="openai2-key">OpenAI API Sleutel (Secundair)</Label>
-            <Input
-              id="openai2-key"
-              type="password"
-              placeholder="sk-..."
-              value={apiKeys.openai2}
-              onChange={(e) => setApiKeys(prev => ({ ...prev, openai2: e.target.value }))}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Voor geavanceerde analyse en seed generatie
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="vector-key">Vector API Sleutel</Label>
-            <Input
-              id="vector-key"
-              type="password"
-              placeholder="Optioneel voor verbeterde zoekfunctie"
-              value={apiKeys.vector}
-              onChange={(e) => setApiKeys(prev => ({ ...prev, vector: e.target.value }))}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Voor semantische vector zoekfunctie
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Action Buttons */}
       <div className="flex gap-3">
