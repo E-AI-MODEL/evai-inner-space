@@ -510,6 +510,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_recent_reflection_logs: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          created_at: string
+          trigger_type: string
+          context: Json
+          new_seeds_generated: number
+          learning_impact: number
+        }[]
+      }
       get_setting: {
         Args: { setting_key: string; default_value?: string }
         Returns: string
@@ -570,6 +581,15 @@ export type Database = {
               p_confidence_score: number
               p_processing_time_ms?: number
             }
+        Returns: string
+      }
+      log_reflection_event: {
+        Args: {
+          p_trigger_type: string
+          p_context: Json
+          p_new_seeds_generated?: number
+          p_learning_impact?: number
+        }
         Returns: string
       }
       search_unified_knowledge: {

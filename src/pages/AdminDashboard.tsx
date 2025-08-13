@@ -24,6 +24,8 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import { testSupabaseOpenAIKey } from '@/services/OpenAIKeyTester';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import NeurosymbolicVisualizer from '@/components/NeurosymbolicVisualizer';
+import SelfLearningMonitor from '@/components/admin/SelfLearningMonitor';
 
 interface HybridDecisionData {
   emotion?: string;
@@ -193,6 +195,42 @@ const AdminDashboard = () => {
     refetchInterval: 30000,
   });
 
+  const { data: neurosymbolicData } = useQuery({
+    queryKey: ['latest-decision-ns'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('decision_logs')
+        .select('hybrid_decision, symbolic_matches, confidence_score, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const hybrid: any = data.hybrid_decision || {};
+      const symbolic = (data.symbolic_matches as any[]) || [];
+      return {
+        symbolicMatches: symbolic.map((m) => ({
+          pattern: m.pattern || m.source || 'match',
+          confidence: m.confidence || 0.7,
+          source: m.source || 'symbolic'
+        })),
+        neuralAnalysis: {
+          emotion: hybrid.finalEmotion || hybrid.emotion || 'onbekend',
+          confidence: hybrid.confidence || data.confidence_score || 0.6,
+          reasoning: hybrid.reasoning || '—'
+        },
+        hybridDecision: {
+          finalEmotion: hybrid.finalEmotion || hybrid.emotion || 'onbekend',
+          confidence: hybrid.confidence || data.confidence_score || 0.6,
+          processingPath: hybrid.processingPath || 'hybrid',
+          componentsUsed: hybrid.componentsUsed || 'Unified Core',
+          processingTime: hybrid.processingTime || 0
+        }
+      } as any;
+    },
+    refetchInterval: 30000,
+  });
+
   const mapToHealth = (status: string): 'healthy' | 'warning' | 'error' => {
     switch (status) {
       case 'connected':
@@ -334,6 +372,10 @@ const AdminDashboard = () => {
                 seedsCount={analytics?.totalSeeds || 0}
                 activeSeedsCount={analytics?.activeSeeds || 0}
               />
+              <div className="grid gap-4 md:grid-cols-2">
+                <SelfLearningMonitor />
+                <NeurosymbolicVisualizer data={neurosymbolicData as any} isProcessing={false} />
+              </div>
             </TabsContent>
 
             {/* Configuratie */}

@@ -24,7 +24,7 @@ export function useSelfLearningManager() {
     result: UnifiedResponse,
     history?: ChatHistoryItem[]
   ): Promise<SelfLearningOutcome> => {
-    // Proactief, impliciet leren op basis van onzekerheid/novelty
+    // Proactief, impliciet leren op basis van onzekerheid/novelty/correcties
     try {
       const apiKey = localStorage.getItem('openai-api-key') || '';
       const vectorKey = localStorage.getItem('vector-api-key') || apiKey;
@@ -32,6 +32,7 @@ export function useSelfLearningManager() {
       // 1) Detectiecriteria
       const lowConfidence = (result.confidence ?? 0) < 0.6;
       let novelTopic = false;
+      const correction = /^\s*(nee|niet zo|ik bedoel|bedoelde|dat klopt niet|correctie|even corrigeren)/i.test(userInput);
 
       try {
         const unified = await searchUnifiedKnowledge(userInput, vectorKey || undefined, 5);
@@ -41,7 +42,7 @@ export function useSelfLearningManager() {
         console.warn('⚠️ Self-learning: unified search failed, skipping novelty check');
       }
 
-      if (!lowConfidence && !novelTopic) {
+      if (!lowConfidence && !novelTopic && !correction) {
         return { triggered: false };
       }
 
@@ -69,11 +70,47 @@ export function useSelfLearningManager() {
 
       const newSeed = await generateEnhancedSeed(seedRequest, apiKey);
       if (!newSeed) {
+        // Log poging zonder resultaat
+        try {
+          await supabase.rpc('log_reflection_event', {
+            p_trigger_type: correction ? 'correction' : (lowConfidence ? 'low_confidence' : 'novel_topic'),
+            p_context: {
+              userInput,
+              emotion: result.emotion || null,
+              confidence: result.confidence || null,
+              label: result.label,
+              historyCount: (history || []).length,
+              severity
+            }
+          });
+        } catch (e) {
+          console.warn('⚠️ Self-learning: log_reflection_event (no seed) failed');
+        }
         return { triggered: false };
       }
 
       // 4) Opslaan als AdvancedSeed in emotion_seeds
       await addAdvancedSeed(newSeed);
+
+      // Log succesvolle zelfleer-actie
+      try {
+        await supabase.rpc('log_reflection_event', {
+          p_trigger_type: correction ? 'correction' : (lowConfidence ? 'low_confidence' : 'novel_topic'),
+          p_context: {
+            userInput,
+            emotion: result.emotion || null,
+            confidence: result.confidence || null,
+            label: result.label,
+            historyCount: (history || []).length,
+            severity,
+            newSeed: { id: newSeed.id, emotion: newSeed.emotion, label: newSeed.label }
+          },
+          p_new_seeds_generated: 1,
+          p_learning_impact: Math.max(0.05, (result.confidence ?? 0.5) * 0.1)
+        });
+      } catch (e) {
+        console.warn('⚠️ Self-learning: log_reflection_event failed');
+      }
 
       // 5) Embedden voor vector search en consolideren naar unified_knowledge
       try {

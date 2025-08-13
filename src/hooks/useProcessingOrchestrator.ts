@@ -147,11 +147,29 @@ export function useProcessingOrchestrator() {
             `📊 Vertrouwen: ${Math.round(confidence * 100)}%`
           ];
 
-          const processingTime = Date.now() - startTime;
-          console.log(`✅ Fallback completed in ${processingTime}ms`);
+      const processingTime = Date.now() - startTime;
+      console.log(`✅ Fallback completed in ${processingTime}ms`);
 
-          // Update success stats (fallback)
-          setStats(prev => ({
+      // Bouw een korte grounding op basis van gesprekshistorie zodat het menselijker voelt
+      const groundingNote = (() => {
+        try {
+          const userMsgs = (conversationHistory || [])
+            .filter((h: any) => h.role === 'user')
+            .map((h: any) => String(h.content))
+            .filter(Boolean);
+          if (userMsgs.length < 2) return '';
+          const first = userMsgs[0].slice(0, 100);
+          const prev = userMsgs[userMsgs.length - 2]?.slice(0, 100);
+          if (!prev) return `Eerder noemde je: "${first}". Als dat nog speelt, neem ik dat mee.`;
+          if (first === prev) return `Ik houd rekening met wat je eerder aangaf: "${first}".`;
+          return `Eerder noemde je: "${first}" en later ook: "${prev}". Ik sluit daar graag op aan.`;
+        } catch {
+          return '';
+        }
+      })();
+
+      // Update success stats (fallback)
+      setStats(prev => ({
             totalRequests: prev.totalRequests + 1,
             averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
             successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
@@ -161,7 +179,7 @@ export function useProcessingOrchestrator() {
           }));
 
           return {
-            content: responseText,
+            content: responseText + (groundingNote ? `\n\n${groundingNote}` : ''),
             emotion,
             confidence,
             label,
@@ -189,6 +207,24 @@ export function useProcessingOrchestrator() {
       const processingTime = Date.now() - startTime;
       console.log(`✅ Processing completed in ${processingTime}ms`);
 
+      // Bouw een korte grounding op basis van gesprekshistorie zodat het menselijker voelt
+      const groundingNote = (() => {
+        try {
+          const userMsgs = (conversationHistory || [])
+            .filter((h: any) => h.role === 'user')
+            .map((h: any) => String(h.content))
+            .filter(Boolean);
+          if (userMsgs.length < 2) return '';
+          const first = userMsgs[0].slice(0, 100);
+          const prev = userMsgs[userMsgs.length - 2]?.slice(0, 100);
+          if (!prev) return `Eerder noemde je: "${first}". Als dat nog speelt, neem ik dat mee.`;
+          if (first === prev) return `Ik houd rekening met wat je eerder aangaf: "${first}".`;
+          return `Eerder noemde je: "${first}" en later ook: "${prev}". Ik sluit daar graag op aan.`;
+        } catch {
+          return '';
+        }
+      })();
+
       // Update success stats
       setStats(prev => ({
         totalRequests: prev.totalRequests + 1,
@@ -200,7 +236,7 @@ export function useProcessingOrchestrator() {
       }));
 
       return {
-        content: decisionResult.response,
+        content: decisionResult.response + (groundingNote ? `\n\n${groundingNote}` : ''),
         emotion: decisionResult.emotion,
         confidence: decisionResult.confidence,
         label: decisionResult.label,
