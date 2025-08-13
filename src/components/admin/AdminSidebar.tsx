@@ -12,18 +12,15 @@ import {
 } from '@/components/ui/sidebar';
 
 interface AdminSidebarProps {
-  active: 'profile' | 'overview' | 'seeds' | 'analytics' | 'autonomy' | 'settings';
+  active: 'autonomy' | 'seeds' | 'settings';
   onChange: (value: AdminSidebarProps['active']) => void;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ active, onChange }) => {
   const items = [
     { key: 'autonomy', label: 'Autonomous', icon: Zap },
-    { key: 'overview', label: 'Overzicht', icon: BarChart3 },
-    { key: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { key: 'seeds', label: 'Seeds', icon: Database },
-    { key: 'profile', label: 'Profiel', icon: User },
-    { key: 'settings', label: 'Configuratie', icon: Settings },
+    { key: 'seeds', label: 'Knowledge', icon: Database },
+    { key: 'settings', label: 'Settings', icon: Settings },
   ] as const;
 
   return (
