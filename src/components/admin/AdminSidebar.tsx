@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, BarChart3, Database, Settings } from 'lucide-react';
+import { User, BarChart3, Database, Settings, Zap } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/sidebar';
 
 interface AdminSidebarProps {
-  active: 'profile' | 'overview' | 'seeds' | 'analytics' | 'settings';
+  active: 'profile' | 'overview' | 'seeds' | 'analytics' | 'autonomy' | 'settings';
   onChange: (value: AdminSidebarProps['active']) => void;
 }
 
@@ -22,6 +22,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ active, onChange }) => {
     { key: 'overview', label: 'Overzicht', icon: BarChart3 },
     { key: 'seeds', label: 'Seeds', icon: Database },
     { key: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { key: 'autonomy', label: 'Autonomy', icon: Zap },
     { key: 'settings', label: 'Configuratie', icon: Settings },
   ] as const;
 

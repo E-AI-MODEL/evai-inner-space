@@ -1,4 +1,3 @@
-
 project_id = "ngcyfbstajfcfdhlelbz"
 
 [functions.test-openai-key]
@@ -11,4 +10,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.openai-safety]
+verify_jwt = false
+
+[functions.evai-autolearn-scan]
 verify_jwt = false

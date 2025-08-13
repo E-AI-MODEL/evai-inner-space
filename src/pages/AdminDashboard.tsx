@@ -27,6 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import NeurosymbolicVisualizer from '@/components/NeurosymbolicVisualizer';
 import SelfLearningMonitor from '@/components/admin/SelfLearningMonitor';
 import { useSystemConnectivity } from '@/hooks/useSystemConnectivity';
+import AutonomyConsole from '@/components/admin/AutonomyConsole';
 
 interface HybridDecisionData {
   emotion?: string;
@@ -35,11 +36,12 @@ interface HybridDecisionData {
 
 const AdminDashboard = () => {
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
-  const [activeTab, setActiveTab] = useState<'profile' | 'overview' | 'seeds' | 'analytics' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'profile' | 'overview' | 'seeds' | 'analytics' | 'autonomy' | 'settings'>('overview');
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const { status: connectivity } = useSystemConnectivity();
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
+  const { status: connectivity, refresh: refreshConnectivity, isChecking } = useSystemConnectivity();
 
   const { data: seeds = [] } = useSeeds();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
@@ -257,6 +259,12 @@ const AdminDashboard = () => {
               Supabase {supabaseStatus === 'connected' ? 'Verbonden' : supabaseStatus === 'connecting' ? 'Verbinden...' : 'Offline'}
             </span>
           </Badge>
+          <Button variant="outline" size="sm" onClick={() => { refreshConnectivity(); setLastRefreshedAt(new Date()); }}>
+            {isChecking ? 'Verversen…' : 'Status verversen'}
+          </Button>
+          {lastRefreshedAt && (
+            <span className="text-xs text-muted-foreground">Laatst: {lastRefreshedAt.toLocaleTimeString('nl-NL')}</span>
+          )}
           <Button variant="outline" size="sm" onClick={() => navigate('/')}>Terug naar chat</Button>
         </div>
       </header>
@@ -377,6 +385,11 @@ const AdminDashboard = () => {
                 <SelfLearningMonitor />
                 <NeurosymbolicVisualizer data={neurosymbolicData as any} isProcessing={false} />
               </div>
+            </TabsContent>
+
+            {/* Autonomy Console */}
+            <TabsContent value="autonomy" className="space-y-4">
+              <AutonomyConsole />
             </TabsContent>
 
             {/* Configuratie */}

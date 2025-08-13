@@ -510,6 +510,35 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_recent_api_collaboration_logs: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          created_at: string
+          workflow_type: string
+          api1_used: boolean
+          api2_used: boolean
+          vector_api_used: boolean
+          seed_generated: boolean
+          secondary_analysis: boolean
+          processing_time_ms: number
+          success: boolean
+          error_details: Json
+        }[]
+      }
+      get_recent_decision_logs: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          created_at: string
+          user_input: string
+          final_response: string
+          confidence_score: number
+          processing_time_ms: number
+          api_collaboration: Json
+          rubrics_analysis: Json
+        }[]
+      }
       get_recent_reflection_logs: {
         Args: { p_limit?: number }
         Returns: {
