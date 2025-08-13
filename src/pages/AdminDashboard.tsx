@@ -7,7 +7,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AutonomyConsole from '@/components/admin/AutonomyConsole';
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
-import ConfigurationPanel from '@/components/ConfigurationPanel';
+import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
 import { useNavigate } from 'react-router-dom';
 import { useSystemConnectivity } from '@/hooks/useSystemConnectivity';
 import { getStatusIcon as getStatusIconGeneric, getStatusColor as getStatusColorGeneric } from '@/utils/statusUtils';
