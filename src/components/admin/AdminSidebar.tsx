@@ -18,11 +18,11 @@ interface AdminSidebarProps {
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ active, onChange }) => {
   const items = [
-    { key: 'profile', label: 'Profiel', icon: User },
+    { key: 'autonomy', label: 'Autonomous', icon: Zap },
     { key: 'overview', label: 'Overzicht', icon: BarChart3 },
-    { key: 'seeds', label: 'Seeds', icon: Database },
     { key: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { key: 'autonomy', label: 'Autonomy', icon: Zap },
+    { key: 'seeds', label: 'Seeds', icon: Database },
+    { key: 'profile', label: 'Profiel', icon: User },
     { key: 'settings', label: 'Configuratie', icon: Settings },
   ] as const;
 

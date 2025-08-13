@@ -36,7 +36,7 @@ interface HybridDecisionData {
 
 const AdminDashboard = () => {
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
-  const [activeTab, setActiveTab] = useState<'profile' | 'overview' | 'seeds' | 'analytics' | 'autonomy' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'profile' | 'overview' | 'seeds' | 'analytics' | 'autonomy' | 'settings'>('autonomy');
   const { toast } = useToast();
   const navigate = useNavigate();
 
