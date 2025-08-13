@@ -25,6 +25,18 @@ import {
   Target
 } from 'lucide-react';
 
+interface AutonomyCockpitProps {
+  systemMetrics?: {
+    successRate: number;
+    avgResponseTime: number;
+    avgConfidence: number;
+    totalDecisions: number;
+    activeSeedCount: number;
+    systemHealth: string;
+  };
+  connectionStatus?: any;
+}
+
 interface CockpitMetrics {
   autonomousMode: boolean;
   processingQueue: number;
@@ -39,19 +51,19 @@ interface CockpitMetrics {
   };
 }
 
-const AutonomyCockpit: React.FC = () => {
+const AutonomyCockpit: React.FC<AutonomyCockpitProps> = ({ systemMetrics, connectionStatus }) => {
   const { toast } = useToast();
   const [metrics, setMetrics] = useState<CockpitMetrics>({
     autonomousMode: true,
     processingQueue: 0,
-    successRate: 95,
-    averageResponseTime: 1250,
+    successRate: systemMetrics?.successRate || 95,
+    averageResponseTime: systemMetrics?.avgResponseTime || 1250,
     lastActivity: new Date().toISOString(),
-    systemHealth: 'excellent',
+    systemHealth: (systemMetrics?.systemHealth as any) || 'excellent',
     agentStatus: {
-      autoLearn: 'active',
-      orchestrator: 'active',
-      feedbackLoop: 'active'
+      autoLearn: connectionStatus?.supabase === 'connected' ? 'active' : 'error',
+      orchestrator: connectionStatus?.openaiApi1 === 'configured' ? 'active' : 'error',
+      feedbackLoop: connectionStatus?.vectorApi === 'configured' ? 'active' : 'idle'
     }
   });
   const [isProcessing, setIsProcessing] = useState(false);
