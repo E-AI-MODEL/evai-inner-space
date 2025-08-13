@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AdvancedSeed } from '../types/seed';
 import { SeedGenerationRequest, OpenAISeedGeneratorConfig } from '../types/openAISeedGenerator';
 import { OPENAI_MODEL } from '../openaiConfig';
+import { supabase } from '@/integrations/supabase/client';
 
 const DEFAULT_CONFIG: OpenAISeedGeneratorConfig = {
   model: OPENAI_MODEL,
@@ -169,11 +170,6 @@ BELANGRIJKE VEREISTEN:
     apiKey: string,
     config: Partial<OpenAISeedGeneratorConfig> = {}
   ): Promise<AdvancedSeed | null> => {
-    if (!apiKey?.trim()) {
-      console.log('🔴 OpenAI API key not available for enhanced seed generation');
-      return null;
-    }
-
     setIsGenerating(true);
     console.log('🌱 Starting enhanced seed generation...', request);
 
@@ -190,20 +186,41 @@ BELANGRIJKE VEREISTEN:
 
     try {
       const prompt = buildEnhancedPrompt(request, targetType, targetLabel);
-      const response = await callOpenAI(prompt, apiKey, finalConfig);
-      
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+
+      const { data, error } = await supabase.functions.invoke('openai-chat', {
+        body: {
+          model: finalConfig.model,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Je bent een expert therapeut gespecialiseerd in het genereren van diverse, therapeutisch verantwoorde emotionele ondersteuning. Genereer alleen geldige JSON responses met gevarieerde seed types.'
+            },
+            { role: 'user', content: prompt }
+          ],
+          temperature: finalConfig.temperature,
+          max_tokens: finalConfig.maxTokens,
+          response_format: { type: 'json_object' },
+          use_secondary: false
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'OpenAI edge function error');
+      }
+      const payload: any = data;
+      if (!payload?.ok) {
+        const status = payload?.status;
+        const err = payload?.error || 'Unknown error';
+        throw new Error(`OpenAI edge error: ${err}${status ? ` (status ${status})` : ''}`);
       }
 
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content;
-      
+      const content: string = payload.content as string;
       if (!content) {
-        throw new Error('No content received from OpenAI API');
+        throw new Error('No content received from Edge Function');
       }
 
-      console.log('🟢 Enhanced seed generation response:', content);
+      console.log('🟢 Enhanced seed generation response (edge):', content);
       return parseEnhancedSeed(content, request, targetType, targetLabel);
 
     } catch (error) {

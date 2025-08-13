@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import ApiKeyInput from '../shared/ApiKeyInput';
 import GoogleApiKeyConfiguration from './GoogleApiKeyConfiguration';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,7 +63,7 @@ const ApiKeyConfiguration: React.FC<ApiKeyConfigurationProps> = ({
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Production Mode:</strong> Only real API keys are accepted. Mock, test, or demo keys are automatically rejected.
+          OpenAI-sleutels worden server-side beheerd via Supabase Edge Functions. Geen client-side invoer nodig.
         </AlertDescription>
       </Alert>
 
@@ -85,69 +84,8 @@ const ApiKeyConfiguration: React.FC<ApiKeyConfigurationProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <ApiKeyInput
-                      label="OpenAI API Key (Primary) *"
-                      placeholder="sk-... (Required for core functionality)"
-                      storageKey="openai-api-key"
-                      value={apiKey}
-                      onChange={onApiKeyChange}
-                      onSave={onApiKeySave}
-                    />
-                    <Badge variant={primaryKeyStatus.color as any}>
-                      {primaryKeyStatus.message}
-                    </Badge>
-                  </div>
-                  {primaryKeyStatus.status === 'invalid' && (
-                    <p className="text-sm text-red-600">
-                      This API key is not valid for production use. Please provide a real OpenAI API key.
-                    </p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <ApiKeyInput
-                      label="OpenAI API Key (Secondary)"
-                      placeholder="sk-... (Optional backup key)"
-                      storageKey="openai-api-key-2"
-                      value={openAiKey2}
-                      onChange={setOpenAiKey2}
-                      onSave={handleOpenAiKey2Save}
-                    />
-                    <Badge variant={secondaryKeyStatus.color as any}>
-                      {secondaryKeyStatus.message}
-                    </Badge>
-                  </div>
-                  {secondaryKeyStatus.status === 'invalid' && openAiKey2 && (
-                    <p className="text-sm text-red-600">
-                      This secondary API key is not valid for production use.
-                    </p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <ApiKeyInput
-                      label="Vector API Key"
-                      placeholder="sk-... (Optional for enhanced embeddings)"
-                      storageKey="vector-api-key"
-                      value={vectorApiKey}
-                      onChange={setVectorApiKey}
-                      onSave={handleVectorApiKeySave}
-                    />
-                    <Badge variant={vectorKeyStatus.color as any}>
-                      {vectorKeyStatus.message}
-                    </Badge>
-                  </div>
-                  {vectorKeyStatus.status === 'invalid' && vectorApiKey && (
-                    <p className="text-sm text-red-600">
-                      This vector API key is not valid for production use.
-                    </p>
-                  )}
-                </div>
+              <div className="p-3 rounded border text-sm">
+                OpenAI- en Vector-API-sleutels zijn verwijderd uit deze UI; de app gebruikt uitsluitend server-side sleutels via Edge Functions.
               </div>
 
               <GoogleApiKeyConfiguration onKeyUpdate={onGoogleApiKeyUpdate} />
