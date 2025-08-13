@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Database, TrendingUp, Users, Zap } from 'lucide-react';
 
 import { useSeeds } from '../hooks/useSeeds';
-import { testSupabaseConnection, supabase } from '../integrations/supabase/client';
+import { supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { ANONYMOUS_SUPER_USER } from '../hooks/useAuth';
 import AdvancedSeedManager from '../components/admin/AdvancedSeedManager';
@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import NeurosymbolicVisualizer from '@/components/NeurosymbolicVisualizer';
 import SelfLearningMonitor from '@/components/admin/SelfLearningMonitor';
+import { useSystemConnectivity } from '@/hooks/useSystemConnectivity';
 
 interface HybridDecisionData {
   emotion?: string;
@@ -38,6 +39,8 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const { status: connectivity } = useSystemConnectivity();
+
   const { data: seeds = [] } = useSeeds();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     supabase: 'checking',
@@ -48,32 +51,29 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const result = await testSupabaseConnection();
-        setSupabaseStatus(result.success ? 'connected' : 'disconnected');
-      } catch (error) {
-        setSupabaseStatus('disconnected');
-      }
-    };
-
-    checkConnection();
-  }, []);
+    setSupabaseStatus(
+      connectivity.supabase === 'connected'
+        ? 'connected'
+        : connectivity.supabase === 'checking'
+        ? 'connecting'
+        : 'disconnected'
+    );
+  }, [connectivity.supabase]);
 
   useEffect(() => {
     setConnectionStatus({
       supabase:
-        supabaseStatus === 'connected'
+        connectivity.supabase === 'connected'
           ? 'connected'
-          : supabaseStatus === 'connecting'
+          : connectivity.supabase === 'checking'
           ? 'checking'
           : 'error',
-      openaiApi1: localStorage.getItem('openai-api-key') ? 'configured' : 'missing',
-      openaiApi2: localStorage.getItem('openai-api-key-2') ? 'configured' : 'missing',
-      vectorApi: localStorage.getItem('vector-api-key') ? 'configured' : 'missing',
+      openaiApi1: connectivity.openaiApi1,
+      openaiApi2: connectivity.openaiApi2,
+      vectorApi: connectivity.vectorApi,
       seeds: seeds.length > 0 ? 'loaded' : 'error',
     });
-  }, [supabaseStatus, seeds]);
+  }, [connectivity, seeds]);
 
   // Test de in Supabase opgeslagen OPENAI_API_KEY via edge function en toon compacte melding
   useEffect(() => {
@@ -353,6 +353,7 @@ const AdminDashboard = () => {
                 openAiActive={connectionStatus.openaiApi1 === 'configured'}
                 openAi2Active={connectionStatus.openaiApi2 === 'configured'}
                 vectorActive={connectionStatus.vectorApi === 'configured'}
+                databaseActive={connectionStatus.supabase === 'connected'}
               />
             </TabsContent>
 

@@ -2,11 +2,8 @@
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { useSeeds } from './useSeeds';
-import { useOpenAI, EmotionDetection } from './useOpenAI';
-import { useOpenAISecondary } from './useOpenAISecondary';
-// Removed useSeedEngine import as it was deleted
-import { AdvancedSeed } from '../types/seed';
 import { HealthCheckResult } from '../types/healthCheck';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useHealthCheck = () => {
   const [isRunning, setIsRunning] = useState(false);
@@ -14,9 +11,7 @@ export const useHealthCheck = () => {
   const [results, setResults] = useState<HealthCheckResult[]>([]);
   
   const { data: seeds, refetch: refetchSeeds } = useSeeds();
-  const { detectEmotion } = useOpenAI();
-  const { createStrategicBriefing } = useOpenAISecondary();
-  // const { checkInput } = useSeedEngine(); // Removed as useSeedEngine was deleted
+  // Using server-side checks via Edge Functions
 
   const runHealthCheck = async () => {
     setIsRunning(true);
@@ -56,67 +51,57 @@ export const useHealthCheck = () => {
       }
       updateProgress();
 
-      // Test 2: OpenAI API 1
-      console.log('🧪 Test 2: OpenAI API 1');
-      const apiKey1 = localStorage.getItem('openai-api-key');
-      if (apiKey1?.trim()) {
-        try {
-          const testResult = await detectEmotion('Ik voel me een beetje onzeker', apiKey1);
-          tests.push({
-            component: 'OpenAI API 1',
-            status: 'success',
-            message: `Werkend (${testResult.emotion})`,
-            details: `Confidence: ${Math.round(testResult.confidence * 100)}%`
-          });
-        } catch (error) {
-          tests.push({
-            component: 'OpenAI API 1',
-            status: 'error',
-            message: 'API call failed',
-            details: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
-      } else {
+      // Test 2: OpenAI API 1 (server-side)
+      console.log('🧪 Test 2: OpenAI API 1 (edge)');
+      try {
+        const { data, error } = await supabase.functions.invoke('test-openai-key');
+        if (error) throw error;
+        const ok = (data as any)?.ok === true;
         tests.push({
           component: 'OpenAI API 1',
-          status: 'warning',
-          message: 'API key niet geconfigureerd',
-          details: 'Stel de API key in via instellingen'
+          status: ok ? 'success' : 'error',
+          message: ok ? 'Key actief (server)' : 'Key ontbreekt of ongeldig',
+          details: ok ? `Model: ${(data as any)?.model || 'gpt-4o-mini'}` : undefined
+        });
+      } catch (error) {
+        tests.push({
+          component: 'OpenAI API 1',
+          status: 'error',
+          message: 'Server-side check failed',
+          details: error instanceof Error ? error.message : 'Unknown error'
         });
       }
       updateProgress();
 
-      // Test 3: OpenAI API 2
-      console.log('🧪 Test 3: OpenAI API 2');
-      const apiKey2 = localStorage.getItem('openai-api-key-2');
-      if (apiKey2?.trim()) {
-        try {
-          const briefing = await createStrategicBriefing(
-            'Ik voel me verdrietig',
-            [],
-            null,
-            apiKey2
-          );
-          tests.push({
-            component: 'OpenAI API 2',
-            status: briefing ? 'success' : 'warning',
-            message: briefing ? 'Strategische briefing werkend' : 'Geen briefing',
-            details: briefing ? briefing.goal : undefined
-          });
-        } catch (error) {
-          tests.push({
-            component: 'OpenAI API 2',
-            status: 'error',
-            message: 'API call failed',
-            details: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
-      } else {
+      // Test 3: OpenAI API 2 (server-side via secondary key)
+      console.log('🧪 Test 3: OpenAI API 2 (edge)');
+      try {
+        const { data, error } = await supabase.functions.invoke('openai-chat', {
+          body: {
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: 'Validator: reply OK' },
+              { role: 'user', content: 'OK' },
+            ],
+            max_tokens: 3,
+            temperature: 0,
+            use_secondary: true,
+          },
+        });
+        if (error) throw error;
+        const ok = Boolean((data as any)?.choices?.[0]?.message?.content);
         tests.push({
           component: 'OpenAI API 2',
-          status: 'warning',
-          message: 'API key niet geconfigureerd',
-          details: 'Stel de tweede API key in via instellingen'
+          status: ok ? 'success' : 'warning',
+          message: ok ? 'Strategische briefing mogelijk' : 'Geen antwoord',
+          details: ok ? 'Secondary key actief' : undefined
+        });
+      } catch (error) {
+        tests.push({
+          component: 'OpenAI API 2',
+          status: 'error',
+          message: 'Server-side check failed',
+          details: error instanceof Error ? error.message : 'Unknown error'
         });
       }
       updateProgress();

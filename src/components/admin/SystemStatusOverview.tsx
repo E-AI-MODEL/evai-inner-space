@@ -3,18 +3,20 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Database } from 'lucide-react';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+
 
 interface SystemStatusOverviewProps {
   openAiActive: boolean;
   openAi2Active: boolean;
   vectorActive: boolean;
+  databaseActive: boolean;
 }
 
 const SystemStatusOverview: React.FC<SystemStatusOverviewProps> = ({
   openAiActive,
   openAi2Active,
   vectorActive,
+  databaseActive,
 }) => {
   const allActive = openAiActive && openAi2Active && vectorActive;
 
@@ -49,8 +51,8 @@ const SystemStatusOverview: React.FC<SystemStatusOverviewProps> = ({
 
         <div className="flex items-center justify-between">
           <span className="text-xs sm:text-sm truncate mr-2">Database</span>
-          <Badge variant={supabaseUrl ? "default" : "secondary"} className="text-xs flex-shrink-0">
-            {supabaseUrl ? "Connected" : "Disconnected"}
+          <Badge variant={databaseActive ? "default" : "secondary"} className="text-xs flex-shrink-0">
+            {databaseActive ? "Connected" : "Disconnected"}
           </Badge>
         </div>
       </div>
