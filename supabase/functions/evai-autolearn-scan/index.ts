@@ -46,30 +46,38 @@ serve(async (req) => {
 
     const lowConfidence = (decisions || []).filter(d => (d.confidence_score ?? 1) < 0.6);
 
-    // Try generate a compact seed for learning if low confidence detected
+    // Generate multiple seeds from low confidence decisions
     let seedsGenerated = 0;
     try {
       if (lowConfidence.length > 0) {
-        const first = lowConfidence[0];
-        const excerpt = (first.user_input || '').slice(0, 180);
-        const suggestion = `Ik hoor onzekerheid en twijfel. Klopt dat? Kun je iets meer vertellen over wat dit bij je oproept? (${excerpt})`;
-
-        const { error: seedErr } = await supabase.from('emotion_seeds').insert({
+        const seedsToGenerate = lowConfidence.slice(0, 5).map(decision => ({
           emotion: 'onzeker',
           label: 'Reflectievraag',
-          response: { nl: suggestion },
+          response: { 
+            nl: `Ik merk dat je het moeilijk vindt. Wat maakt dit zo lastig voor je? (Context: ${(decision.user_input || '').slice(0, 100)})` 
+          },
           meta: {
             source: 'autolearn-scan',
             reason: 'low_confidence',
-            confidence: 0.7,
-            triggers: ['onzeker', 'twijfel'],
-            sampled_input: excerpt
+            confidence: decision.confidence_score || 0.5,
+            triggers: ['onzeker', 'twijfel', 'moeilijk'],
+            sampled_input: (decision.user_input || '').slice(0, 180),
+            original_decision_id: decision.id
           },
           active: true
-        });
+        }));
 
-        if (!seedErr) seedsGenerated = 1;
-        else console.warn('seed insert error', seedErr);
+        const { data: inserted, error: seedErr } = await supabase
+          .from('emotion_seeds')
+          .insert(seedsToGenerate)
+          .select();
+
+        if (!seedErr && inserted) {
+          seedsGenerated = inserted.length;
+          console.log(`✅ Generated ${seedsGenerated} learning seeds from low-confidence decisions`);
+        } else {
+          console.warn('seed insert error', seedErr);
+        }
       }
     } catch (e) {
       console.warn('seed generation skipped due to error', e);
@@ -93,7 +101,25 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ ok: true, scanned: decisions?.length || 0, lowConfidence: lowConfidence.length, seedsGenerated, version: '1.1.0' }),
+      JSON.stringify({ 
+        ok: true, 
+        scanned: decisions?.length || 0, 
+        lowConfidence: lowConfidence.length, 
+        seedsGenerated,
+        version: '2.0.0',
+        diagnostics: {
+          confidenceDistribution: {
+            veryLow: decisions?.filter(d => (d.confidence_score ?? 1) < 0.4).length || 0,
+            low: lowConfidence.length,
+            medium: decisions?.filter(d => (d.confidence_score ?? 1) >= 0.6 && (d.confidence_score ?? 1) < 0.8).length || 0,
+            high: decisions?.filter(d => (d.confidence_score ?? 1) >= 0.8).length || 0
+          },
+          timeRange: {
+            from: sinceIso,
+            to: new Date().toISOString()
+          }
+        }
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
