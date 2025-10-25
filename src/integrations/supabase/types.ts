@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -70,6 +70,59 @@ export type Database = {
           workflow_type?: string
         }
         Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          emotion_seed_id: string | null
+          feedback: Json | null
+          from_role: string
+          id: string
+          label: string | null
+          message_id: string
+          meta: Json | null
+          session_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          emotion_seed_id?: string | null
+          feedback?: Json | null
+          from_role: string
+          id?: string
+          label?: string | null
+          message_id: string
+          meta?: Json | null
+          session_id: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          emotion_seed_id?: string | null
+          feedback?: Json | null
+          from_role?: string
+          id?: string
+          label?: string | null
+          message_id?: string
+          meta?: Json | null
+          session_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_emotion_seed_id_fkey"
+            columns: ["emotion_seed_id"]
+            isOneToOne: false
+            referencedRelation: "emotion_seeds"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       decision_logs: {
         Row: {
@@ -398,7 +451,7 @@ export type Database = {
           last_used: string | null
           metadata: Json | null
           response_text: string | null
-          search_vector: unknown | null
+          search_vector: unknown
           triggers: string[] | null
           updated_at: string | null
           usage_count: number | null
@@ -415,7 +468,7 @@ export type Database = {
           last_used?: string | null
           metadata?: Json | null
           response_text?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           triggers?: string[] | null
           updated_at?: string | null
           usage_count?: number | null
@@ -432,7 +485,7 @@ export type Database = {
           last_used?: string | null
           metadata?: Json | null
           response_text?: string | null
-          search_vector?: unknown | null
+          search_vector?: unknown
           triggers?: string[] | null
           updated_at?: string | null
           usage_count?: number | null
@@ -482,186 +535,213 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      consolidate_knowledge: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      find_similar_embeddings: {
-        Args:
-          | {
+      consolidate_knowledge: { Args: never; Returns: undefined }
+      find_similar_embeddings:
+        | {
+            Args: {
+              max_results?: number
               query_embedding: string
               similarity_threshold?: number
-              max_results?: number
             }
-          | {
+            Returns: {
+              content_id: string
+              content_text: string
+              content_type: string
+              metadata: Json
+              similarity_score: number
+            }[]
+          }
+        | {
+            Args: {
+              max_results?: number
               query_embedding: string
               similarity_threshold?: number
-              max_results?: number
             }
-        Returns: {
-          content_id: string
-          content_type: string
-          content_text: string
-          similarity_score: number
-          metadata: Json
-        }[]
-      }
-      get_google_api_key: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+            Returns: {
+              content_id: string
+              content_text: string
+              content_type: string
+              metadata: Json
+              similarity_score: number
+            }[]
+          }
+      get_google_api_key: { Args: never; Returns: string }
       get_recent_api_collaboration_logs: {
         Args: { p_limit?: number }
         Returns: {
-          id: string
-          created_at: string
-          workflow_type: string
           api1_used: boolean
           api2_used: boolean
-          vector_api_used: boolean
-          seed_generated: boolean
-          secondary_analysis: boolean
-          processing_time_ms: number
-          success: boolean
+          created_at: string
           error_details: Json
+          id: string
+          processing_time_ms: number
+          secondary_analysis: boolean
+          seed_generated: boolean
+          success: boolean
+          vector_api_used: boolean
+          workflow_type: string
         }[]
       }
       get_recent_decision_logs: {
         Args: { p_limit?: number }
         Returns: {
-          id: string
-          created_at: string
-          user_input: string
-          final_response: string
-          confidence_score: number
-          processing_time_ms: number
           api_collaboration: Json
+          confidence_score: number
+          created_at: string
+          final_response: string
+          id: string
+          processing_time_ms: number
           rubrics_analysis: Json
+          user_input: string
         }[]
       }
       get_recent_reflection_logs: {
         Args: { p_limit?: number }
         Returns: {
-          id: string
-          created_at: string
-          trigger_type: string
           context: Json
-          new_seeds_generated: number
+          created_at: string
+          id: string
           learning_impact: number
+          new_seeds_generated: number
+          trigger_type: string
         }[]
       }
       get_setting: {
-        Args: { setting_key: string; default_value?: string }
+        Args: { default_value?: string; setting_key: string }
         Returns: string
       }
       get_single_user_setting: {
-        Args: { setting_key: string; default_value?: string }
+        Args: { default_value?: string; setting_key: string }
         Returns: string
       }
       get_user_setting: {
-        Args: { setting_key: string; default_value?: string }
+        Args: { default_value?: string; setting_key: string }
         Returns: string
       }
-      increment_seed_usage: {
-        Args: Record<PropertyKey, never> | { seed_id: string }
-        Returns: undefined
-      }
-      log_evai_workflow: {
-        Args:
-          | {
-              p_conversation_id: string
-              p_workflow_type: string
+      increment_seed_usage:
+        | { Args: { seed_id: string }; Returns: undefined }
+        | { Args: never; Returns: undefined }
+      log_evai_workflow:
+        | {
+            Args: {
               p_api_collaboration: Json
-              p_rubrics_data?: Json
-              p_processing_time?: number
-              p_success?: boolean
+              p_conversation_id: string
               p_error_details?: Json
-            }
-          | {
+              p_processing_time?: number
+              p_rubrics_data?: Json
+              p_success?: boolean
               p_user_id: string
-              p_conversation_id: string
               p_workflow_type: string
-              p_api_collaboration: Json
-              p_rubrics_data?: Json
-              p_processing_time?: number
-              p_success?: boolean
-              p_error_details?: Json
             }
-        Returns: string
-      }
-      log_hybrid_decision: {
-        Args:
-          | {
+            Returns: string
+          }
+        | {
+            Args: {
+              p_api_collaboration: Json
+              p_conversation_id: string
+              p_error_details?: Json
+              p_processing_time?: number
+              p_rubrics_data?: Json
+              p_success?: boolean
+              p_workflow_type: string
+            }
+            Returns: string
+          }
+      log_hybrid_decision:
+        | {
+            Args: {
+              p_confidence_score: number
+              p_final_response: string
+              p_hybrid_decision: Json
+              p_neural_similarities: Json
+              p_processing_time_ms?: number
+              p_symbolic_matches: Json
               p_user_id: string
               p_user_input: string
-              p_symbolic_matches: Json
-              p_neural_similarities: Json
-              p_hybrid_decision: Json
-              p_final_response: string
-              p_confidence_score: number
-              p_processing_time_ms?: number
             }
-          | {
+            Returns: string
+          }
+        | {
+            Args: {
+              p_confidence_score: number
+              p_final_response: string
+              p_hybrid_decision: Json
+              p_neural_similarities: Json
+              p_processing_time_ms?: number
+              p_symbolic_matches: Json
               p_user_input: string
-              p_symbolic_matches: Json
-              p_neural_similarities: Json
-              p_hybrid_decision: Json
-              p_final_response: string
-              p_confidence_score: number
-              p_processing_time_ms?: number
             }
-        Returns: string
-      }
+            Returns: string
+          }
       log_reflection_event: {
         Args: {
-          p_trigger_type: string
           p_context: Json
-          p_new_seeds_generated?: number
           p_learning_impact?: number
+          p_new_seeds_generated?: number
+          p_trigger_type: string
         }
         Returns: string
       }
-      search_unified_knowledge: {
-        Args:
-          | {
-              query_text: string
-              query_embedding: string
-              similarity_threshold?: number
+      search_unified_knowledge:
+        | {
+            Args: {
               max_results?: number
-            }
-          | {
-              query_text: string
               query_embedding: string
+              query_text: string
               similarity_threshold?: number
-              max_results?: number
-            }
-          | {
-              query_text: string
-              query_embedding: string
               user_uuid: string
-              similarity_threshold?: number
-              max_results?: number
             }
-        Returns: {
-          id: string
-          content_type: string
-          emotion: string
-          response_text: string
-          confidence_score: number
-          similarity_score: number
-          metadata: Json
-        }[]
-      }
-      update_google_api_key: {
-        Args: { api_key: string }
-        Returns: undefined
-      }
-      update_setting: {
-        Args:
-          | Record<PropertyKey, never>
-          | { setting_key: string; setting_value: string }
-        Returns: undefined
-      }
+            Returns: {
+              confidence_score: number
+              content_type: string
+              emotion: string
+              id: string
+              metadata: Json
+              response_text: string
+              similarity_score: number
+            }[]
+          }
+        | {
+            Args: {
+              max_results?: number
+              query_embedding: string
+              query_text: string
+              similarity_threshold?: number
+            }
+            Returns: {
+              confidence_score: number
+              content_type: string
+              emotion: string
+              id: string
+              metadata: Json
+              response_text: string
+              similarity_score: number
+            }[]
+          }
+        | {
+            Args: {
+              max_results?: number
+              query_embedding: string
+              query_text: string
+              similarity_threshold?: number
+            }
+            Returns: {
+              confidence_score: number
+              content_type: string
+              emotion: string
+              id: string
+              metadata: Json
+              response_text: string
+              similarity_score: number
+            }[]
+          }
+      update_google_api_key: { Args: { api_key: string }; Returns: undefined }
+      update_setting:
+        | {
+            Args: { setting_key: string; setting_value: string }
+            Returns: undefined
+          }
+        | { Args: never; Returns: undefined }
       update_single_user_setting: {
         Args: { setting_key: string; setting_value: string }
         Returns: undefined

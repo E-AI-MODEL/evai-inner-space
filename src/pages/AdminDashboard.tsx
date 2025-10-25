@@ -18,6 +18,8 @@ import { useQuery } from '@tanstack/react-query';
 import { ANONYMOUS_SUPER_USER } from '../hooks/useAuth';
 import { testSupabaseOpenAIKey } from '@/services/OpenAIKeyTester';
 import { ConnectionStatus } from '../types/connectionStatus';
+import { useRetroactiveLearning } from '@/hooks/useRetroactiveLearning';
+import { RetroactiveLearningStatus } from '@/components/admin/RetroactiveLearningStatus';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<'autonomy' | 'seeds' | 'settings'>('autonomy');
@@ -150,6 +152,9 @@ const AdminDashboard = () => {
               <AutonomyConsole systemMetrics={systemMetrics} connectionStatus={connectionStatus} />
               <div className="mt-6">
                 <ProactiveAutonomyConsole />
+              </div>
+              <div className="mt-6">
+                <RetroactiveLearningStatus />
               </div>
             </TabsContent>
 

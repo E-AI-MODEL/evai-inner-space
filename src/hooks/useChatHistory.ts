@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Message } from "../types";
-import { loadChatHistory, saveChatHistory } from "../lib/chatHistoryStorage";
+import { loadChatHistory, saveChatMessage, clearChatHistory } from "../lib/chatHistoryStorage";
 import { loadFeedback } from "../lib/feedbackStorage";
 
 const initialMessages: Message[] = [
@@ -37,27 +37,38 @@ const getDefaultMessages = (): Message[] => {
     }));
 };
 
-// Load from storage or use fallback
-const getInitialMessages = (): Message[] => {
-    const storedHistory = loadChatHistory();
-    // If there's a stored history with at least one message, use it.
-    if (storedHistory && storedHistory.length > 0) {
-        return storedHistory;
-    }
-    // Otherwise, return the default set of messages.
-    return getDefaultMessages();
-};
-
 export function useChatHistory() {
-  const [messages, setMessages] = useState<Message[]>(getInitialMessages);
+  const [messages, setMessages] = useState<Message[]>(getDefaultMessages);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Load messages from database on mount
   useEffect(() => {
-    saveChatHistory(messages);
-  }, [messages]);
+    const loadMessages = async () => {
+      setIsLoading(true);
+      const loadedMessages = await loadChatHistory();
+      if (loadedMessages.length > 0) {
+        setMessages(loadedMessages);
+      }
+      setIsLoading(false);
+    };
+    loadMessages();
+  }, []);
+
+  // Save each new message to database
+  useEffect(() => {
+    if (!isLoading && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      // Only save if it's not an initial message
+      if (!initialMessages.some(m => m.id === lastMessage.id)) {
+        saveChatMessage(lastMessage);
+      }
+    }
+  }, [messages, isLoading]);
   
-  const clearHistory = () => {
+  const clearHistory = async () => {
+    await clearChatHistory();
     setMessages(getDefaultMessages());
   };
   
-  return { messages, setMessages, clearHistory };
+  return { messages, setMessages, clearHistory, isLoading };
 }
