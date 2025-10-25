@@ -50,8 +50,19 @@ serve(async (req) => {
     }
 
     if (!HUGGING_FACE_TOKEN) {
+      console.error('🔴 HUGGING_FACE_ACCESS_TOKEN not set in Supabase secrets');
       return new Response(
-        JSON.stringify({ ok: false, error: "Hugging Face token not configured" }),
+        JSON.stringify({ 
+          ok: false, 
+          error: "Hugging Face token not configured", 
+          details: "Set HUGGING_FACE_ACCESS_TOKEN in Supabase Edge Function secrets",
+          recommendations: [
+            "1. Go to Supabase Dashboard → Settings → Edge Functions",
+            "2. Add HUGGING_FACE_ACCESS_TOKEN secret",
+            "3. Get token from https://huggingface.co/settings/tokens"
+          ],
+          action: "https://supabase.com/dashboard/project/ngcyfbstajfcfdhlelbz/settings/functions"
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -79,28 +90,95 @@ serve(async (req) => {
 
     console.log(`🤖 Python Transformer Engine: ${task} with ${selectedModel}`);
 
-    // Call Hugging Face Inference API
-    const hfResponse = await fetch(
-      `https://api-inference.huggingface.co/models/${selectedModel}`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${HUGGING_FACE_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          inputs: text.substring(0, 500), // Limit input length
-          options: {
-            wait_for_model: true,
-            use_cache: false,
-          },
-        }),
-      }
-    );
+    // Call Hugging Face Inference API with retry logic
+    let hfResponse;
+    let retries = 0;
+    const maxRetries = 3;
 
-    if (!hfResponse.ok) {
-      const errorData = await hfResponse.json().catch(() => ({}));
-      throw new Error(`Hugging Face API error: ${hfResponse.status} - ${errorData.error || hfResponse.statusText}`);
+    while (retries < maxRetries) {
+      try {
+        hfResponse = await fetch(
+          `https://api-inference.huggingface.co/models/${selectedModel}`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${HUGGING_FACE_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              inputs: text.substring(0, 500),
+              options: {
+                wait_for_model: true,
+                use_cache: true,
+              },
+            }),
+          }
+        );
+
+        if (hfResponse.ok) break;
+        
+        // Handle rate limiting
+        if (hfResponse.status === 429) {
+          const waitTime = Math.pow(2, retries) * 1000;
+          console.log(`⏳ Rate limited, waiting ${waitTime}ms (attempt ${retries + 1}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          retries++;
+          continue;
+        }
+
+        // Handle model loading (503)
+        if (hfResponse.status === 503) {
+          const errorData = await hfResponse.json().catch(() => ({}));
+          if (errorData.error?.includes('loading')) {
+            const waitTime = (errorData.estimated_time || 20) * 1000;
+            console.log(`🔄 Model loading, waiting ${waitTime}ms (attempt ${retries + 1}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+            retries++;
+            continue;
+          }
+        }
+
+        break;
+
+      } catch (fetchError) {
+        console.error(`❌ Fetch attempt ${retries + 1}/${maxRetries} failed:`, fetchError);
+        retries++;
+        if (retries >= maxRetries) throw fetchError;
+        await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+      }
+    }
+
+    if (!hfResponse || !hfResponse.ok) {
+      const errorData = await hfResponse?.json().catch(() => ({}));
+      const errorMsg = `Hugging Face API error: ${hfResponse?.status || 'unknown'} - ${errorData?.error || hfResponse?.statusText || 'no response'}`;
+      console.error('🔴', errorMsg, {
+        model: selectedModel,
+        task: task,
+        status: hfResponse?.status,
+        errorData: errorData
+      });
+      
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          engine: "python-transformer-engine",
+          error: errorMsg,
+          details: errorData?.error || "Hugging Face API request failed",
+          recommendations: [
+            "Check if HUGGING_FACE_ACCESS_TOKEN is valid",
+            "Verify model name is correct",
+            "Try again in a few moments (model may be loading)",
+            "Check Hugging Face API status at https://status.huggingface.co"
+          ],
+          meta: {
+            processingTime: Date.now() - startedAt,
+            model: selectedModel,
+            task: task,
+            retries: retries
+          }
+        }),
+        { status: hfResponse?.status || 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const hfResult = await hfResponse.json();

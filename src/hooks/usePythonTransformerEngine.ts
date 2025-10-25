@@ -58,12 +58,17 @@ export function usePythonTransformerEngine() {
 
       if (error) {
         console.error('🔴 Python Engine error:', error);
-        throw new Error(error.message || 'Python engine failed');
+        const errorMsg = error.message || 'Python engine edge function failed';
+        throw new Error(`${errorMsg} - Check Supabase Edge Function logs for details`);
       }
 
       if (!data?.ok) {
         console.error('🔴 Python Engine response not ok:', data);
-        throw new Error(data?.error || 'Python engine returned error');
+        const details = data?.details ? ` (${data.details})` : '';
+        const recommendations = data?.recommendations?.length 
+          ? ` Suggestions: ${data.recommendations.join('; ')}` 
+          : ' Check Hugging Face API configuration';
+        throw new Error(`${data?.error || 'Python engine processing failed'}${details}.${recommendations}`);
       }
 
       const result = data as PythonEngineResponse;

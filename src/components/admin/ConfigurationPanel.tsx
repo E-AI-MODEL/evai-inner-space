@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Settings, Key, Network, Database, Shield, PlayCircle, Brain } from 'lucide-react';
+import { Settings, Key, Network, Database, Shield, PlayCircle } from 'lucide-react';
 import HealthCheckProgress from './healthCheck/HealthCheckProgress';
 import HealthCheckResults from './healthCheck/HealthCheckResults';
 import RubricSettings from '../RubricSettings';
 import { useHealthCheck } from '../../hooks/useHealthCheck';
 import { useSystemConnectivity } from '../../hooks/useSystemConnectivity';
-import PythonEngineMonitor from './PythonEngineMonitor';
 
 const ConfigurationPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState('health');
@@ -29,7 +28,7 @@ const ConfigurationPanel: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="health" className="flex items-center gap-2">
                 <Network className="h-4 w-4" />
                 Health Check
@@ -37,10 +36,6 @@ const ConfigurationPanel: React.FC = () => {
               <TabsTrigger value="system" className="flex items-center gap-2">
                 <Database className="h-4 w-4" />
                 System Status
-              </TabsTrigger>
-              <TabsTrigger value="python" className="flex items-center gap-2">
-                <Brain className="h-4 w-4" />
-                Python Engine
               </TabsTrigger>
               <TabsTrigger value="rubrics" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
@@ -125,10 +120,6 @@ const ConfigurationPanel: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="python" className="space-y-4">
-              <PythonEngineMonitor />
             </TabsContent>
 
             <TabsContent value="rubrics" className="space-y-4">

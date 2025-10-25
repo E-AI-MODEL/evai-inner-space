@@ -61,7 +61,7 @@ const NeurosymbolicArchitectureDiagram: React.FC = () => {
       id: 'learning',
       title: 'Leer-loop',
       icon: <Zap className="w-4 h-4" />,
-      description: 'OpenAI API 2 - Analyse & Verbetering',
+      description: 'Feedback Analyse & Continue Verbetering',
       color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       example: 'Feedback → nieuwe seeds → kennisbank'
     }
