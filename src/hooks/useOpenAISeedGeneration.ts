@@ -8,11 +8,11 @@ export function useOpenAISeedGeneration() {
 
   const generateSeed = async (
     request: SeedGenerationRequest,
-    apiKey: string,
+    _apiKey: string, // Kept for backward compatibility but unused - all calls go through edge function
     config: Partial<OpenAISeedGeneratorConfig> = {}
   ) => {
     console.log('🚀 Using enhanced seed generation with improved type variety...');
-    return generateEnhancedSeed(request, apiKey, config);
+    return generateEnhancedSeed(request, '', config);
   };
 
   return {

@@ -19,9 +19,6 @@ export function useProactiveSeedGenerator() {
   const openAI = useOpenAI();
 
   const generatePredictiveSeeds = useCallback(async (): Promise<PredictiveSeed[]> => {
-    // Skip actual generation for now - focus on prediction logic
-    const apiKey = 'temp-placeholder';
-    
     setIsGenerating(true);
     try {
       // Analyze current seed gaps and usage patterns
@@ -95,7 +92,7 @@ export function useProactiveSeedGenerator() {
             emotion: prediction.emotion,
             severity: prediction.priority === 'critical' ? 'critical' : 'high',
             context: `Proactively generated for predicted scenario: ${prediction.scenario}`
-          }, apiKey);
+          }, '');
           
           console.log(`🌱 Generated predictive seed for ${prediction.emotion} (${prediction.scenario})`);
         } catch (error) {

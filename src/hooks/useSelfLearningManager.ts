@@ -26,8 +26,7 @@ export function useSelfLearningManager() {
   ): Promise<SelfLearningOutcome> => {
     // Proactief, impliciet leren op basis van onzekerheid/novelty/correcties
     try {
-      const apiKey = localStorage.getItem('openai-api-key') || '';
-      const vectorKey = localStorage.getItem('vector-api-key') || apiKey;
+      const vectorKey = localStorage.getItem('vector-api-key') || '';
 
       // 1) Detectiecriteria
       const lowConfidence = (result.confidence ?? 0) < 0.6;
@@ -68,7 +67,7 @@ export function useSelfLearningManager() {
         conversationHistory
       } as any; // Gebruik het exacte type uit useEnhancedSeedGeneration
 
-      const newSeed = await generateEnhancedSeed(seedRequest, apiKey);
+      const newSeed = await generateEnhancedSeed(seedRequest, '');
       if (!newSeed) {
         // Log poging zonder resultaat
         try {

@@ -167,7 +167,7 @@ BELANGRIJKE VEREISTEN:
 
   const generateEnhancedSeed = async (
     request: SeedGenerationRequest,
-    apiKey: string,
+    _apiKey: string, // Kept for backward compatibility but unused
     config: Partial<OpenAISeedGeneratorConfig> = {}
   ): Promise<AdvancedSeed | null> => {
     setIsGenerating(true);
@@ -231,36 +231,6 @@ BELANGRIJKE VEREISTEN:
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  const callOpenAI = async (
-    prompt: string,
-    apiKey: string,
-    config: OpenAISeedGeneratorConfig
-  ): Promise<Response> => {
-    incrementApiUsage('openai1');
-    return fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: config.model,
-        messages: [
-          {
-            role: 'system',
-            content: 'Je bent een expert therapeut gespecialiseerd in het genereren van diverse, therapeutisch verantwoorde emotionele ondersteuning. Genereer alleen geldige JSON responses met gevarieerde seed types.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: config.temperature,
-        max_tokens: config.maxTokens,
-      }),
-    });
   };
 
   const parseEnhancedSeed = (
