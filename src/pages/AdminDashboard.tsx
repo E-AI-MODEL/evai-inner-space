@@ -9,7 +9,7 @@ import AutonomyConsole from '@/components/admin/AutonomyConsole';
 import { ProactiveAutonomyConsole } from '@/components/admin/ProactiveAutonomyConsole';
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
-import PythonEngineMonitor from '@/components/admin/PythonEngineMonitor';
+import MLEngineMonitor from '@/components/admin/MLEngineMonitor';
 import { useNavigate } from 'react-router-dom';
 import { useSystemConnectivity } from '@/hooks/useSystemConnectivity';
 import { getStatusIcon as getStatusIconGeneric, getStatusColor as getStatusColorGeneric } from '@/utils/statusUtils';
@@ -237,7 +237,7 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="python" className="space-y-4">
-              <PythonEngineMonitor />
+              <MLEngineMonitor />
             </TabsContent>
           </Tabs>
         </main>

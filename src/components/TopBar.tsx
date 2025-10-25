@@ -1,8 +1,8 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Brain, Settings } from "lucide-react";
+import { BrowserMLLoadingIndicator } from "@/components/BrowserMLLoadingIndicator";
 
 interface TopBarProps {
   onSettingsClick: () => void;
@@ -27,6 +27,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
           <h1 className="text-xl font-bold text-gray-800">EvAI Neurosymbolische Chat</h1>
         </div>
         <div className="flex items-center gap-2">
+          <BrowserMLLoadingIndicator />
           <Button variant="ghost" size="sm" onClick={onSettingsClick} className="text-gray-600 hover:text-gray-800">
             <Settings className="h-4 w-4" />
           </Button>

@@ -1,17 +1,17 @@
 /**
  * Neurosymbolic Emotion Detector v3.0
  * 3-Layer Detection System:
- * 1. PRIMARY: Python Transformer Engine (ML-based emotion detection)
+ * 1. PRIMARY: Browser Transformer Engine (ML-based emotion detection via WebGPU/WASM)
  * 2. FALLBACK: Symbolic keyword matching
  * 3. INFERENCE: Rubrics-based emotion inference
  */
 
-import { usePythonTransformerEngine } from './usePythonTransformerEngine';
+import { useBrowserTransformerEngine } from './useBrowserTransformerEngine';
 import { RubricAssessment } from './useEvAI56Rubrics';
 import { isValidEmotion, normalizeEmotion, VALID_EMOTIONS } from '../utils/seedValidator';
 
 export function useEmotionDetector() {
-  const { detectEmotion, isProcessing } = usePythonTransformerEngine();
+  const { detectEmotionInBrowser, isProcessing } = useBrowserTransformerEngine();
 
   /**
    * 3-Layer Neurosymbolic Emotion Detection
@@ -26,25 +26,25 @@ export function useEmotionDetector() {
     const detectedEmotions: Set<string> = new Set();
     
     // ═══════════════════════════════════════════════════════════
-    // LAYER 1: PYTHON TRANSFORMER ENGINE (PRIMARY)
+    // LAYER 1: BROWSER TRANSFORMER ENGINE (PRIMARY)
     // ═══════════════════════════════════════════════════════════
     try {
-      console.log('🧠 Layer 1: Invoking Python Transformer Engine...');
-      const pythonResult = await detectEmotion(content, 'nl');
+      console.log('🧠 Layer 1: Invoking Browser Transformer Engine...');
+      const browserResult = await detectEmotionInBrowser(content, 'nl');
       
-      if (pythonResult?.result?.emotion) {
-        const mlEmotion = pythonResult.result.emotion;
+      if (browserResult?.result?.emotion) {
+        const mlEmotion = browserResult.result.emotion;
         const normalized = normalizeEmotion(mlEmotion);
         
         if (normalized && isValidEmotion(normalized)) {
           detectedEmotions.add(normalized);
-          console.log(`✅ ML detected: ${normalized} (confidence: ${pythonResult.result.confidence || 'unknown'})`);
+          console.log(`✅ ML detected: ${normalized} (confidence: ${Math.round(browserResult.result.confidence * 100)}%, device: ${browserResult.meta.device})`);
         } else {
           console.warn(`⚠️ ML returned invalid emotion: "${mlEmotion}"`);
         }
       }
     } catch (error) {
-      console.warn('⚠️ Python Transformer Engine failed, falling back to symbolic:', error);
+      console.warn('⚠️ Browser Transformer Engine failed, falling back to symbolic:', error);
     }
 
     // ═══════════════════════════════════════════════════════════
