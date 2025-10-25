@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Message } from "../types";
 import { loadChatHistory, saveChatMessage, clearChatHistory } from "../lib/chatHistoryStorage";
 import { loadFeedback } from "../lib/feedbackStorage";
@@ -40,6 +40,7 @@ const getDefaultMessages = (): Message[] => {
 export function useChatHistory() {
   const [messages, setMessages] = useState<Message[]>(getDefaultMessages);
   const [isLoading, setIsLoading] = useState(true);
+  const savedMessageIds = useRef<Set<string>>(new Set(initialMessages.map(m => m.id)));
 
   // Load messages from database on mount
   useEffect(() => {
@@ -48,20 +49,23 @@ export function useChatHistory() {
       const loadedMessages = await loadChatHistory();
       if (loadedMessages.length > 0) {
         setMessages(loadedMessages);
+        // Mark loaded messages as saved
+        loadedMessages.forEach(msg => savedMessageIds.current.add(msg.id));
       }
       setIsLoading(false);
     };
     loadMessages();
   }, []);
 
-  // Save each new message to database
+  // Save all new messages to database
   useEffect(() => {
     if (!isLoading && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      // Only save if it's not an initial message
-      if (!initialMessages.some(m => m.id === lastMessage.id)) {
-        saveChatMessage(lastMessage);
-      }
+      messages.forEach(message => {
+        if (!savedMessageIds.current.has(message.id)) {
+          saveChatMessage(message);
+          savedMessageIds.current.add(message.id);
+        }
+      });
     }
   }, [messages, isLoading]);
   
