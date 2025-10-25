@@ -29,6 +29,45 @@ export function useTherapeuticWindowDetector() {
 
       if (error) throw error;
 
+      // Graceful degradation: Check for empty data
+      if (!recentLogs || recentLogs.length === 0) {
+        console.log('⚠️ No recent logs for therapeutic window detection - using time-based windows only');
+        
+        const windows: TherapeuticWindow[] = [];
+        const now = new Date();
+        const currentHour = new Date().getHours();
+        
+        // Still provide time-based windows even without conversation data
+        if (currentHour >= 7 && currentHour <= 9) {
+          windows.push({
+            id: crypto.randomUUID(),
+            type: 'emotional_receptivity',
+            confidence: 0.70,
+            timeframe: 'next 2 hours',
+            indicators: ['Morning energy patterns', 'Day planning mindset', 'Fresh mental state'],
+            suggestedIntervention: 'Goal-setting and motivation enhancement strategies',
+            priority: 'medium',
+            detectedAt: now
+          });
+        }
+
+        if (currentHour >= 19 && currentHour <= 21) {
+          windows.push({
+            id: crypto.randomUUID(),
+            type: 'learning_readiness',
+            confidence: 0.65,
+            timeframe: 'next 90 minutes',
+            indicators: ['Evening reflection time', 'Day processing opportunity', 'Calm mental state'],
+            suggestedIntervention: 'Reflective exercises and day integration activities',
+            priority: 'low',
+            detectedAt: now
+          });
+        }
+        
+        console.log(`🎯 Detected ${windows.length} time-based therapeutic windows (no conversation data)`);
+        return windows;
+      }
+
       const now = new Date();
       
       if (recentLogs && recentLogs.length > 0) {

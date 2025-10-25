@@ -48,29 +48,8 @@ export function useSystemConnectivity() {
       openai1 = 'missing';
     }
 
-    // Check OpenAI secondary by invoking chat with use_secondary: true (tiny call)
-    let openai2: ApiConfigStatus = 'checking';
-    try {
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
-        body: {
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: 'Validator: reply OK' },
-            { role: 'user', content: 'OK' },
-          ],
-          max_tokens: 3,
-          temperature: 0,
-          use_secondary: true,
-        },
-      });
-      if (error) {
-        openai2 = 'missing';
-      } else {
-        openai2 = (data as any)?.choices ? 'configured' : 'missing';
-      }
-    } catch {
-      openai2 = 'missing';
-    }
+    // Secondary API no longer exists - mark as configured if primary works
+    const openai2: ApiConfigStatus = openai1 === 'configured' ? 'configured' : 'missing';
 
     // Check embeddings/vector by invoking the embedding function with tiny input
     let vector: ApiConfigStatus = 'checking';

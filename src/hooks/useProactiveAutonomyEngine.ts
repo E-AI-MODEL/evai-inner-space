@@ -94,6 +94,57 @@ export function useProactiveAutonomyEngine() {
     try {
       console.log('🧠 Running Autonomous Intelligence Loop...');
 
+      // Check if we have recent data to work with
+      const { data: recentLogs } = await supabase
+        .from('decision_logs')
+        .select('id')
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .limit(1);
+      
+      const hasRecentData = recentLogs && recentLogs.length > 0;
+      
+      if (!hasRecentData) {
+        console.log('⚠️ No recent conversation data - running in predictive mode only');
+        
+        await executeProactiveAction({
+          type: 'prediction',
+          action: 'System running in predictive mode - time-based anticipations active',
+          confidence: 0.7,
+          impact: 0.1
+        });
+        
+        // Still run maintenance (works without user data)
+        const maintenanceActions = await maintenanceAgent.performPredictiveMaintenance();
+        if (maintenanceActions.actionsPerformed > 0) {
+          await executeProactiveAction({
+            type: 'maintenance',
+            action: `Executed ${maintenanceActions.actionsPerformed} predictive maintenance actions`,
+            confidence: 0.95,
+            impact: maintenanceActions.impactScore
+          });
+        }
+        
+        // Still run quality control
+        const qualityOptimizations = await qualityController.performAutonomousOptimizations();
+        if (qualityOptimizations.optimizationsApplied > 0) {
+          await executeProactiveAction({
+            type: 'optimization',
+            action: `Applied ${qualityOptimizations.optimizationsApplied} autonomous quality optimizations`,
+            confidence: qualityOptimizations.confidence,
+            impact: qualityOptimizations.impactScore
+          });
+        }
+
+        console.log(`🤖 Autonomy Status (Predictive Mode):
+  - Recent Actions: ${recentActions.length}
+  - Predictions: ${metrics.activePredictions}
+  - Mode: Time-based only (no conversation data)`);
+        
+        return; // Skip data-dependent engines
+      }
+
+      console.log('✅ Recent data available - running full autonomous intelligence');
+
       // 1. Predictive Seed Generation
       const seedPredictions = await seedGenerator.generatePredictiveSeeds();
       if (seedPredictions.length > 0) {
@@ -167,10 +218,18 @@ export function useProactiveAutonomyEngine() {
         systemEvolution: Math.min(prev.systemEvolution + 0.005, 1.0)
       }));
 
+      console.log(`🤖 Autonomy Status:
+  - Active: ${isActive}
+  - Recent Actions: ${recentActions.length}
+  - Predictions: ${metrics.activePredictions}
+  - Interventions: ${metrics.proactiveInterventions}
+  - Optimizations: ${metrics.autonomousOptimizations}
+  - Last Action: ${metrics.lastProactiveAction?.toLocaleTimeString() || 'Never'}`);
+
     } catch (error) {
       console.error('❌ Autonomous Intelligence Loop failed:', error);
     }
-  }, [isActive, seedGenerator, riskEngine, windowDetector, qualityController, maintenanceAgent, anticipationEngine, executeProactiveAction]);
+  }, [isActive, seedGenerator, riskEngine, windowDetector, qualityController, maintenanceAgent, anticipationEngine, executeProactiveAction, recentActions, metrics]);
 
   // Start autonomous background loop
   useEffect(() => {

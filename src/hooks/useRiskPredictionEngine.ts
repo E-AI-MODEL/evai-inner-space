@@ -34,6 +34,33 @@ export function useRiskPredictionEngine() {
 
       if (error) throw error;
 
+      // Graceful degradation: Check for empty data
+      if (!recentLogs || recentLogs.length === 0) {
+        console.log('⚠️ No recent logs for risk prediction - using time-based patterns only');
+        
+        const risks: EmotionalRisk[] = [];
+        
+        // Still provide seasonal risk even without conversation data
+        const currentMonth = new Date().getMonth();
+        if (currentMonth >= 10 || currentMonth <= 1) {
+          risks.push({
+            pattern: 'seasonal_affective_risk',
+            riskLevel: 'low',
+            confidence: 0.6,
+            indicators: ['Winter season', 'Reduced daylight', 'Potential seasonal depression'],
+            timeframe: 'next 30 days',
+            intervention: 'Light therapy suggestions and mood monitoring'
+          });
+        }
+        
+        return {
+          highRisk: [],
+          mediumRisk: risks,
+          confidence: 0.5,
+          totalRisks: risks.length
+        };
+      }
+
       const risks: EmotionalRisk[] = [];
       let totalConfidence = 0;
 

@@ -61,9 +61,9 @@ const AutonomyCockpit: React.FC<AutonomyCockpitProps> = ({ systemMetrics, connec
     lastActivity: new Date().toISOString(),
     systemHealth: (systemMetrics?.systemHealth as any) || 'excellent',
     agentStatus: {
-      autoLearn: connectionStatus?.supabase === 'connected' ? 'active' : 'error',
-      orchestrator: connectionStatus?.openaiApi1 === 'configured' ? 'active' : 'error',
-      feedbackLoop: connectionStatus?.vectorApi === 'configured' ? 'active' : 'idle'
+      autoLearn: 'idle',
+      orchestrator: 'idle',
+      feedbackLoop: 'idle'
     }
   });
   const [isProcessing, setIsProcessing] = useState(false);
@@ -103,11 +103,63 @@ const AutonomyCockpit: React.FC<AutonomyCockpitProps> = ({ systemMetrics, connec
     }
   }, []);
 
+  // Check actual agent activity for real-time status
+  const checkAgentActivity = useCallback(async () => {
+    try {
+      // AutoLearn: Check last autolearn scan execution (last 10 minutes)
+      const { data: autolearnLogs } = await supabase
+        .from('api_collaboration_logs')
+        .select('created_at')
+        .eq('workflow_type', 'autolearn_scan')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      const autolearnActive = autolearnLogs?.[0] && 
+        new Date(autolearnLogs[0].created_at) > new Date(Date.now() - 10 * 60 * 1000);
+      
+      // Orchestrator: Check recent decision logs (last 5 minutes)
+      const { data: decisionLogs } = await supabase
+        .from('decision_logs')
+        .select('created_at')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      const orchestratorActive = decisionLogs?.[0] &&
+        new Date(decisionLogs[0].created_at) > new Date(Date.now() - 5 * 60 * 1000);
+      
+      // FeedbackLoop: Check recent reflection logs (last 15 minutes)
+      const { data: reflectionLogs } = await supabase
+        .from('reflection_logs')
+        .select('created_at')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      const feedbackActive = reflectionLogs?.[0] &&
+        new Date(reflectionLogs[0].created_at) > new Date(Date.now() - 15 * 60 * 1000);
+      
+      setMetrics(prev => ({
+        ...prev,
+        agentStatus: {
+          autoLearn: autolearnActive ? 'active' : 'idle',
+          orchestrator: orchestratorActive ? 'active' : 'idle',
+          feedbackLoop: feedbackActive ? 'active' : 'idle'
+        }
+      }));
+    } catch (error) {
+      console.error('Failed to check agent activity:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchRealtimeData();
-    const interval = setInterval(fetchRealtimeData, 5000); // Update every 5 seconds
-    return () => clearInterval(interval);
-  }, [fetchRealtimeData]);
+    checkAgentActivity();
+    const dataInterval = setInterval(fetchRealtimeData, 5000); // Update every 5 seconds
+    const activityInterval = setInterval(checkAgentActivity, 30000); // Check activity every 30 seconds
+    return () => {
+      clearInterval(dataInterval);
+      clearInterval(activityInterval);
+    };
+  }, [fetchRealtimeData, checkAgentActivity]);
 
   const runAutonomousScan = useCallback(async () => {
     setIsProcessing(true);
