@@ -538,6 +538,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_invalid_emotions: {
+        Args: never
+        Returns: {
+          deleted_knowledge: number
+          deleted_seeds: number
+          normalized_emotions: number
+        }[]
+      }
       consolidate_knowledge: { Args: never; Returns: undefined }
       find_similar_embeddings:
         | {

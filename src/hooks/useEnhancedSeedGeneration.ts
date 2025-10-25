@@ -5,6 +5,7 @@ import { AdvancedSeed } from '../types/seed';
 import { SeedGenerationRequest, OpenAISeedGeneratorConfig } from '../types/openAISeedGenerator';
 import { OPENAI_MODEL } from '../openaiConfig';
 import { supabase } from '@/integrations/supabase/client';
+import { isValidEmotion, sanitizeSeed, normalizeEmotion } from '../utils/seedValidator';
 
 const DEFAULT_CONFIG: OpenAISeedGeneratorConfig = {
   model: OPENAI_MODEL,
@@ -187,8 +188,9 @@ BELANGRIJKE VEREISTEN:
     try {
       const prompt = buildEnhancedPrompt(request, targetType, targetLabel);
 
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
+      const { data, error } = await supabase.functions.invoke('evai-core', {
         body: {
+          operation: 'chat',
           model: finalConfig.model,
           messages: [
             {
@@ -244,13 +246,19 @@ BELANGRIJKE VEREISTEN:
       if (jsonMatch) {
         const seedData = JSON.parse(jsonMatch[0]);
         
+        // Validate and normalize emotion
+        const normalizedEmotion = normalizeEmotion(seedData.emotion || request.emotion) || 'onzekerheid';
+        if (!isValidEmotion(normalizedEmotion)) {
+          console.warn(`⚠️ Invalid emotion "${seedData.emotion}", using fallback: ${normalizedEmotion}`);
+        }
+        
         // Ensure type consistency
         const finalType = seedData.type || targetType;
         const finalLabel = seedData.label || targetLabel;
         
         return {
           id: uuidv4(),
-          emotion: seedData.emotion || request.emotion,
+          emotion: normalizedEmotion,
           type: finalType,
           label: finalLabel,
           triggers: Array.isArray(seedData.triggers) ? seedData.triggers : [request.emotion],

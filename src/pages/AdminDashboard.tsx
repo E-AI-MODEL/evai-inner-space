@@ -22,12 +22,13 @@ import { ConnectionStatus } from '../types/connectionStatus';
 import { useRetroactiveLearning } from '@/hooks/useRetroactiveLearning';
 import { RetroactiveLearningStatus } from '@/components/admin/RetroactiveLearningStatus';
 import AdminAuth from '@/components/admin/AdminAuth';
-import { LogOut } from 'lucide-react';
+import { LogOut, Trash2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { isAdminAuthorized, authorizeAdmin, logoutAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<'autonomy' | 'seeds' | 'settings' | 'python'>('autonomy');
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
+  const [isConsolidating, setIsConsolidating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
@@ -136,6 +137,39 @@ const AdminDashboard = () => {
     refetchInterval: 10000, // Update every 10 seconds for autonomous monitoring
   });
 
+  // Database cleanup and consolidation
+  const handleConsolidateKnowledge = async () => {
+    setIsConsolidating(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('evai-admin', {
+        body: { operation: 'consolidate-knowledge' }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: '✅ Database Cleanup Successful',
+        description: data?.cleanup 
+          ? `Removed ${data.cleanup[0]} invalid seeds, ${data.cleanup[1]} invalid knowledge entries, normalized ${data.cleanup[2]} emotions`
+          : 'Knowledge base consolidated and cleaned',
+      });
+      
+      // Refresh data
+      await refreshConnectivity();
+      
+    } catch (error) {
+      console.error('Consolidation error:', error);
+      toast({
+        title: '❌ Consolidation Failed',
+        description: error instanceof Error ? error.message : 'Failed to clean database',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsConsolidating(false);
+    }
+  };
+
   // Auth guard: Render AdminAuth scherm als niet geauthoriseerd
   if (!isAdminAuthorized) {
     return <AdminAuth onAuthenticated={authorizeAdmin} />;
@@ -156,20 +190,31 @@ const AdminDashboard = () => {
                 Real-time autonomous AI operations center • Health: {systemMetrics?.systemHealth || 'initializing'} • Success Rate: {systemMetrics?.successRate.toFixed(1) || '0'}%
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                logoutAdmin();
-                toast({ 
-                  title: "Uitgelogd", 
-                  description: "Admin sessie beëindigd. Refresh om opnieuw in te loggen." 
-                });
-              }}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Uitloggen
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                onClick={handleConsolidateKnowledge}
+                disabled={isConsolidating}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                {isConsolidating ? 'Cleaning...' : 'Clean Database'}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  logoutAdmin();
+                  toast({ 
+                    title: "Uitgelogd", 
+                    description: "Admin sessie beëindigd. Refresh om opnieuw in te loggen." 
+                  });
+                }}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Uitloggen
+              </Button>
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">

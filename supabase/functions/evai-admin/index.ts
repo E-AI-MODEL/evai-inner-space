@@ -36,8 +36,13 @@ serve(async (req) => {
       return handleAutolearnScan(body);
     }
 
+    // OPERATION: consolidate-knowledge
+    if (operation === "consolidate-knowledge") {
+      return await handleConsolidateKnowledge(body);
+    }
+
     return new Response(
-      JSON.stringify({ ok: false, error: "Unknown operation. Use: auth, test-openai-key, or autolearn-scan" }),
+      JSON.stringify({ ok: false, error: "Unknown operation. Use: auth, test-openai-key, autolearn-scan, or consolidate-knowledge" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
@@ -130,4 +135,68 @@ function handleAutolearnScan(body: any) {
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
+}
+
+/**
+ * Consolidate Knowledge Handler
+ * Triggers database cleanup and unified knowledge consolidation
+ */
+async function handleConsolidateKnowledge(body: any) {
+  console.log("🧹 Knowledge consolidation triggered");
+  
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+      throw new Error("Supabase credentials not configured");
+    }
+    
+    // Import Supabase client
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    
+    // Call cleanup function
+    const { data: cleanupResult, error: cleanupError } = await supabase
+      .rpc("cleanup_invalid_emotions");
+    
+    if (cleanupError) {
+      console.error("❌ Cleanup failed:", cleanupError);
+      throw cleanupError;
+    }
+    
+    console.log("✅ Cleanup completed:", cleanupResult);
+    
+    // Call consolidate function
+    const { error: consolidateError } = await supabase
+      .rpc("consolidate_knowledge");
+    
+    if (consolidateError) {
+      console.error("❌ Consolidation failed:", consolidateError);
+      throw consolidateError;
+    }
+    
+    console.log("✅ Consolidation completed");
+    
+    return new Response(
+      JSON.stringify({ 
+        ok: true,
+        success: true,
+        message: "Knowledge consolidation completed",
+        cleanup: cleanupResult,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+    
+  } catch (error) {
+    console.error("❌ Knowledge consolidation error:", error);
+    return new Response(
+      JSON.stringify({ 
+        ok: false,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error"
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
 }

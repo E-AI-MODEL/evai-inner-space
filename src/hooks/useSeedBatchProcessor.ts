@@ -22,9 +22,9 @@ export function useSeedBatchProcessor() {
         // Use server-side embedding generation via Edge Function
         const textToEmbed = `Emotie: ${seed.emotion}. Triggers: ${seed.triggers.join(', ')}. Response: ${seed.response.nl}`;
         
-        // Call Edge Function for embedding generation
-        const { data: embData, error: embError } = await supabase.functions.invoke('openai-embedding', {
-          body: { input: textToEmbed, model: 'text-embedding-3-small' }
+        // Call Edge Function for embedding generation (using evai-core)
+        const { data: embData, error: embError } = await supabase.functions.invoke('evai-core', {
+          body: { operation: 'embedding', input: textToEmbed, model: 'text-embedding-3-small' }
         });
         
         if (embError || !embData) {
