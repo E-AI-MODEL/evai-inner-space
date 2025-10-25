@@ -15,15 +15,18 @@ interface AuthContextType {
   isAdminAuthorized: boolean;
   authorizeChat: () => void;
   authorizeAdmin: () => void;
+  logoutAdmin: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user] = useState<User>(ANONYMOUS_SUPER_USER);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isAdminAuthorized, setIsAdminAuthorized] = useState(true); // Admin is voorlopig altijd toegankelijk
+  const [isAdminAuthorized, setIsAdminAuthorized] = useState(() => {
+    return sessionStorage.getItem('evai-admin-authorized') === 'true';
+  });
   
   const authorizeChat = useCallback(() => {
     // Check of er al een sessie is. Zo niet, start een nieuwe.
@@ -36,10 +39,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   // Deze functie blijft voor nu eenvoudig, kan later worden uitgebreid
   const authorizeAdmin = useCallback(() => {
+    sessionStorage.setItem('evai-admin-authorized', 'true');
+    sessionStorage.setItem('evai-admin-login-time', Date.now().toString());
     setIsAdminAuthorized(true);
   }, []);
+
+  const logoutAdmin = useCallback(() => {
+    sessionStorage.removeItem('evai-admin-authorized');
+    sessionStorage.removeItem('evai-admin-login-time');
+    setIsAdminAuthorized(false);
+  }, []);
   
-  const value = { user, loading, isAuthorized, isAdminAuthorized, authorizeChat, authorizeAdmin };
+  const value = { user, loading, isAuthorized, isAdminAuthorized, authorizeChat, authorizeAdmin, logoutAdmin };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -9,20 +9,24 @@ import AutonomyConsole from '@/components/admin/AutonomyConsole';
 import { ProactiveAutonomyConsole } from '@/components/admin/ProactiveAutonomyConsole';
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
+import PythonEngineMonitor from '@/components/admin/PythonEngineMonitor';
 import { useNavigate } from 'react-router-dom';
 import { useSystemConnectivity } from '@/hooks/useSystemConnectivity';
 import { getStatusIcon as getStatusIconGeneric, getStatusColor as getStatusColorGeneric } from '@/utils/statusUtils';
 import { useSeeds } from '../hooks/useSeeds';
 import { supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { ANONYMOUS_SUPER_USER } from '../hooks/useAuth';
+import { ANONYMOUS_SUPER_USER, useAuth } from '../hooks/useAuth';
 import { testSupabaseOpenAIKey } from '@/services/OpenAIKeyTester';
 import { ConnectionStatus } from '../types/connectionStatus';
 import { useRetroactiveLearning } from '@/hooks/useRetroactiveLearning';
 import { RetroactiveLearningStatus } from '@/components/admin/RetroactiveLearningStatus';
+import AdminAuth from '@/components/admin/AdminAuth';
+import { LogOut } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<'autonomy' | 'seeds' | 'settings'>('autonomy');
+  const { isAdminAuthorized, authorizeAdmin, logoutAdmin } = useAuth();
+  const [activeTab, setActiveTab] = useState<'autonomy' | 'seeds' | 'settings' | 'python'>('autonomy');
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -132,19 +136,40 @@ const AdminDashboard = () => {
     refetchInterval: 10000, // Update every 10 seconds for autonomous monitoring
   });
 
+  // Auth guard: Render AdminAuth scherm als niet geauthoriseerd
+  if (!isAdminAuthorized) {
+    return <AdminAuth onAuthenticated={authorizeAdmin} />;
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AdminSidebar active={activeTab} onChange={setActiveTab} />
 
         <main className="flex-1 p-4 md:p-8 pt-6">
-          <div className="mb-4">
-            <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
-              EvAI Autonomous System
-            </h2>
-            <p className="text-muted-foreground">
-              Real-time autonomous AI operations center • Health: {systemMetrics?.systemHealth || 'initializing'} • Success Rate: {systemMetrics?.successRate.toFixed(1) || '0'}%
-            </p>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
+                EvAI Autonomous System
+              </h2>
+              <p className="text-muted-foreground">
+                Real-time autonomous AI operations center • Health: {systemMetrics?.systemHealth || 'initializing'} • Success Rate: {systemMetrics?.successRate.toFixed(1) || '0'}%
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                logoutAdmin();
+                toast({ 
+                  title: "Uitgelogd", 
+                  description: "Admin sessie beëindigd. Refresh om opnieuw in te loggen." 
+                });
+              }}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Uitloggen
+            </Button>
           </div>
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">
@@ -164,6 +189,10 @@ const AdminDashboard = () => {
 
             <TabsContent value="settings" className="space-y-4">
               <ConfigurationPanel />
+            </TabsContent>
+
+            <TabsContent value="python" className="space-y-4">
+              <PythonEngineMonitor />
             </TabsContent>
           </Tabs>
         </main>
