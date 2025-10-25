@@ -244,6 +244,33 @@ export function useProcessingOrchestrator() {
           } as UnifiedResponse;
         } catch (fbErr) {
           console.error('🔴 Fallback ook mislukt:', fbErr);
+          
+          // Log error naar database
+          try {
+            await supabase.rpc('log_evai_workflow', {
+              p_conversation_id: sessionStorage.getItem('evai-current-session-id') || 'unknown',
+              p_workflow_type: 'orchestrate-fallback-failed',
+              p_api_collaboration: {
+                api1Used: false,
+                api2Used: false,
+                vectorApiUsed: false,
+                googleApiUsed: false,
+                seedGenerated: false,
+                secondaryAnalysis: false
+              },
+              p_rubrics_data: null,
+              p_processing_time: Date.now() - startTime,
+              p_success: false,
+              p_error_details: {
+                error: fbErr instanceof Error ? fbErr.message : 'Unknown error',
+                stack: fbErr instanceof Error ? fbErr.stack : undefined,
+                timestamp: new Date().toISOString()
+              }
+            });
+          } catch (logError) {
+            console.error('Failed to log error to database:', logError);
+          }
+          
           throw new Error(
             fbErr instanceof Error
               ? fbErr.message
@@ -316,6 +343,32 @@ export function useProcessingOrchestrator() {
       console.error('🔴 Production orchestration error:', error);
       console.error('   Processing time before error:', processingTime + 'ms');
       console.error('   Error type:', error instanceof Error ? error.constructor.name : typeof error);
+
+      // Log error naar database
+      try {
+        await supabase.rpc('log_evai_workflow', {
+          p_conversation_id: sessionStorage.getItem('evai-current-session-id') || 'unknown',
+          p_workflow_type: 'orchestrate-error',
+          p_api_collaboration: {
+            api1Used: false,
+            api2Used: false,
+            vectorApiUsed: false,
+            googleApiUsed: false,
+            seedGenerated: false,
+            secondaryAnalysis: false
+          },
+          p_rubrics_data: null,
+          p_processing_time: processingTime,
+          p_success: false,
+          p_error_details: {
+            error: errorMessage,
+            stack: error instanceof Error ? error.stack : undefined,
+            timestamp: new Date().toISOString()
+          }
+        });
+      } catch (logError) {
+        console.error('Failed to log error to database:', logError);
+      }
 
       // Update error stats
       setStats(prev => ({

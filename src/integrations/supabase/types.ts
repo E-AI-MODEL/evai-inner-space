@@ -73,6 +73,7 @@ export type Database = {
       }
       chat_messages: {
         Row: {
+          confidence: number | null
           content: string
           created_at: string
           emotion_seed_id: string | null
@@ -87,6 +88,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          confidence?: number | null
           content: string
           created_at?: string
           emotion_seed_id?: string | null
@@ -101,6 +103,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          confidence?: number | null
           content?: string
           created_at?: string
           emotion_seed_id?: string | null

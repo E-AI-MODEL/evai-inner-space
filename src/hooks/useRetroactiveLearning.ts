@@ -21,13 +21,14 @@ export function useRetroactiveLearning(enabled: boolean = true) {
         const recentMessages = await loadRecentMessages(100);
         
         // Group messages into conversation pairs (user + ai response)
-        const conversationPairs: Array<{ user: string; ai: string; aiLabel?: string }> = [];
+        const conversationPairs: Array<{ user: string; ai: string; aiLabel?: string; confidence?: number }> = [];
         for (let i = 0; i < recentMessages.length - 1; i++) {
           if (recentMessages[i].from === 'user' && recentMessages[i + 1].from === 'ai') {
             conversationPairs.push({
               user: recentMessages[i].content,
               ai: recentMessages[i + 1].content,
-              aiLabel: recentMessages[i + 1].label || undefined
+              aiLabel: recentMessages[i + 1].label || undefined,
+              confidence: recentMessages[i + 1].confidence
             });
           }
         }
@@ -40,7 +41,7 @@ export function useRetroactiveLearning(enabled: boolean = true) {
           // Simulate a unified response for analysis
           const mockResult: UnifiedResponse = {
             content: pair.ai,
-            confidence: 0.6, // Low confidence to trigger learning
+            confidence: pair.confidence ?? 0.6,
             label: (pair.aiLabel as any) || 'Reflectievraag',
             emotion: 'neutral',
             reasoning: 'Retroactive analysis',

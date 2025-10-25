@@ -34,6 +34,7 @@ export const loadChatHistory = async (): Promise<Message[]> => {
       animate: msg.from_role === 'ai',
       timestamp: new Date(msg.created_at),
       feedback: msg.feedback as any,
+      confidence: msg.confidence ?? undefined,
       explainText: (msg.meta as any)?.explainText,
       meta: (msg.meta as any)?.meta
     }));
@@ -55,6 +56,7 @@ export const saveChatMessage = async (message: Message): Promise<void> => {
       emotion_seed_id: message.emotionSeed || null,
       label: message.label,
       feedback: message.feedback as any,
+      confidence: message.confidence ?? null,
       meta: {
         explainText: message.explainText,
         meta: message.meta
@@ -87,6 +89,7 @@ export const loadRecentMessages = async (limit: number = 100): Promise<Message[]
       animate: false,
       timestamp: new Date(msg.created_at),
       feedback: msg.feedback as any,
+      confidence: msg.confidence ?? undefined,
       explainText: (msg.meta as any)?.explainText,
       meta: (msg.meta as any)?.meta
     }));
