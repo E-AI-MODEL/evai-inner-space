@@ -7,8 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const OPENAI_PRIMARY = Deno.env.get("OPENAI_API_KEY");
-const OPENAI_SECONDARY = Deno.env.get("OPENAI_API_KEY_SECONDARY");
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -16,9 +15,9 @@ serve(async (req) => {
   }
 
   try {
-    if (!OPENAI_PRIMARY && !OPENAI_SECONDARY) {
+    if (!OPENAI_API_KEY) {
       return new Response(
-        JSON.stringify({ ok: false, error: "No OpenAI API key configured in Supabase secrets" }),
+        JSON.stringify({ ok: false, error: "OPENAI_API_KEY not configured in Supabase secrets" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -30,24 +29,10 @@ serve(async (req) => {
       model = "gpt-4o-mini",
       temperature = 0.5,
       max_tokens = 400,
-      use_secondary = false,
       response_format,
     } = body || {};
 
-    // Explicit channel selection:
-    // - use_secondary = true  => prefer OPENAI_SECONDARY
-    // - use_secondary = false => prefer OPENAI_PRIMARY
-    // If preferred is missing, fallback to the other if available.
-    let keyToUse = use_secondary ? OPENAI_SECONDARY : OPENAI_PRIMARY;
-    if (!keyToUse) {
-      keyToUse = use_secondary ? OPENAI_PRIMARY : OPENAI_SECONDARY;
-    }
-    if (!keyToUse) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "No appropriate OpenAI API key available for chat" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    console.log(`🔑 Using OpenAI API key for model: ${model}`);
 
     const finalMessages = Array.isArray(messages) && messages.length
       ? messages
@@ -56,7 +41,7 @@ serve(async (req) => {
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${keyToUse}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

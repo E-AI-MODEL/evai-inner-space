@@ -41,22 +41,10 @@ export function useChat() {
         timestamp: msg.timestamp
       }));
 
-      // Get optional API keys from localStorage (not required when using Edge Functions)
-      const storedApiKey = localStorage.getItem('openai-api-key') || undefined;
-      const storedApiKey2 = localStorage.getItem('openai-api-key-2') || undefined;
-      
-      // If keys are present, ensure they are not obvious mock/test keys
-      if (storedApiKey && (storedApiKey.includes('demo') || storedApiKey.includes('test') || storedApiKey.includes('mock'))) {
-        throw new Error('Mock API keys zijn niet toegestaan. Configureer een echte OpenAI API key of verwijder de mock key.');
-      }
-      
-      if (storedApiKey2 && (storedApiKey2.includes('demo') || storedApiKey2.includes('test') || storedApiKey2.includes('mock'))) {
-        throw new Error('Mock API keys zijn niet toegestaan. Configureer een echte OpenAI API key of verwijder de mock key.');
-      }
-
-      if (!storedApiKey) {
-        console.log('🔐 Geen client key gevonden — doorgaan met server-side keys via Edge Functions');
-      }
+      // Get optional API keys from localStorage (deprecated - kept for backward compatibility only)
+      // All production API calls now go through Supabase Edge Functions with server-side keys
+      const storedApiKey = undefined; // Removed client-side API key usage
+      const storedApiKey2 = undefined; // Removed client-side API key usage
       
       console.log('🔑 Using keys - Primary present:', !!storedApiKey, 'Secondary present:', !!storedApiKey2);
       console.log('📋 History length:', history.length);
