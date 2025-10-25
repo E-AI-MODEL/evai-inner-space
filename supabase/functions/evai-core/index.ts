@@ -21,6 +21,7 @@ serve(async (req) => {
     const { operation } = body || {};
 
     console.log(`🧠 evai-core: operation=${operation}`);
+    console.log(`🔑 Secrets status: OPENAI=${!!OPENAI_PRIMARY}, SAFETY=${!!OPENAI_SAFETY}, VECTOR=${!!VECTOR_API_KEY}`);
 
     // OPERATION: chat
     if (operation === "chat") {
@@ -51,9 +52,13 @@ serve(async (req) => {
 });
 
 async function handleChat(body: any) {
-  if (!OPENAI_PRIMARY) {
+  console.log(`🔑 Chat: OPENAI_PRIMARY exists? ${!!OPENAI_PRIMARY}`);
+  console.log(`🔑 Chat: OPENAI_PRIMARY length: ${OPENAI_PRIMARY?.length || 0}`);
+  
+  if (!OPENAI_PRIMARY || OPENAI_PRIMARY.trim() === '') {
+    console.error("🔴 OPENAI_API_KEY not configured or empty");
     return new Response(
-      JSON.stringify({ ok: false, error: "OPENAI_API_KEY not configured" }),
+      JSON.stringify({ ok: false, error: "OPENAI_API_KEY not configured or empty" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
