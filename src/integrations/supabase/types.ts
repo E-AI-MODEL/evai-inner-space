@@ -565,7 +565,6 @@ export type Database = {
               similarity_score: number
             }[]
           }
-      get_google_api_key: { Args: never; Returns: string }
       get_recent_api_collaboration_logs: {
         Args: { p_limit?: number }
         Returns: {
@@ -735,7 +734,6 @@ export type Database = {
               similarity_score: number
             }[]
           }
-      update_google_api_key: { Args: { api_key: string }; Returns: undefined }
       update_setting:
         | {
             Args: { setting_key: string; setting_value: string }

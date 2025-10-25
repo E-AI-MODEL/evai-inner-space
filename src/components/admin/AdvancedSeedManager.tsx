@@ -28,7 +28,6 @@ const AdvancedSeedManager = () => {
     setFilterType,
     filterSeverity,
     setFilterSeverity,
-    openAiKey2,
     filteredSeeds,
     handleSaveSeed,
     handleDeleteSeed,
@@ -185,7 +184,6 @@ const AdvancedSeedManager = () => {
 
         <TabsContent value="neural" className="space-y-4">
           <NeuralSeedTab
-            openAiKey2={openAiKey2}
             seeds={seedsData}
             onSeedGenerated={loadSeedsData}
           />

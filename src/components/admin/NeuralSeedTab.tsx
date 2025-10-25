@@ -11,162 +11,31 @@ import { v4 as uuidv4 } from 'uuid';
 import { OPENAI_MODEL } from '../../openaiConfig';
 
 interface NeuralSeedTabProps {
-  openAiKey2: string;
   seeds: AdvancedSeed[];
   onSeedGenerated: () => void;
 }
 
-const NeuralSeedTab: React.FC<NeuralSeedTabProps> = ({ openAiKey2, seeds, onSeedGenerated }) => {
+const NeuralSeedTab: React.FC<NeuralSeedTabProps> = ({ seeds, onSeedGenerated }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState('');
 
   const generateSeedWithAI = async (emotion: string, triggers: string[]) => {
-    if (!openAiKey2.trim()) {
-      toast({
-        title: "Geen tweede OpenAI key",
-        description: "Voeg eerst de tweede OpenAI key toe voor AI-gegenereerde seeds.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsGenerating(true);
-
-    try {
-      incrementApiUsage('openai2');
-      incrementApiUsage('openai2');
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openAiKey2}`,
-        },
-        body: JSON.stringify({
-          model: OPENAI_MODEL,
-          messages: [
-            { role: 'user', content: `Genereer een therapeutische response voor de emotie "${emotion}" met triggers: ${triggers.join(', ')}. Geef alleen de Nederlandse response text terug, maximaal 100 woorden, empathisch en ondersteunend.` }
-          ],
-          temperature: 0.7,
-          max_tokens: 200
-        })
-      });
-
-      if (!response.ok) throw new Error('OpenAI API fout');
-
-      const data = await response.json();
-      const generatedText = data.choices[0]?.message?.content?.trim() || 'Ik begrijp hoe je je voelt.';
-      
-      // Import the function dynamically to avoid circular dependency
-      const { addAdvancedSeed } = await import('../../lib/advancedSeedStorage');
-      
-      const newSeed: AdvancedSeed = {
-        id: uuidv4(),
-        emotion,
-        type: 'validation',
-        label: 'Valideren',
-        triggers,
-        response: { nl: generatedText },
-        context: {
-          severity: 'medium',
-          situation: 'therapy'
-        },
-        meta: {
-          priority: 1,
-          weight: 1.0,
-          confidence: 0.8,
-          usageCount: 0,
-          ttl: 30
-        },
-        tags: ['ai-generated'],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        createdBy: 'ai',
-        isActive: true,
-        version: '1.0.0'
-      };
-
-      await addAdvancedSeed(newSeed);
-      onSeedGenerated();
-      toast({
-        title: "AI Seed gegenereerd",
-        description: `Nieuwe seed voor "${emotion}" is aangemaakt.`
-      });
-    } catch (error) {
-      toast({
-        title: "AI Generatie gefaald",
-        description: "Kon geen seed genereren met OpenAI.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGenerating(false);
-    }
+    // All AI seed generation now happens server-side via Edge Functions
+    toast({
+      title: "Feature tijdelijk uitgeschakeld",
+      description: "Neural seed generatie is verplaatst naar server-side. Gebruik de Enhanced Seed Generator in plaats daarvan.",
+      variant: "default"
+    });
   };
 
   const analyzeConversationPattern = async () => {
-    if (!openAiKey2.trim()) {
-      toast({
-        title: "Geen tweede OpenAI key",
-        description: "Deze functie vereist de tweede OpenAI key.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsAnalyzing(true);
-
-    try {
-      const usageData = seeds
-        .filter(seed => seed.meta.usageCount > 0)
-        .sort((a, b) => b.meta.usageCount - a.meta.usageCount)
-        .slice(0, 5);
-
-      const analysisPrompt = `
-        Analyseer deze emotie-patronen van therapeutische sessies:
-        ${usageData.map(seed => `${seed.emotion}: ${seed.meta.usageCount} keer gebruikt, severity: ${seed.context.severity}`).join('\n')}
-        
-        Geef 3 concrete aanbevelingen voor nieuwe seeds die ontbreken, gebaseerd op deze patronen.
-      `;
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openAiKey2}`,
-        },
-        body: JSON.stringify({
-          model: OPENAI_MODEL,
-          messages: [
-            { role: 'user', content: analysisPrompt }
-          ],
-          temperature: 0.6,
-          max_tokens: 300
-        })
-      });
-
-      if (!response.ok) throw new Error('OpenAI API fout');
-
-      const data = await response.json();
-      const recommendations =
-        data.choices[0]?.message?.content?.trim() ||
-        'Geen aanbevelingen beschikbaar.';
-      setAnalysisResults(recommendations);
-
-      toast({
-        title: "Patroon Analyse Voltooid",
-        description: "Analyse voltooid. Resultaten hieronder."
-      });
-
-      console.log('🧠 Neurosymbolische Patroon Analyse:', recommendations);
-    } catch (error) {
-      toast({
-        title: "Analyse gefaald",
-        description: "Kon conversatiepatronen niet analyseren.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
+    // All AI analysis now happens server-side via Edge Functions
+    toast({
+      title: "Feature tijdelijk uitgeschakeld",
+      description: "Patroon analyse is verplaatst naar server-side.",
+      variant: "default"
+    });
   };
 
   return (
