@@ -16,7 +16,7 @@ const SystemStatusDetails: React.FC<SystemStatusDetailsProps> = ({
 }) => {
   const neurosymbolicReady = 
     status.openaiApi1 === 'configured' && 
-    status.huggingFaceApi === 'configured' && 
+    status.browserML === 'configured' && 
     status.vectorApi === 'configured';
 
   return (

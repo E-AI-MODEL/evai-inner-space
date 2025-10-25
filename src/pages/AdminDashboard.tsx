@@ -38,7 +38,7 @@ const AdminDashboard = () => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     supabase: 'checking',
     openaiApi1: 'checking',
-    huggingFaceApi: 'checking',
+    browserML: 'checking',
     vectorApi: 'checking',
     seeds: 'loading',
   });
@@ -63,7 +63,7 @@ const AdminDashboard = () => {
           ? 'checking'
           : 'error',
       openaiApi1: connectivity.openaiApi1,
-      huggingFaceApi: connectivity.huggingFaceApi,
+      browserML: connectivity.browserML,
       vectorApi: connectivity.vectorApi,
       seeds: seeds.length > 0 ? 'loaded' : 'error',
     });

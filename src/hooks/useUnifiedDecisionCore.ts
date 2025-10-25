@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { generateEmbedding } from '../lib/embeddingUtils';
 import { EmotionDetection } from './useOpenAI';
 import { ChatHistoryItem } from '../types';
-import { usePythonTransformerEngine } from './usePythonTransformerEngine';
+import { useBrowserTransformerEngine } from './useBrowserTransformerEngine';
 
 export interface UnifiedKnowledgeItem {
   id: string;
@@ -38,8 +38,8 @@ export function useUnifiedDecisionCore() {
     insights: 0
   });
 
-  // 🧠 Neurosymbolisch: Python Transformer Engine voor snelle emotion pre-detection
-  const { detectEmotion } = usePythonTransformerEngine();
+  // 🧠 Neurosymbolisch: Browser Transformer Engine voor snelle emotion pre-detection
+  const { detectEmotionInBrowser } = useBrowserTransformerEngine();
 
   useEffect(() => {
     console.log('🚀 UnifiedDecisionCore v2.0 initializing...');
@@ -181,39 +181,39 @@ export function useUnifiedDecisionCore() {
     console.log('🧠 Unified Decision Core v3.0 NEUROSYMBOLISCH processing:', input.substring(0, 50));
 
     try {
-      // 🚀 NEUROSYMBOLISCH STAP 1: Python Transformer Engine voor snelle emotion pre-detection
-      let pythonEmotion: string | null = null;
-      let pythonConfidence = 0;
+      // 🚀 NEUROSYMBOLISCH STAP 1: Browser Transformer Engine voor snelle emotion pre-detection
+      let browserEmotion: string | null = null;
+      let browserConfidence = 0;
       
       try {
-        console.log('🐍 Python Engine: Pre-detecting emotion...');
-        const pythonResult = await detectEmotion(input);
+        console.log('🧠 Browser ML Engine: Pre-detecting emotion...');
+        const browserResult = await detectEmotionInBrowser(input, 'nl');
         
-        if (pythonResult?.ok && pythonResult.result?.emotion) {
-          pythonEmotion = pythonResult.result.emotion;
-          pythonConfidence = pythonResult.result.confidence || 0.7;
-          console.log(`✅ Python Engine detected: ${pythonEmotion} (${Math.round(pythonConfidence * 100)}%)`);
+        if (browserResult?.ok && browserResult.result?.emotion) {
+          browserEmotion = browserResult.result.emotion;
+          browserConfidence = browserResult.result.confidence || 0.7;
+          console.log(`✅ Browser ML Engine detected: ${browserEmotion} (${Math.round(browserConfidence * 100)}%)`);
         }
-      } catch (pythonErr) {
-        console.warn('⚠️ Python Engine pre-detection failed (niet kritiek):', pythonErr);
+      } catch (browserErr) {
+        console.warn('⚠️ Browser ML Engine pre-detection failed (niet kritiek):', browserErr);
       }
 
-      // 🚀 NEUROSYMBOLISCH STAP 2: Symbolic search met Python-enhanced query
-      const enhancedQuery = pythonEmotion ? `${pythonEmotion} ${input}` : input;
+      // 🚀 NEUROSYMBOLISCH STAP 2: Symbolic search met Browser ML-enhanced query
+      const enhancedQuery = browserEmotion ? `${browserEmotion} ${input}` : input;
       console.log('🔍 Enhanced search query:', enhancedQuery.substring(0, 80));
       
       const knowledgeItems = await searchUnifiedKnowledge(enhancedQuery, vectorApiKey, 15);
       
-      // 🚀 NEUROSYMBOLISCH STAP 3: Ranking met Python emotion boost
+      // 🚀 NEUROSYMBOLISCH STAP 3: Ranking met Browser ML emotion boost
       const rankedSources = rankKnowledgeSources(
         knowledgeItems, 
         input, 
         context,
-        pythonEmotion
+        browserEmotion
       );
       
       // 🚀 NEUROSYMBOLISCH STAP 4: Decision generation
-      const decision = await generateUnifiedDecision(input, rankedSources, context, history, pythonEmotion);
+      const decision = await generateUnifiedDecision(input, rankedSources, context, history, browserEmotion);
 
       // Log decision with v2.0 metadata
       await logUnifiedDecision(input, rankedSources, decision, {
@@ -236,16 +236,16 @@ export function useUnifiedDecisionCore() {
     sources: UnifiedKnowledgeItem[],
     input: string,
     context?: any,
-    pythonEmotion?: string | null
+    browserEmotion?: string | null
   ): UnifiedKnowledgeItem[] => {
     return sources
       .map(source => {
         let score = source.confidence_score || 0;
         
-        // 🐍 NEUROSYMBOLISCH: Boost als Python Engine dezelfde emotie detecteerde
-        if (pythonEmotion && source.emotion.toLowerCase().includes(pythonEmotion.toLowerCase())) {
+        // 🧠 NEUROSYMBOLISCH: Boost als Browser ML Engine dezelfde emotie detecteerde
+        if (browserEmotion && source.emotion.toLowerCase().includes(browserEmotion.toLowerCase())) {
           score += 0.4;
-          console.log(`🚀 Python boost for ${source.emotion}: +0.4`);
+          console.log(`🚀 Browser ML boost for ${source.emotion}: +0.4`);
         }
         
         if (source.emotion && input.toLowerCase().includes(source.emotion.toLowerCase())) {
@@ -280,7 +280,7 @@ export function useUnifiedDecisionCore() {
     sources: UnifiedKnowledgeItem[],
     context?: any,
     history?: ChatHistoryItem[],
-    pythonEmotion?: string | null
+    browserEmotion?: string | null
   ): Promise<DecisionResult | null> => {
     if (sources.length === 0) {
       return null;
@@ -313,7 +313,7 @@ export function useUnifiedDecisionCore() {
 
     const symbolicInferences = [
       `🧠 NEUROSYMBOLISCH v3.0`,
-      pythonEmotion ? `🐍 Python Engine: ${pythonEmotion}` : null,
+      browserEmotion ? `🧠 Browser ML Engine: ${browserEmotion}` : null,
       `🎯 Hoofdemotie: ${bestSource.emotion}`,
       `📊 Vertrouwen: ${Math.round(bestSource.confidence_score * 100)}%`,
       `🔗 Bronnen: ${sources.length} gevonden`,
@@ -329,7 +329,7 @@ export function useUnifiedDecisionCore() {
       sources,
       label,
       symbolicInferences,
-      meta: `🧠 Neurosymbolisch v3.0: ${sources.length} bronnen${pythonEmotion ? ` + Python(${pythonEmotion})` : ''}`
+      meta: `🧠 Neurosymbolisch v3.0: ${sources.length} bronnen${browserEmotion ? ` + Browser ML(${browserEmotion})` : ''}`
     };
   };
 

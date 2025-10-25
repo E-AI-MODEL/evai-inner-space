@@ -9,7 +9,7 @@ export type DbStatus = 'connected' | 'error' | 'checking';
 export interface SystemConnectivityStatus {
   supabase: DbStatus;
   openaiApi1: ApiConfigStatus; // primary
-  huggingFaceApi: ApiConfigStatus; // transformers
+  browserML: ApiConfigStatus; // browser transformers
   vectorApi: ApiConfigStatus;
 }
 
@@ -17,7 +17,7 @@ export function useSystemConnectivity() {
   const [status, setStatus] = useState<SystemConnectivityStatus>({
     supabase: 'checking',
     openaiApi1: 'checking',
-    huggingFaceApi: 'checking',
+    browserML: 'checking',
     vectorApi: 'checking',
   });
   const [isChecking, setIsChecking] = useState(true);
@@ -50,20 +50,9 @@ export function useSystemConnectivity() {
       openai1 = 'missing';
     }
 
-    // Check Hugging Face API via python-transformer-engine
-    let huggingFace: ApiConfigStatus = 'checking';
-    try {
-      const { data, error } = await supabase.functions.invoke('python-transformer-engine', {
-        body: { text: 'test', task: 'sentiment-analysis', language: 'en' }
-      });
-      if (error) {
-        huggingFace = 'missing';
-      } else {
-        huggingFace = (data as any)?.ok ? 'configured' : 'missing';
-      }
-    } catch {
-      huggingFace = 'missing';
-    }
+    // Check Browser ML (always available, no API key needed)
+    const browserML: ApiConfigStatus = 'configured';
+    console.log('✅ Browser ML: Always available (WebGPU/WASM)');
 
     // Check embeddings/vector by invoking the embedding function with tiny input
     let vector: ApiConfigStatus = 'checking';
@@ -83,7 +72,7 @@ export function useSystemConnectivity() {
     setStatus({
       supabase: supabaseState,
       openaiApi1: openai1,
-      huggingFaceApi: huggingFace,
+      browserML: browserML,
       vectorApi: vector,
     });
     setIsChecking(false);

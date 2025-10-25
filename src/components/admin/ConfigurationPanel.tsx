@@ -99,11 +99,11 @@ const ConfigurationPanel: React.FC = () => {
                       <div className="text-xs text-gray-600 capitalize">{connectivity.openaiApi1}</div>
                     </div>
                     <div className="text-center p-4 rounded-lg border">
-                      <div className={`text-2xl mb-2 ${connectivity.huggingFaceApi === 'configured' ? 'text-green-600' : 'text-red-600'}`}>
-                        {connectivity.huggingFaceApi === 'configured' ? '✅' : '❌'}
+                      <div className={`text-2xl mb-2 ${connectivity.browserML === 'configured' ? 'text-green-600' : 'text-red-600'}`}>
+                        {connectivity.browserML === 'configured' ? '✅' : '❌'}
                       </div>
-                      <div className="text-sm font-medium">Hugging Face API</div>
-                      <div className="text-xs text-gray-600 capitalize">{connectivity.huggingFaceApi}</div>
+                      <div className="text-sm font-medium">Browser ML (WebGPU/WASM)</div>
+                      <div className="text-xs text-gray-600 capitalize">{connectivity.browserML}</div>
                     </div>
                     <div className="text-center p-4 rounded-lg border">
                       <div className={`text-2xl mb-2 ${connectivity.vectorApi === 'configured' ? 'text-green-600' : 'text-red-600'}`}>

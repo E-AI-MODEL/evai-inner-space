@@ -1,3 +1,25 @@
+/**
+ * ⚠️ DEPRECATED: Python Transformer Engine Hook
+ * 
+ * This hook is DEPRECATED and replaced by useBrowserTransformerEngine.
+ * 
+ * DO NOT USE for new features. This is kept for:
+ * - Backward compatibility
+ * - Rollback option if Browser ML fails
+ * 
+ * Migration path:
+ * - Old: import { usePythonTransformerEngine } from './usePythonTransformerEngine'
+ * - New: import { useBrowserTransformerEngine } from './useBrowserTransformerEngine'
+ * 
+ * Browser ML benefits over Python API:
+ * ✅ Free (no API costs)
+ * ✅ Privacy (local inference)
+ * ✅ Offline (works without internet after model download)
+ * ✅ Fast (no network latency)
+ * 
+ * @deprecated Use useBrowserTransformerEngine instead
+ */
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
