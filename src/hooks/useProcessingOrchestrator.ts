@@ -269,7 +269,7 @@ export function useProcessingOrchestrator() {
             `🧠 Neurosymbolisch v3.0`,
             `Unified Core (${decisionResult.sources.length} sources)`,
             `Knowledge Base: ${knowledgeStats.total} items`,
-            `Python Transformer Engine`,
+            `Browser ML Engine (WebGPU/WASM)`,
             'Edge Functions'
           ],
           fallback: false,

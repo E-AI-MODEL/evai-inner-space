@@ -81,7 +81,7 @@ export const useHealthCheck = () => {
         component: 'Neurosymbolisch Core',
         status: 'success',
         message: '🧠 Pure neurosymbolische architectuur actief',
-        details: 'Python Transformer + Unified Knowledge Base'
+        details: 'Browser ML + Unified Knowledge Base'
       });
       updateProgress();
 
@@ -118,14 +118,14 @@ export const useHealthCheck = () => {
           component: '🧠 Neurosymbolische Integratie',
           status: 'success',
           message: 'Volledige neurosymbolische flow actief',
-          details: 'Python Transformer + Unified Core + Embeddings'
+          details: 'Browser ML + Unified Core + Embeddings'
         });
       } else if (api1Working && seedsWorking) {
         tests.push({
           component: '🧠 Neurosymbolische Integratie',
           status: 'warning',
           message: 'Gedeeltelijke integratie',
-          details: 'Basis werkt, Python Transformer mogelijk offline'
+          details: 'Basis werkt, Browser ML mogelijk offline'
         });
       } else {
         tests.push({
