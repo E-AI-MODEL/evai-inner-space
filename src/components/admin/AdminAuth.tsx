@@ -30,8 +30,8 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
     setIsAuthenticating(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('admin-auth', {
-        body: { password }
+      const { data, error } = await supabase.functions.invoke('evai-admin', {
+        body: { operation: 'auth', password }
       });
       
       if (error) {

@@ -67,63 +67,12 @@ export function useProcessingOrchestrator() {
         console.log('🔐 No client API key provided — using server-side keys via Edge Functions');
       }
 
-      // Vector and Google API keys are server-side only (via Edge Functions)
-      // No client-side keys needed anymore
-      const vectorApiKey = apiKey; // Fallback for legacy compatibility
-      const googleApiKey = ''; // Not used anymore
+      // 🧠 NEUROSYMBOLISCH v3.0: Direct naar Unified Decision Core
+      // evai-orchestrate VERWIJDERD - pure neurosymbolische flow
+      const vectorApiKey = apiKey;
+      const googleApiKey = '';
       
-      console.log('🚀 Calling evai-orchestrate first...');
-      try {
-        const hist = (conversationHistory || []).map((m: any) => ({ role: m.role || m.from || 'user', content: String(m.content || '') }));
-        const { data: orchData, error: orchErr } = await supabase.functions.invoke('evai-orchestrate', {
-          body: { userInput, history: hist.slice(-10) }
-        });
-
-        if (!orchErr && (orchData as any)?.ok && (orchData as any)?.response) {
-          const payload: any = orchData;
-          const res = payload.response;
-          const processingTime = payload?.meta?.processingTime || (Date.now() - startTime);
-
-          setStats(prev => ({
-            totalRequests: prev.totalRequests + 1,
-            averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
-            successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
-            lastProcessingTime: processingTime,
-            errorCount: prev.errorCount,
-            lastError: undefined
-          }));
-
-          return {
-            content: String(res.content || ''),
-            emotion: String(res.emotion || 'neutral'),
-            confidence: Math.max(0.1, Math.min(1, Number(res.confidence ?? 0.6))),
-            label: (res.label || 'Valideren') as any,
-            reasoning: String(res.reasoning || 'Neural orchestration'),
-            symbolicInferences: Array.isArray(res.symbolicInferences) ? res.symbolicInferences : [],
-            metadata: {
-              processingPath: 'neural',
-              totalProcessingTime: processingTime,
-              componentsUsed: Array.isArray(payload?.meta?.componentsUsed) ? payload.meta.componentsUsed : ['orchestrate'],
-              fallback: false,
-              apiCollaboration: {
-                api1Used: true,
-                api2Used: false,
-                vectorApiUsed: (payload?.meta?.componentsUsed || []).includes('embedding'),
-                googleApiUsed: false,
-                seedGenerated: false,
-                secondaryAnalysis: false
-              }
-            }
-          } as UnifiedResponse;
-        }
-        if (orchErr) {
-          console.warn('orchestrate edge error, falling back to unified core', orchErr);
-        }
-      } catch (e) {
-        console.warn('orchestrate call failed, continuing with unified core', e);
-      }
-
-      console.log('🧠 Calling Unified Decision Core with validated keys...');
+      console.log('🧠 NEUROSYMBOLISCH: Direct naar Unified Decision Core v3.0...');
       console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
       
       const decisionResult: DecisionResult | null = await makeUnifiedDecision(
@@ -143,8 +92,9 @@ export function useProcessingOrchestrator() {
             { role: 'user', content: userInput }
           ];
 
-          const { data, error } = await supabase.functions.invoke('openai-chat', {
+          const { data, error } = await supabase.functions.invoke('evai-core', {
             body: {
+              operation: 'chat',
               model: OPENAI_MODEL,
               messages,
               temperature: 0.7,
@@ -316,9 +266,11 @@ export function useProcessingOrchestrator() {
           processingPath: 'hybrid',
           totalProcessingTime: processingTime,
           componentsUsed: [
+            `🧠 Neurosymbolisch v3.0`,
             `Unified Core (${decisionResult.sources.length} sources)`,
             `Knowledge Base: ${knowledgeStats.total} items`,
-            'OpenAI via Edge Functions'
+            `Python Transformer Engine`,
+            'Edge Functions'
           ],
           fallback: false,
           apiCollaboration: {

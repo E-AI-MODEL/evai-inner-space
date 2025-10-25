@@ -37,7 +37,9 @@ export function useSystemConnectivity() {
     // Check OpenAI primary via lightweight validator function
     let openai1: ApiConfigStatus = 'checking';
     try {
-      const { data, error } = await supabase.functions.invoke('test-openai-key');
+      const { data, error } = await supabase.functions.invoke('evai-admin', {
+        body: { operation: 'test-openai-key', apiKey: 'server-key-test' }
+      });
       if (error) {
         openai1 = 'missing';
       } else {
@@ -66,8 +68,8 @@ export function useSystemConnectivity() {
     // Check embeddings/vector by invoking the embedding function with tiny input
     let vector: ApiConfigStatus = 'checking';
     try {
-      const { data, error } = await supabase.functions.invoke('openai-embedding', {
-        body: { input: 'ping', model: 'text-embedding-3-small' },
+      const { data, error } = await supabase.functions.invoke('evai-core', {
+        body: { operation: 'embedding', input: 'ping', model: 'text-embedding-3-small' },
       });
       if (error) {
         vector = 'missing';

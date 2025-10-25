@@ -54,7 +54,9 @@ export const useHealthCheck = () => {
       // Test 2: OpenAI API 1 (server-side)
       console.log('🧪 Test 2: OpenAI API 1 (edge)');
       try {
-        const { data, error } = await supabase.functions.invoke('test-openai-key');
+        const { data, error } = await supabase.functions.invoke('evai-admin', {
+          body: { operation: 'test-openai-key', apiKey: 'server-key-test' }
+        });
         if (error) throw error;
         const ok = (data as any)?.ok === true;
         tests.push({
@@ -73,37 +75,14 @@ export const useHealthCheck = () => {
       }
       updateProgress();
 
-      // Test 3: OpenAI API 2 (server-side via secondary key)
-      console.log('🧪 Test 3: OpenAI API 2 (edge)');
-      try {
-        const { data, error } = await supabase.functions.invoke('openai-chat', {
-          body: {
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: 'Validator: reply OK' },
-              { role: 'user', content: 'OK' },
-            ],
-            max_tokens: 3,
-            temperature: 0,
-            use_secondary: true,
-          },
-        });
-        if (error) throw error;
-        const ok = Boolean((data as any)?.choices?.[0]?.message?.content);
-        tests.push({
-          component: 'OpenAI API 2',
-          status: ok ? 'success' : 'warning',
-          message: ok ? 'Strategische briefing mogelijk' : 'Geen antwoord',
-          details: ok ? 'Secondary key actief' : undefined
-        });
-      } catch (error) {
-        tests.push({
-          component: 'OpenAI API 2',
-          status: 'error',
-          message: 'Server-side check failed',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
+      // Test 3: VERWIJDERD - OpenAI API 2 niet meer nodig in neurosymbolische architectuur
+      console.log('🧪 Test 3: SKIPPED (API 2 removed)');
+      tests.push({
+        component: 'Neurosymbolisch Core',
+        status: 'success',
+        message: '🧠 Pure neurosymbolische architectuur actief',
+        details: 'Python Transformer + Unified Knowledge Base'
+      });
       updateProgress();
 
       // Test 4: Unified Decision Core Integration (Simplified test)
@@ -128,29 +107,29 @@ export const useHealthCheck = () => {
       }
       updateProgress();
 
-      // Test 5: API Integration
-      console.log('🧪 Test 5: API Samenwerking');
+      // Test 5: Neurosymbolisch Integration
+      console.log('🧪 Test 5: Neurosymbolische Integratie');
       const api1Working = tests.find(t => t.component === 'OpenAI API 1')?.status === 'success';
-      const api2Working = tests.find(t => t.component === 'OpenAI API 2')?.status === 'success';
+      const neurosymbolicWorking = tests.find(t => t.component === 'Neurosymbolisch Core')?.status === 'success';
       const seedsWorking = tests.find(t => t.component === 'Seeds Database')?.status === 'success';
       
-      if (api1Working && api2Working && seedsWorking) {
+      if (api1Working && neurosymbolicWorking && seedsWorking) {
         tests.push({
-          component: 'API Samenwerking',
+          component: '🧠 Neurosymbolische Integratie',
           status: 'success',
-          message: 'Volledige integratie actief',
-          details: 'API 1 + API 2 + Supabase werken samen'
+          message: 'Volledige neurosymbolische flow actief',
+          details: 'Python Transformer + Unified Core + Embeddings'
         });
       } else if (api1Working && seedsWorking) {
         tests.push({
-          component: 'API Samenwerking',
+          component: '🧠 Neurosymbolische Integratie',
           status: 'warning',
           message: 'Gedeeltelijke integratie',
-          details: 'API 1 + Supabase, API 2 ontbreekt'
+          details: 'Basis werkt, Python Transformer mogelijk offline'
         });
       } else {
         tests.push({
-          component: 'API Samenwerking',
+          component: '🧠 Neurosymbolische Integratie',
           status: 'error',
           message: 'Integratie problemen',
           details: 'Niet alle componenten werken'

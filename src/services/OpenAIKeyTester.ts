@@ -10,7 +10,9 @@ export interface SupabaseOpenAIKeyTestResult {
 
 export async function testSupabaseOpenAIKey(): Promise<SupabaseOpenAIKeyTestResult> {
   try {
-    const { data, error } = await supabase.functions.invoke('test-openai-key', { body: {} });
+    const { data, error } = await supabase.functions.invoke('evai-admin', {
+      body: { operation: 'test-openai-key', apiKey: 'server-key-test' }
+    });
     if (error) return { ok: false, error: error.message };
     return data as SupabaseOpenAIKeyTestResult;
   } catch (e) {

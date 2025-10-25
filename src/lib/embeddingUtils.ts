@@ -7,11 +7,11 @@ export async function generateEmbedding(text: string, apiKey: string): Promise<n
     throw new Error('Text is required for generating embeddings');
   }
 
-  try {
-    incrementApiUsage('vector');
-    const { data, error } = await supabase.functions.invoke('openai-embedding', {
-      body: { input: text.substring(0, 8000), model: 'text-embedding-3-small' }
-    });
+      try {
+        incrementApiUsage('vector');
+        const { data, error } = await supabase.functions.invoke('evai-core', {
+          body: { operation: 'embedding', input: text.substring(0, 8000), model: 'text-embedding-3-small' }
+        });
 
     if (error) {
       throw new Error(`Embedding edge error: ${error.message}`);

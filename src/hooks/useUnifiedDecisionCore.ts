@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { generateEmbedding } from '../lib/embeddingUtils';
 import { EmotionDetection } from './useOpenAI';
 import { ChatHistoryItem } from '../types';
+import { usePythonTransformerEngine } from './usePythonTransformerEngine';
 
 export interface UnifiedKnowledgeItem {
   id: string;
@@ -36,6 +37,9 @@ export function useUnifiedDecisionCore() {
     patterns: 0,
     insights: 0
   });
+
+  // 🧠 Neurosymbolisch: Python Transformer Engine voor snelle emotion pre-detection
+  const { detectEmotion } = usePythonTransformerEngine();
 
   useEffect(() => {
     console.log('🚀 UnifiedDecisionCore v2.0 initializing...');
@@ -165,7 +169,7 @@ export function useUnifiedDecisionCore() {
     },
     history?: ChatHistoryItem[]
   ): Promise<DecisionResult | null> => {
-    console.log('🧠 makeUnifiedDecision v2.0 called with input:', input.substring(0, 50) + '...');
+    console.log('🧠 makeUnifiedDecision v3.0 NEUROSYMBOLISCH called with input:', input.substring(0, 50) + '...');
     console.log('🔑 API keys provided - primary:', !!apiKey, 'vector:', !!vectorApiKey, 'google:', !!googleApiKey);
     
     if (!input?.trim()) {
@@ -174,12 +178,42 @@ export function useUnifiedDecisionCore() {
     }
 
     setIsProcessing(true);
-    console.log('🧠 Unified Decision Core v2.0 processing:', input.substring(0, 50));
+    console.log('🧠 Unified Decision Core v3.0 NEUROSYMBOLISCH processing:', input.substring(0, 50));
 
     try {
-      const knowledgeItems = await searchUnifiedKnowledge(input, vectorApiKey, 15);
-      const rankedSources = rankKnowledgeSources(knowledgeItems, input, context);
-      const decision = await generateUnifiedDecision(input, rankedSources, context, history);
+      // 🚀 NEUROSYMBOLISCH STAP 1: Python Transformer Engine voor snelle emotion pre-detection
+      let pythonEmotion: string | null = null;
+      let pythonConfidence = 0;
+      
+      try {
+        console.log('🐍 Python Engine: Pre-detecting emotion...');
+        const pythonResult = await detectEmotion(input);
+        
+        if (pythonResult?.ok && pythonResult.result?.emotion) {
+          pythonEmotion = pythonResult.result.emotion;
+          pythonConfidence = pythonResult.result.confidence || 0.7;
+          console.log(`✅ Python Engine detected: ${pythonEmotion} (${Math.round(pythonConfidence * 100)}%)`);
+        }
+      } catch (pythonErr) {
+        console.warn('⚠️ Python Engine pre-detection failed (niet kritiek):', pythonErr);
+      }
+
+      // 🚀 NEUROSYMBOLISCH STAP 2: Symbolic search met Python-enhanced query
+      const enhancedQuery = pythonEmotion ? `${pythonEmotion} ${input}` : input;
+      console.log('🔍 Enhanced search query:', enhancedQuery.substring(0, 80));
+      
+      const knowledgeItems = await searchUnifiedKnowledge(enhancedQuery, vectorApiKey, 15);
+      
+      // 🚀 NEUROSYMBOLISCH STAP 3: Ranking met Python emotion boost
+      const rankedSources = rankKnowledgeSources(
+        knowledgeItems, 
+        input, 
+        context,
+        pythonEmotion
+      );
+      
+      // 🚀 NEUROSYMBOLISCH STAP 4: Decision generation
+      const decision = await generateUnifiedDecision(input, rankedSources, context, history, pythonEmotion);
 
       // Log decision with v2.0 metadata
       await logUnifiedDecision(input, rankedSources, decision, {
@@ -201,11 +235,18 @@ export function useUnifiedDecisionCore() {
   const rankKnowledgeSources = (
     sources: UnifiedKnowledgeItem[],
     input: string,
-    context?: any
+    context?: any,
+    pythonEmotion?: string | null
   ): UnifiedKnowledgeItem[] => {
     return sources
       .map(source => {
         let score = source.confidence_score || 0;
+        
+        // 🐍 NEUROSYMBOLISCH: Boost als Python Engine dezelfde emotie detecteerde
+        if (pythonEmotion && source.emotion.toLowerCase().includes(pythonEmotion.toLowerCase())) {
+          score += 0.4;
+          console.log(`🚀 Python boost for ${source.emotion}: +0.4`);
+        }
         
         if (source.emotion && input.toLowerCase().includes(source.emotion.toLowerCase())) {
           score += 0.3;
@@ -238,7 +279,8 @@ export function useUnifiedDecisionCore() {
     input: string,
     sources: UnifiedKnowledgeItem[],
     context?: any,
-    history?: ChatHistoryItem[]
+    history?: ChatHistoryItem[],
+    pythonEmotion?: string | null
   ): Promise<DecisionResult | null> => {
     if (sources.length === 0) {
       return null;
@@ -270,13 +312,14 @@ export function useUnifiedDecisionCore() {
     ].filter(Boolean).join('. ');
 
     const symbolicInferences = [
+      `🧠 NEUROSYMBOLISCH v3.0`,
+      pythonEmotion ? `🐍 Python Engine: ${pythonEmotion}` : null,
       `🎯 Hoofdemotie: ${bestSource.emotion}`,
       `📊 Vertrouwen: ${Math.round(bestSource.confidence_score * 100)}%`,
       `🔗 Bronnen: ${sources.length} gevonden`,
       `💡 Type: ${label}`,
-      `🚀 EvAI v2.0 Enhanced`,
       ...sources.slice(0, 2).map(s => `• ${s.emotion} (${Math.round(s.confidence_score * 100)}%)`)
-    ];
+    ].filter(Boolean) as string[];
 
     return {
       emotion: bestSource.emotion,
@@ -286,7 +329,7 @@ export function useUnifiedDecisionCore() {
       sources,
       label,
       symbolicInferences,
-      meta: `Unified Decision Core v2.0: ${sources.length} bronnen geanalyseerd`
+      meta: `🧠 Neurosymbolisch v3.0: ${sources.length} bronnen${pythonEmotion ? ` + Python(${pythonEmotion})` : ''}`
     };
   };
 

@@ -29,8 +29,8 @@ export function useAutonomousScan() {
   const runScan = async (sinceMinutes: number = 60) => {
     setIsScanning(true);
     try {
-      const { data, error } = await supabase.functions.invoke('evai-autolearn-scan', {
-        body: { sinceMinutes }
+      const { data, error } = await supabase.functions.invoke('evai-admin', {
+        body: { operation: 'autolearn-scan', sinceMinutes }
       });
 
       if (error) throw error;
