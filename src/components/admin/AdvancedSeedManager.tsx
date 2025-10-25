@@ -39,15 +39,6 @@ const AdvancedSeedManager = () => {
   const { processSeedBatch, isProcessing: isEmbedding } = useVectorEmbeddings();
 
   const handleEmbedAllSeeds = async () => {
-    const apiKey = localStorage.getItem('vector-api-key') || localStorage.getItem('openai-api-key');
-    if (!apiKey) {
-      toast({ 
-        title: "Vector/Embedding API Key ontbreekt", 
-        description: "Voeg eerst een API key toe voor vector embeddings.",
-        variant: "destructive" 
-      });
-      return;
-    }
     if (!seedsDataFromHook || seedsDataFromHook.length === 0) {
       toast({ 
         title: "Geen seeds om te embedden", 
@@ -59,14 +50,15 @@ const AdvancedSeedManager = () => {
 
     toast({ 
       title: "Starten met embedden van alle seeds...", 
-      description: `${seedsDataFromHook.length} seeds worden verwerkt. Dit kan even duren.` 
+      description: `${seedsDataFromHook.length} seeds worden verwerkt via Edge Functions. Dit kan even duren.` 
     });
     
     try {
-      const result = await processSeedBatch(seedsDataFromHook, apiKey);
+      // processSeedBatch uses server-side Edge Functions for embeddings
+      const result = await processSeedBatch(seedsDataFromHook);
       toast({
         title: "Embedding voltooid",
-        description: `${result.success} seeds succesvol verwerkt, ${result.failed} mislukt.`
+        description: `${result.success} seeds succesvol verwerkt via server-side embeddings, ${result.failed} mislukt.`
       });
     } catch (error) {
       toast({

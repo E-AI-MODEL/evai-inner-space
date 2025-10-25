@@ -8,13 +8,8 @@ export function useSeedBatchProcessor() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const processSeedBatch = async (
-    seeds: AdvancedSeed[],
-    apiKey: string
+    seeds: AdvancedSeed[]
   ): Promise<{ success: number; failed: number }> => {
-    if (!apiKey) {
-      console.error('API key is required for batch processing.');
-      return { success: 0, failed: seeds.length };
-    }
 
     setIsProcessing(true);
     let successCount = 0;
@@ -24,10 +19,22 @@ export function useSeedBatchProcessor() {
 
     for (const seed of seeds) {
       try {
-        // Gebruik een combinatie van velden voor een rijkere embedding
+        // Use server-side embedding generation via Edge Function
         const textToEmbed = `Emotie: ${seed.emotion}. Triggers: ${seed.triggers.join(', ')}. Response: ${seed.response.nl}`;
         
-        const embedding = await generateEmbedding(textToEmbed, apiKey);
+        // Call Edge Function for embedding generation
+        const { data: embData, error: embError } = await supabase.functions.invoke('openai-embedding', {
+          body: { input: textToEmbed, model: 'text-embedding-3-small' }
+        });
+        
+        if (embError || !embData) {
+          throw new Error(`Embedding generation failed: ${embError?.message || 'No data returned'}`);
+        }
+        
+        const embedding = (embData as any)?.embedding;
+        if (!embedding) {
+          throw new Error('No embedding vector returned from Edge Function');
+        }
         
         await supabase.from('vector_embeddings').insert({
           content_id: seed.id,

@@ -17,7 +17,6 @@ export function useVectorEmbeddings() {
 
   const searchSimilarEmbeddings = async (
     query: string,
-    apiKey: string,
     threshold: number = 0.7,
     maxResults: number = 5
   ): Promise<SimilarityResult[]> => {
@@ -72,8 +71,7 @@ export function useVectorEmbeddings() {
   };
 
   const processSeedBatch = async (
-    seeds: any[],
-    apiKey: string
+    seeds: any[]
   ): Promise<{ success: number; failed: number }> => {
     setIsProcessing(true);
     let success = 0;

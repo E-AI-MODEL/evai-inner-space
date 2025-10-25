@@ -7,11 +7,10 @@ export function useEmbeddingProcessor() {
   const { searchSimilarEmbeddings } = useVectorEmbeddings();
 
   const performNeuralSearch = async (
-    query: string,
-    vectorApiKey: string
+    query: string
   ): Promise<SimilarityResult[]> => {
-    if (!query?.trim() || !vectorApiKey?.trim()) {
-      console.log('🔍 Neural search skipped: missing query or API key');
+    if (!query?.trim()) {
+      console.log('🔍 Neural search skipped: missing query');
       return [];
     }
 
@@ -19,8 +18,9 @@ export function useEmbeddingProcessor() {
     console.log('🧠 Starting neural search for:', query.substring(0, 50));
 
     try {
-      const results = await searchSimilarEmbeddings(query, vectorApiKey);
-      console.log(`✅ Neural search complete: ${results.length} similarities found`);
+      // searchSimilarEmbeddings now uses server-side Edge Functions
+      const results = await searchSimilarEmbeddings(query);
+      console.log(`✅ Neural search complete (server-side): ${results.length} similarities found`);
       return results;
 
     } catch (error) {

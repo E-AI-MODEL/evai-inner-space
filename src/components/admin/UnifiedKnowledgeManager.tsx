@@ -87,13 +87,13 @@ const UnifiedKnowledgeManager: React.FC = () => {
     setIsSearching(true);
     
     try {
-      const vectorApiKey = localStorage.getItem('vector-api-key') || localStorage.getItem('openai-api-key');
-      const results = await searchUnifiedKnowledge(searchTerm, vectorApiKey, 20);
+      // searchUnifiedKnowledge uses server-side Edge Functions for embeddings
+      const results = await searchUnifiedKnowledge(searchTerm, undefined, 20);
       setSearchResults(results);
       
       toast({
         title: "Search Complete",
-        description: `Found ${results.length} knowledge items.`,
+        description: `Found ${results.length} knowledge items via server-side search.`,
       });
     } catch (error) {
       toast({

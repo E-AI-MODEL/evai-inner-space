@@ -25,19 +25,17 @@ export function useOptimizedEmbeddings() {
 
   const processAndStore = async (
     content: string,
-    apiKey: string,
     metadata?: Record<string, any>
   ) => {
     setIsOptimizing(true);
     
     try {
-      console.log('🔄 Processing and storing embedding...');
+      console.log('🔄 Processing and storing embedding (server-side)...');
       
-      // For now, we'll just search for similar embeddings
-      // In a full implementation, this would store new embeddings
-      const results = await searchSimilarEmbeddings(content, apiKey);
+      // searchSimilarEmbeddings now uses server-side Edge Functions
+      const results = await searchSimilarEmbeddings(content);
       
-      console.log('✅ Optimized embedding processing complete');
+      console.log('✅ Optimized embedding processing complete (server-side)');
       return results;
     } catch (error) {
       console.error('🔴 Optimized embedding error:', error);
@@ -49,10 +47,9 @@ export function useOptimizedEmbeddings() {
 
   const searchSimilar = async (
     query: string,
-    apiKey: string,
     threshold?: number
   ) => {
-    return await searchSimilarEmbeddings(query, apiKey, threshold);
+    return await searchSimilarEmbeddings(query, threshold);
   };
 
   const updateConfig = (newConfig: EmbeddingConfig) => {

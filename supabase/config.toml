@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.evai-orchestrate]
 verify_jwt = false
+
+[functions.admin-auth]
+verify_jwt = false

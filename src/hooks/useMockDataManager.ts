@@ -10,11 +10,21 @@ export function useMockDataManager() {
     setMockMode(false);
     setActiveMockKeys({});
     
-    // Remove any existing mock keys from localStorage
+    console.log('🧹 Cleaning up all legacy localStorage keys...');
+    
+    // Remove mock keys
     localStorage.removeItem('evai-mock-mode');
     ['openai', 'google', 'anthropic', 'vector'].forEach(provider => {
       localStorage.removeItem(`mock-${provider}-key`);
     });
+    
+    // Remove real API keys (moved to server-side)
+    localStorage.removeItem('openai-api-key');
+    localStorage.removeItem('openai-api-key-2');
+    localStorage.removeItem('vector-api-key');
+    localStorage.removeItem('google-api-key');
+    
+    console.log('✅ Legacy localStorage cleanup complete - all API keys now server-side');
   }, []);
 
   const toggleMockMode = () => {

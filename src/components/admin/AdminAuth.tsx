@@ -6,31 +6,67 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { Brain, Shield, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminAuthProps {
   onAuthenticated: () => void;
 }
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
-
 const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
   const [password, setPassword] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    if (password === ADMIN_PASSWORD) {
-      onAuthenticated();
+  const handleLogin = async () => {
+    if (!password.trim()) {
       toast({
-        title: "Toegang verleend",
-        description: "Welkom in het EvAI Admin Dashboard.",
-      });
-    } else {
-      toast({
-        title: "Verkeerd wachtwoord",
-        description: "De ingevoerde code is onjuist.",
+        title: "Wachtwoord vereist",
+        description: "Voer een wachtwoord in.",
         variant: "destructive",
       });
-      setPassword('');
+      return;
+    }
+
+    setIsAuthenticating(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: { password }
+      });
+      
+      if (error) {
+        console.error('Admin auth error:', error);
+        toast({
+          title: "Authenticatie fout",
+          description: "Er is een fout opgetreden tijdens authenticatie.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data?.authenticated) {
+        onAuthenticated();
+        toast({
+          title: "Toegang verleend",
+          description: "Welkom in het EvAI Admin Dashboard.",
+        });
+      } else {
+        toast({
+          title: "Verkeerd wachtwoord",
+          description: "De ingevoerde code is onjuist.",
+          variant: "destructive",
+        });
+        setPassword('');
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+      toast({
+        title: "Authenticatie gefaald",
+        description: "Kan geen verbinding maken met authenticatie service.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -72,9 +108,9 @@ const AdminAuth: React.FC<AdminAuthProps> = ({ onAuthenticated }) => {
               />
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isAuthenticating}>
               <Brain className="h-4 w-4 mr-2" />
-              Toegang Verkrijgen
+              {isAuthenticating ? 'Authenticeren...' : 'Toegang Verkrijgen'}
             </Button>
           </form>
           

@@ -115,9 +115,8 @@ export function useSelfLearningManager() {
 
       // 5) Embedden voor vector search en consolideren naar unified_knowledge
       try {
-        if (vectorKey) {
-          await processSeedBatch([newSeed], vectorKey);
-        }
+        // processSeedBatch now uses server-side Edge Functions
+        await processSeedBatch([newSeed]);
         await supabase.rpc('consolidate_knowledge');
       } catch (embedErr) {
         console.warn('⚠️ Self-learning: embedding/consolidation failed', embedErr);

@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { testOpenAIApiKey, testOpenAIChat } from '@/utils/apiKeyTester';
 import { OPENAI_MODEL } from '../openaiConfig';
+import { supabase } from '@/integrations/supabase/client';
 
 const DebugPanel: React.FC = () => {
   const [debugInfo, setDebugInfo] = useState<string>('');
@@ -14,51 +14,51 @@ const DebugPanel: React.FC = () => {
     setDebugInfo('🔍 Running system diagnostics...\n');
 
     try {
-      // Check localStorage API keys
-      const apiKey1 = localStorage.getItem('openai-api-key');
-      const apiKey2 = localStorage.getItem('openai-api-key-2');
-      const vectorKey = localStorage.getItem('vector-api-key');
-
-      setDebugInfo(prev => prev + `\n📋 ENVIRONMENT CHECK:\n`);
+      setDebugInfo(prev => prev + `\n📋 ARCHITECTURE CHECK:\n`);
+      setDebugInfo(prev => prev + `• Architecture: ✅ Server-Side (Production)\n`);
+      setDebugInfo(prev => prev + `• API Keys: ✅ Managed via Edge Functions\n`);
       setDebugInfo(prev => prev + `• Model: ${OPENAI_MODEL}\n`);
-      setDebugInfo(prev => prev + `• API Key 1: ${apiKey1 ? '✅ Present' : '❌ Missing'}\n`);
-      setDebugInfo(prev => prev + `• API Key 2: ${apiKey2 ? '✅ Present' : '❌ Missing'}\n`);
-      setDebugInfo(prev => prev + `• Vector Key: ${vectorKey ? '✅ Present' : '❌ Missing'}\n`);
-
-      if (apiKey1) {
-        setDebugInfo(prev => prev + `\n🧪 TESTING API KEY 1:\n`);
+      setDebugInfo(prev => prev + `• Security Mode: Production (no client-side keys)\n`);
+      
+      setDebugInfo(prev => prev + `\n🧪 TESTING EDGE FUNCTIONS:\n`);
+      setDebugInfo(prev => prev + `• evai-orchestrate: Testing...\n`);
+      
+      try {
+        const testStart = Date.now();
+        const { data, error } = await supabase.functions.invoke('evai-orchestrate', {
+          body: { userInput: 'test diagnostic message', history: [] }
+        });
+        const testDuration = Date.now() - testStart;
         
-        const basicTest = await testOpenAIApiKey(apiKey1);
-        setDebugInfo(prev => prev + `• Format validation: ${basicTest.isValid ? '✅ Valid' : '❌ Invalid'}\n`);
-        
-        if (basicTest.isValid) {
-          setDebugInfo(prev => prev + `• Response time: ${basicTest.responseTime}ms\n`);
-          
-          const chatTest = await testOpenAIChat(apiKey1);
-          setDebugInfo(prev => prev + `• Chat completion: ${chatTest.isValid ? '✅ Working' : '❌ Failed'}\n`);
-          
-          if (chatTest.isValid) {
-            setDebugInfo(prev => prev + `• Test response: "${chatTest.details?.response || 'Success'}"\n`);
-            setDebugInfo(prev => prev + `• Chat response time: ${chatTest.responseTime}ms\n`);
-          } else {
-            setDebugInfo(prev => prev + `• Chat error: ${chatTest.error}\n`);
-          }
+        if (error) {
+          setDebugInfo(prev => prev + `• evai-orchestrate: ❌ ${error.message}\n`);
         } else {
-          setDebugInfo(prev => prev + `• Error: ${basicTest.error}\n`);
+          setDebugInfo(prev => prev + `• evai-orchestrate: ✅ Connected (${testDuration}ms)\n`);
+          setDebugInfo(prev => prev + `• Response received: ${data ? 'Valid' : 'Empty'}\n`);
         }
+      } catch (err) {
+        setDebugInfo(prev => prev + `• evai-orchestrate: ❌ ${err instanceof Error ? err.message : 'Unknown error'}\n`);
       }
-
-      if (apiKey2) {
-        setDebugInfo(prev => prev + `\n🧪 TESTING API KEY 2:\n`);
+      
+      setDebugInfo(prev => prev + `\n🧠 TESTING EMBEDDING FUNCTION:\n`);
+      setDebugInfo(prev => prev + `• openai-embedding: Testing...\n`);
+      
+      try {
+        const embStart = Date.now();
+        const { data: embData, error: embError } = await supabase.functions.invoke('openai-embedding', {
+          body: { input: 'test', model: 'text-embedding-3-small' }
+        });
+        const embDuration = Date.now() - embStart;
         
-        const basicTest2 = await testOpenAIApiKey(apiKey2);
-        setDebugInfo(prev => prev + `• Format validation: ${basicTest2.isValid ? '✅ Valid' : '❌ Invalid'}\n`);
-        
-        if (basicTest2.isValid) {
-          setDebugInfo(prev => prev + `• Response time: ${basicTest2.responseTime}ms\n`);
+        if (embError) {
+          setDebugInfo(prev => prev + `• openai-embedding: ❌ ${embError.message}\n`);
         } else {
-          setDebugInfo(prev => prev + `• Error: ${basicTest2.error}\n`);
+          setDebugInfo(prev => prev + `• openai-embedding: ✅ Connected (${embDuration}ms)\n`);
+          const embedding = (embData as any)?.embedding;
+          setDebugInfo(prev => prev + `• Embedding vector: ${embedding ? `${embedding.length} dimensions` : 'Invalid'}\n`);
         }
+      } catch (err) {
+        setDebugInfo(prev => prev + `• openai-embedding: ❌ ${err instanceof Error ? err.message : 'Unknown error'}\n`);
       }
 
       setDebugInfo(prev => prev + `\n🌐 NETWORK CHECK:\n`);
