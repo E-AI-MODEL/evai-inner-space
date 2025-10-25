@@ -72,13 +72,10 @@ export function useProcessingOrchestrator() {
         console.log('🔐 No client API key provided — using server-side keys via Edge Functions');
       }
 
-      const vectorApiKey = localStorage.getItem('vector-api-key') || apiKey;
-      const googleApiKey = localStorage.getItem('google-api-key') || '';
-      
-      // Validate vector API key if present
-      if (vectorApiKey && !validateApiKey(vectorApiKey)) {
-        console.warn('⚠️ Vector API key is invalid, falling back to primary key');
-      }
+      // Vector and Google API keys are server-side only (via Edge Functions)
+      // No client-side keys needed anymore
+      const vectorApiKey = apiKey; // Fallback for legacy compatibility
+      const googleApiKey = ''; // Not used anymore
       
       console.log('🚀 Calling evai-orchestrate first...');
       try {

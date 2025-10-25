@@ -16,23 +16,14 @@ export function useAdvancedSeedManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
-  const [openAiKey2, setOpenAiKey2] = useState('');
 
   useEffect(() => {
     loadSeedsData();
-    loadOpenAiKey2();
   }, []);
 
   const loadSeedsData = async () => {
     const advanced = await loadAdvancedSeeds();
     setSeedsData(advanced);
-  };
-
-  const loadOpenAiKey2 = () => {
-    const savedKey = localStorage.getItem('openai-api-key-2');
-    if (savedKey) {
-      setOpenAiKey2(savedKey);
-    }
   };
 
   const filteredSeeds = seedsData.filter(seed => {
@@ -89,7 +80,6 @@ export function useAdvancedSeedManager() {
     setFilterType,
     filterSeverity,
     setFilterSeverity,
-    openAiKey2,
     filteredSeeds,
     handleSaveSeed,
     handleDeleteSeed,

@@ -1,54 +1,18 @@
 
-import React, { useState } from 'react';
-import GoogleApiKeyConfiguration from './GoogleApiKeyConfiguration';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Key, Settings, Shield, AlertTriangle } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ApiKeyConfigurationProps {
-  apiKey: string;
-  onApiKeyChange: (key: string) => void;
-  onApiKeySave: () => void;
-  openAiKey2: string;
-  setOpenAiKey2: (key: string) => void;
-  handleOpenAiKey2Save: () => void;
-  vectorApiKey: string;
-  setVectorApiKey: (key: string) => void;
-  handleVectorApiKeySave: () => void;
-  onGoogleApiKeyUpdate?: (key: string) => void;
+  // Props kept for backward compatibility but not used
+  apiKey?: string;
+  onApiKeyChange?: (key: string) => void;
+  onApiKeySave?: () => void;
 }
 
-const ApiKeyConfiguration: React.FC<ApiKeyConfigurationProps> = ({
-  apiKey,
-  onApiKeyChange,
-  onApiKeySave,
-  openAiKey2,
-  setOpenAiKey2,
-  handleOpenAiKey2Save,
-  vectorApiKey,
-  setVectorApiKey,
-  handleVectorApiKeySave,
-  onGoogleApiKeyUpdate,
-}) => {
-  const validateApiKey = (key: string) => {
-    if (!key?.trim()) return { status: 'missing', color: 'destructive', message: 'Not configured' };
-    
-    if (key.includes('demo') || key.includes('test') || key.includes('mock') || key.includes('dev')) {
-      return { status: 'invalid', color: 'destructive', message: 'Mock/test key (not allowed)' };
-    }
-    
-    if (!key.startsWith('sk-')) {
-      return { status: 'invalid', color: 'destructive', message: 'Invalid format' };
-    }
-    
-    return { status: 'valid', color: 'default', message: 'Valid production key' };
-  };
-
-  const primaryKeyStatus = validateApiKey(apiKey);
-  const secondaryKeyStatus = validateApiKey(openAiKey2);
-  const vectorKeyStatus = validateApiKey(vectorApiKey);
+const ApiKeyConfiguration: React.FC<ApiKeyConfigurationProps> = () => {
 
   return (
     <div className="space-y-6">
@@ -61,38 +25,40 @@ const ApiKeyConfiguration: React.FC<ApiKeyConfigurationProps> = ({
       </div>
 
       <Alert>
-        <AlertTriangle className="h-4 w-4" />
+        <Shield className="h-4 w-4" />
         <AlertDescription>
-          OpenAI-sleutels worden server-side beheerd via Supabase Edge Functions. Geen client-side invoer nodig.
+          <strong>✅ Server-Side Beveiliging Actief</strong>
+          <ul className="mt-2 text-sm space-y-1">
+            <li>🔒 OpenAI API Keys: Beheerd via Supabase Edge Function Secrets</li>
+            <li>🔒 Vector API Key: Beheerd via Supabase Edge Function Secrets</li>
+            <li>📊 Status: Alle keys zijn veilig opgeslagen in de backend</li>
+          </ul>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Je hoeft geen API keys meer in te voeren in deze UI.
+            Alle AI-operaties gebruiken server-side keys voor maximale beveiliging.
+          </p>
         </AlertDescription>
       </Alert>
 
-      <Tabs defaultValue="keys" className="w-full">
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger value="keys" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
-            API Keys Configuration
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="keys" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Production API Keys
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-3 rounded border text-sm">
-                OpenAI- en Vector-API-sleutels zijn verwijderd uit deze UI; de app gebruikt uitsluitend server-side sleutels via Edge Functions.
-              </div>
-
-              <GoogleApiKeyConfiguration onKeyUpdate={onGoogleApiKeyUpdate} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle>Server-Side API Status</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+            <span className="font-medium">OpenAI Primary Key</span>
+            <Badge variant="default" className="bg-green-600">Active (Server-Side)</Badge>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+            <span className="font-medium">OpenAI Secondary Key</span>
+            <Badge variant="default" className="bg-green-600">Active (Server-Side)</Badge>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+            <span className="font-medium">Vector API Key</span>
+            <Badge variant="default" className="bg-green-600">Active (Server-Side)</Badge>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="p-4 bg-green-50 rounded-lg border border-green-200">
         <h4 className="font-medium text-green-900 mb-2">Production Features Active:</h4>

@@ -26,7 +26,9 @@ export function useSelfLearningManager() {
   ): Promise<SelfLearningOutcome> => {
     // Proactief, impliciet leren op basis van onzekerheid/novelty/correcties
     try {
-      const vectorKey = localStorage.getItem('vector-api-key') || '';
+      // Vector embeddings are generated server-side via openai-embedding Edge Function
+      // No client-side vector key needed
+      const vectorKey = ''; // Kept for backward compatibility with searchUnifiedKnowledge
 
       // 1) Detectiecriteria
       const lowConfidence = (result.confidence ?? 0) < 0.6;
