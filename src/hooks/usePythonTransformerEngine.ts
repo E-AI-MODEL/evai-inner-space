@@ -100,16 +100,35 @@ export function usePythonTransformerEngine() {
 
   const pingEngine = async (): Promise<boolean> => {
     try {
+      console.log('🐍 Pinging Python Engine with real test...');
+      
+      // Perform REAL test call to verify Hugging Face API works
       const { data, error } = await supabase.functions.invoke('python-transformer-engine', {
-        body: { ping: true }
+        body: { 
+          text: 'This is a test sentence for sentiment analysis.', 
+          task: 'sentiment-analysis',
+          language: 'en'
+        }
       });
 
-      if (error || !data?.ok) {
-        console.log('🔴 Python Engine ping failed');
+      if (error) {
+        console.log('🔴 Python Engine ping failed (Edge Function error):', error);
         return false;
       }
 
-      console.log('✅ Python Engine is online:', data);
+      if (!(data as any)?.ok) {
+        console.log('🔴 Python Engine ping failed (response not ok):', data);
+        return false;
+      }
+
+      // Check if result contains expected sentiment data
+      const result = (data as any)?.result;
+      if (!result || !result.sentiment) {
+        console.log('🔴 Python Engine ping failed (no sentiment in result):', result);
+        return false;
+      }
+
+      console.log('✅ Python Engine is online with Hugging Face API working');
       return true;
     } catch (error) {
       console.error('🔴 Python Engine ping error:', error);

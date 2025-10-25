@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, BarChart3, Database, Settings, Zap, Brain } from 'lucide-react';
+import { User, BarChart3, Database, Settings, Zap, Cpu } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -21,7 +21,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ active, onChange }) => {
     { key: 'autonomy', label: 'Autonomous', icon: Zap },
     { key: 'seeds', label: 'Knowledge', icon: Database },
     { key: 'settings', label: 'Settings', icon: Settings },
-    { key: 'python', label: 'Python Engine', icon: Brain },
+    { key: 'python', label: 'Python Engine', icon: Cpu },
   ] as const;
 
   return (

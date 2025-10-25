@@ -38,7 +38,7 @@ const ServerSideApiStatus: React.FC = () => {
           <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
             <span className="text-sm font-medium flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              OpenAI Secondary API
+              Hugging Face Transformers
             </span>
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
               Server-Side Active

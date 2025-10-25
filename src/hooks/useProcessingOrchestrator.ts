@@ -38,8 +38,7 @@ export function useProcessingOrchestrator() {
   const orchestrateProcessing = useCallback(async (
     userInput: string,
     conversationHistory: any[],
-    apiKey?: string,
-    apiKey2?: string
+    apiKey?: string
   ): Promise<UnifiedResponse> => {
     console.log('🎼 Production orchestration starting...');
     console.log('📝 User input:', userInput.substring(0, 50) + '...');
@@ -53,10 +52,6 @@ export function useProcessingOrchestrator() {
       // Optional API key validation: if provided, ensure it's valid; else rely on server-side keys via Edge Functions
       if (apiKey && !validateApiKey(apiKey)) {
         throw new Error('OpenAI API key ongeldig. Verwijder of vervang in instellingen.');
-      }
-
-      if (apiKey2 && !validateApiKey(apiKey2)) {
-        console.warn('⚠️ Secondary API key is invalid, continuing without it');
       }
 
       if (apiKey) {
@@ -328,9 +323,9 @@ export function useProcessingOrchestrator() {
           fallback: false,
           apiCollaboration: {
             api1Used: !!apiKey,
-            api2Used: !!apiKey2 && validateApiKey(apiKey2),
+            api2Used: false, // Removed - no longer exists
             vectorApiUsed: !!vectorApiKey && validateApiKey(vectorApiKey),
-            googleApiUsed: !!googleApiKey,
+            googleApiUsed: false, // Google API not used anymore
             seedGenerated: false,
             secondaryAnalysis: false
           }

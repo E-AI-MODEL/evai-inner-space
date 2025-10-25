@@ -44,14 +44,13 @@ export function useChat() {
       // Get optional API keys from localStorage (deprecated - kept for backward compatibility only)
       // All production API calls now go through Supabase Edge Functions with server-side keys
       const storedApiKey = undefined; // Removed client-side API key usage
-      const storedApiKey2 = undefined; // Removed client-side API key usage
       
-      console.log('🔑 Using keys - Primary present:', !!storedApiKey, 'Secondary present:', !!storedApiKey2);
+      console.log('🔑 Using keys - Primary present:', !!storedApiKey);
       console.log('📋 History length:', history.length);
 
-      // Process through the orchestrator with real API keys
-      console.log('🎼 Calling orchestrateProcessing with real API keys...');
-      const result: UnifiedResponse = await orchestrateProcessing(message, history, storedApiKey, storedApiKey2);
+      // Process through the orchestrator
+      console.log('🎼 Calling orchestrateProcessing...');
+      const result: UnifiedResponse = await orchestrateProcessing(message, history, storedApiKey);
       console.log('✅ orchestrateProcessing returned result:', result);
 
       const aiResponse: Message = {

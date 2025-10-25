@@ -9,7 +9,7 @@ export type DbStatus = 'connected' | 'error' | 'checking';
 export interface SystemConnectivityStatus {
   supabase: DbStatus;
   openaiApi1: ApiConfigStatus; // primary
-  openaiApi2: ApiConfigStatus; // secondary
+  huggingFaceApi: ApiConfigStatus; // transformers
   vectorApi: ApiConfigStatus;
 }
 
@@ -17,7 +17,7 @@ export function useSystemConnectivity() {
   const [status, setStatus] = useState<SystemConnectivityStatus>({
     supabase: 'checking',
     openaiApi1: 'checking',
-    openaiApi2: 'checking',
+    huggingFaceApi: 'checking',
     vectorApi: 'checking',
   });
   const [isChecking, setIsChecking] = useState(true);
@@ -48,8 +48,20 @@ export function useSystemConnectivity() {
       openai1 = 'missing';
     }
 
-    // Secondary API no longer exists - mark as configured if primary works
-    const openai2: ApiConfigStatus = openai1 === 'configured' ? 'configured' : 'missing';
+    // Check Hugging Face API via python-transformer-engine
+    let huggingFace: ApiConfigStatus = 'checking';
+    try {
+      const { data, error } = await supabase.functions.invoke('python-transformer-engine', {
+        body: { text: 'test', task: 'sentiment-analysis', language: 'en' }
+      });
+      if (error) {
+        huggingFace = 'missing';
+      } else {
+        huggingFace = (data as any)?.ok ? 'configured' : 'missing';
+      }
+    } catch {
+      huggingFace = 'missing';
+    }
 
     // Check embeddings/vector by invoking the embedding function with tiny input
     let vector: ApiConfigStatus = 'checking';
@@ -69,7 +81,7 @@ export function useSystemConnectivity() {
     setStatus({
       supabase: supabaseState,
       openaiApi1: openai1,
-      openaiApi2: openai2,
+      huggingFaceApi: huggingFace,
       vectorApi: vector,
     });
     setIsChecking(false);

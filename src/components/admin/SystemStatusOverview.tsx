@@ -7,18 +7,18 @@ import { CheckCircle, AlertCircle, Database } from 'lucide-react';
 
 interface SystemStatusOverviewProps {
   openAiActive: boolean;
-  openAi2Active: boolean;
+  huggingFaceActive: boolean;
   vectorActive: boolean;
   databaseActive: boolean;
 }
 
 const SystemStatusOverview: React.FC<SystemStatusOverviewProps> = ({
   openAiActive,
-  openAi2Active,
+  huggingFaceActive,
   vectorActive,
   databaseActive,
 }) => {
-  const allActive = openAiActive && openAi2Active && vectorActive;
+  const allActive = openAiActive && huggingFaceActive && vectorActive && databaseActive;
 
   return (
     <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-4">
@@ -36,9 +36,9 @@ const SystemStatusOverview: React.FC<SystemStatusOverviewProps> = ({
         </div>
         
         <div className="flex items-center justify-between">
-          <span className="text-xs sm:text-sm truncate mr-2">API Key 2</span>
-          <Badge variant={openAi2Active ? "default" : "secondary"} className="text-xs flex-shrink-0">
-            {openAi2Active ? "Active" : "Inactive"}
+          <span className="text-xs sm:text-sm truncate mr-2">Hugging Face API</span>
+          <Badge variant={huggingFaceActive ? "default" : "secondary"} className="text-xs flex-shrink-0">
+            {huggingFaceActive ? "Active" : "Inactive"}
           </Badge>
         </div>
 
