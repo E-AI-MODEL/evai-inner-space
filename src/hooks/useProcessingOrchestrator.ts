@@ -97,8 +97,11 @@ export function useProcessingOrchestrator() {
 
       // 🎭 STAP 1: Creëer Strategic Briefing (Regisseur)
       let strategicBriefing = null;
-      if (conversationHistory.length >= 2) {
-        console.log('🎭 Regisseur: Creating Strategic Briefing...');
+      console.log(`🎭 Regisseur check: conversationHistory.length = ${conversationHistory.length}`);
+      
+      if (conversationHistory.length >= 1) {
+        console.log('🎭 Regisseur: ACTIEF - Creating Strategic Briefing...');
+        console.log('📝 User input voor briefing:', userInput.substring(0, 100));
         try {
           strategicBriefing = await createStrategicBriefing(
             userInput,
@@ -107,12 +110,18 @@ export function useProcessingOrchestrator() {
             apiKey || ''
           );
           if (strategicBriefing) {
-            console.log('✅ Strategic Briefing:', strategicBriefing.goal);
+            console.log('✅ Strategic Briefing SUCCESS:', strategicBriefing.goal);
             console.log('📝 Key points:', strategicBriefing.keyPoints);
+            console.log('🎯 Priority:', strategicBriefing.priority);
+          } else {
+            console.warn('⚠️ Strategic Briefing returned NULL');
           }
         } catch (briefingError) {
-          console.warn('⚠️ Strategic briefing failed, continuing without:', briefingError);
+          console.error('🔴 Strategic briefing FAILED:', briefingError);
+          console.warn('⚠️ Continuing without Strategic Briefing');
         }
+      } else {
+        console.log('⏭️ Regisseur: SKIP - te kort conversation history');
       }
 
       // 🧠 STAP 2: Neurosymbolisch v3.0 - Direct naar Unified Decision Core
