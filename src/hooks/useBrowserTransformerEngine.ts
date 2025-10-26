@@ -17,6 +17,12 @@ env.useBrowserCache = true;
 
 const MODEL_NAME = 'Xenova/bert-base-multilingual-uncased-sentiment';
 
+// ============ MODULE-LEVEL STATE (Persistent across component mounts) ============
+const pipelineRef = { current: null as any };
+let globalDevice: 'webgpu' | 'wasm' | null = localStorage.getItem('browserML-device') as any || null;
+let globalModelLoaded = localStorage.getItem('browserML-loaded') === 'true';
+let isInitializing = false;
+
 export interface BrowserEngineResult {
   emotion: string;
   confidence: number;
@@ -51,10 +57,8 @@ export function useBrowserTransformerEngine() {
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [lastResult, setLastResult] = useState<BrowserEngineResponse | null>(null);
-  const [device, setDevice] = useState<'webgpu' | 'wasm' | null>(null);
+  const [, forceUpdate] = useState(0); // Force re-render trigger
   
-  const pipelineRef = useRef<any>(null);
-  const isInitializing = useRef(false);
   const lastProgressUpdate = useRef<number>(0); // Throttle progress updates
 
   /**
@@ -62,13 +66,13 @@ export function useBrowserTransformerEngine() {
    */
   const initPipeline = useCallback(async (): Promise<any> => {
     if (pipelineRef.current) return pipelineRef.current;
-    if (isInitializing.current) {
+    if (isInitializing) {
       // Wait for ongoing initialization
       await new Promise(resolve => setTimeout(resolve, 100));
       return pipelineRef.current;
     }
 
-    isInitializing.current = true;
+    isInitializing = true;
     setIsModelLoading(true);
     setLoadingProgress(0);
 
@@ -99,7 +103,11 @@ export function useBrowserTransformerEngine() {
         });
         
         pipelineRef.current = webgpuPipe;
-        setDevice('webgpu');
+        globalDevice = 'webgpu';
+        globalModelLoaded = true;
+        localStorage.setItem('browserML-device', 'webgpu');
+        localStorage.setItem('browserML-loaded', 'true');
+        forceUpdate(prev => prev + 1);
         console.log('✅ Browser Transformer: WebGPU enabled');
       } catch (webgpuError) {
         console.warn('⚠️ WebGPU not available, falling back to WASM:', webgpuError);
@@ -126,7 +134,11 @@ export function useBrowserTransformerEngine() {
           });
           
           pipelineRef.current = wasmPipe;
-          setDevice('wasm');
+          globalDevice = 'wasm';
+          globalModelLoaded = true;
+          localStorage.setItem('browserML-device', 'wasm');
+          localStorage.setItem('browserML-loaded', 'true');
+          forceUpdate(prev => prev + 1);
           console.log('✅ Browser Transformer: WASM enabled');
         } catch (wasmError) {
           console.error('❌ WASM initialization also failed:', wasmError);
@@ -141,9 +153,9 @@ export function useBrowserTransformerEngine() {
 
       setLoadingProgress(100);
       setIsModelLoading(false);
-      isInitializing.current = false;
+      isInitializing = false;
       console.log('🎉 Browser Transformer: Initialization complete!', {
-        device: device,
+        device: globalDevice,
         modelName: MODEL_NAME,
         pipelineReady: !!pipelineRef.current
       });
@@ -172,8 +184,12 @@ export function useBrowserTransformerEngine() {
       }
       
       setIsModelLoading(false);
-      isInitializing.current = false;
+      isInitializing = false;
       pipelineRef.current = null;
+      globalDevice = null;
+      globalModelLoaded = false;
+      localStorage.removeItem('browserML-device');
+      localStorage.removeItem('browserML-loaded');
       throw error;
     }
   }, []);
@@ -230,13 +246,13 @@ export function useBrowserTransformerEngine() {
           emotion,
           confidence,
           allScores,
-          device: device || 'wasm',
+          device: globalDevice || 'wasm',
           inferenceTime: Math.round(inferenceTime),
         },
         meta: {
           firstLoad: isFirstLoad,
           modelSize: '~120MB',
-          device: device || 'wasm',
+          device: globalDevice || 'wasm',
         },
       };
 
@@ -250,7 +266,7 @@ export function useBrowserTransformerEngine() {
     } finally {
       setIsProcessing(false);
     }
-  }, [initPipeline, device]);
+  }, [initPipeline]);
 
   /**
    * Ping engine to check availability
@@ -268,7 +284,7 @@ export function useBrowserTransformerEngine() {
    * Preload model in background
    */
   const preloadModel = useCallback(async (): Promise<void> => {
-    if (pipelineRef.current || isInitializing.current) {
+    if (pipelineRef.current || isInitializing) {
       console.log('⏭️ Browser Transformer: Model already loaded/loading');
       return;
     }
@@ -290,7 +306,7 @@ export function useBrowserTransformerEngine() {
     isModelLoading,
     loadingProgress,
     lastResult,
-    device,
-    modelLoaded: !!pipelineRef.current,
+    device: globalDevice,
+    modelLoaded: globalModelLoaded,
   };
 }

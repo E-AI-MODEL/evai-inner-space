@@ -1,10 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Brain, Settings } from "lucide-react";
-import { BrowserMLLoadingIndicator } from "@/components/BrowserMLLoadingIndicator";
 import { useBrowserTransformerEngine } from "@/hooks/useBrowserTransformerEngine";
 
 interface TopBarProps {
@@ -14,6 +13,15 @@ interface TopBarProps {
 const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
   const navigate = useNavigate();
   const { device, modelLoaded } = useBrowserTransformerEngine();
+
+  // 🔍 Debug logging voor Browser ML status
+  useEffect(() => {
+    console.log('🔴 TopBar: Browser ML status check', { 
+      device, 
+      modelLoaded,
+      timestamp: new Date().toISOString()
+    });
+  }, [device, modelLoaded]);
 
   const handleLogoClick = () => {
     navigate('/admin');
@@ -40,7 +48,6 @@ const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
           <h1 className="text-xl font-bold text-gray-800">EvAI Neurosymbolische Chat</h1>
         </div>
         <div className="flex items-center gap-2">
-          <BrowserMLLoadingIndicator />
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge variant={status.color} className="cursor-help gap-1">
