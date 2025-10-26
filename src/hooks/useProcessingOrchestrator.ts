@@ -5,6 +5,8 @@ import { testOpenAIApiKey } from '@/utils/apiKeyTester';
 import { supabase } from '@/integrations/supabase/client';
 import { OPENAI_MODEL } from '../openaiConfig';
 import { useOpenAISecondary } from './useOpenAISecondary';
+import { checkPromptSafety } from '@/lib/safetyGuard';
+import { toast } from 'sonner';
 
 interface ProcessingStats {
   totalRequests: number;
@@ -50,6 +52,27 @@ export function useProcessingOrchestrator() {
     const startTime = Date.now();
     
     try {
+      // 🛡️ VEILIGHEIDSLAG: Pre-response harm detection
+      console.log('🛡️ Safety check: Analyzing user input...');
+      const safetyResult = await checkPromptSafety(userInput);
+      
+      if (safetyResult.decision === 'block') {
+        console.warn('🚫 Safety check BLOCKED input:', safetyResult.flags);
+        toast.error('Input geblokkeerd om veiligheidsredenen', {
+          description: 'Je bericht bevat mogelijk schadelijke inhoud. Probeer het anders te formuleren.'
+        });
+        throw new Error('Input geblokkeerd vanwege veiligheidsredenen');
+      }
+      
+      if (safetyResult.decision === 'review') {
+        console.warn('⚠️ Safety check flagged for REVIEW:', safetyResult.flags);
+        toast.warning('Let op: gevoelige inhoud gedetecteerd', {
+          description: 'We verwerken je bericht, maar houd rekening met gevoeligheid.'
+        });
+      } else {
+        console.log('✅ Safety check PASSED');
+      }
+
       // Optional API key validation: if provided, ensure it's valid; else rely on server-side keys via Edge Functions
       if (apiKey && !validateApiKey(apiKey)) {
         throw new Error('OpenAI API key ongeldig. Verwijder of vervang in instellingen.');
