@@ -73,33 +73,99 @@ export function useBrowserTransformerEngine() {
 
     try {
       console.log('🧠 Browser Transformer: Initializing pipeline...');
+      console.log('📊 Browser info:', {
+        userAgent: navigator.userAgent,
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        deviceMemory: (navigator as any).deviceMemory || 'unknown',
+        webGPU: 'gpu' in navigator ? 'available' : 'not available'
+      });
       
       // Try WebGPU first
       try {
-        setLoadingProgress(25);
+        console.log('🔄 Attempting WebGPU initialization...');
+        setLoadingProgress(10);
+        
         const webgpuPipe: any = await pipeline('text-classification', MODEL_NAME, {
           device: 'webgpu',
+          progress_callback: (progress: any) => {
+            console.log('📥 Model download progress:', progress);
+            if (progress.progress) {
+              setLoadingProgress(10 + Math.floor(progress.progress * 40));
+            }
+          }
         });
+        
         pipelineRef.current = webgpuPipe;
         setDevice('webgpu');
         console.log('✅ Browser Transformer: WebGPU enabled');
       } catch (webgpuError) {
         console.warn('⚠️ WebGPU not available, falling back to WASM:', webgpuError);
-        setLoadingProgress(25);
-        const wasmPipe: any = await pipeline('text-classification', MODEL_NAME, {
-          device: 'wasm',
+        console.warn('WebGPU error details:', {
+          name: (webgpuError as Error).name,
+          message: (webgpuError as Error).message,
+          stack: (webgpuError as Error).stack?.split('\n').slice(0, 3)
         });
-        pipelineRef.current = wasmPipe;
-        setDevice('wasm');
-        console.log('✅ Browser Transformer: WASM enabled');
+        
+        console.log('🔄 Attempting WASM initialization...');
+        setLoadingProgress(50);
+        
+        try {
+          const wasmPipe: any = await pipeline('text-classification', MODEL_NAME, {
+            device: 'wasm',
+            progress_callback: (progress: any) => {
+              console.log('📥 Model download progress (WASM):', progress);
+              if (progress.progress) {
+                setLoadingProgress(50 + Math.floor(progress.progress * 50));
+              }
+            }
+          });
+          
+          pipelineRef.current = wasmPipe;
+          setDevice('wasm');
+          console.log('✅ Browser Transformer: WASM enabled');
+        } catch (wasmError) {
+          console.error('❌ WASM initialization also failed:', wasmError);
+          console.error('WASM error details:', {
+            name: (wasmError as Error).name,
+            message: (wasmError as Error).message,
+            stack: (wasmError as Error).stack?.split('\n').slice(0, 3)
+          });
+          throw wasmError;
+        }
       }
 
       setLoadingProgress(100);
       setIsModelLoading(false);
       isInitializing.current = false;
+      console.log('🎉 Browser Transformer: Initialization complete!', {
+        device: device,
+        modelName: MODEL_NAME,
+        pipelineReady: !!pipelineRef.current
+      });
       return pipelineRef.current;
     } catch (error) {
       console.error('❌ Browser Transformer: Pipeline initialization failed:', error);
+      console.error('🔍 Failure context:', {
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        browserOnline: navigator.onLine,
+        storageAvailable: 'storage' in navigator && 'estimate' in navigator.storage
+      });
+      
+      // Check storage quota
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
+        try {
+          const estimate = await navigator.storage.estimate();
+          console.warn('💾 Storage info:', {
+            usage: estimate.usage ? `${(estimate.usage / 1024 / 1024).toFixed(2)} MB` : 'unknown',
+            quota: estimate.quota ? `${(estimate.quota / 1024 / 1024).toFixed(2)} MB` : 'unknown',
+            percentUsed: estimate.usage && estimate.quota ? `${((estimate.usage / estimate.quota) * 100).toFixed(1)}%` : 'unknown'
+          });
+        } catch (storageError) {
+          console.warn('⚠️ Could not check storage:', storageError);
+        }
+      }
+      
       setIsModelLoading(false);
       isInitializing.current = false;
       pipelineRef.current = null;
