@@ -746,59 +746,23 @@ export type Database = {
         }
         Returns: string
       }
-      search_unified_knowledge:
-        | {
-            Args: {
-              max_results?: number
-              query_embedding: string
-              query_text: string
-              similarity_threshold?: number
-              user_uuid: string
-            }
-            Returns: {
-              confidence_score: number
-              content_type: string
-              emotion: string
-              id: string
-              metadata: Json
-              response_text: string
-              similarity_score: number
-            }[]
-          }
-        | {
-            Args: {
-              max_results?: number
-              query_embedding: string
-              query_text: string
-              similarity_threshold?: number
-            }
-            Returns: {
-              confidence_score: number
-              content_type: string
-              emotion: string
-              id: string
-              metadata: Json
-              response_text: string
-              similarity_score: number
-            }[]
-          }
-        | {
-            Args: {
-              max_results?: number
-              query_embedding: string
-              query_text: string
-              similarity_threshold?: number
-            }
-            Returns: {
-              confidence_score: number
-              content_type: string
-              emotion: string
-              id: string
-              metadata: Json
-              response_text: string
-              similarity_score: number
-            }[]
-          }
+      search_unified_knowledge: {
+        Args: {
+          max_results?: number
+          query_embedding: string
+          query_text: string
+          similarity_threshold?: number
+        }
+        Returns: {
+          confidence_score: number
+          content_type: string
+          emotion: string
+          id: string
+          metadata: Json
+          response_text: string
+          similarity_score: number
+        }[]
+      }
       update_setting:
         | {
             Args: { setting_key: string; setting_value: string }
