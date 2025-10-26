@@ -10,9 +10,54 @@ const corsHeaders = {
 const ADMIN_PASSWORD = Deno.env.get("ADMIN_PASSWORD");
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
+// Rate limiting for admin: 30 requests per minute
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 30;
+const RATE_WINDOW_MS = 60 * 1000;
+
+function checkRateLimit(clientId: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(clientId);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(clientId, { count: 1, resetTime: now + RATE_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT - 1 };
+  }
+
+  if (record.count >= RATE_LIMIT) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  record.count++;
+  return { allowed: true, remaining: RATE_LIMIT - record.count };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting
+  const clientId = req.headers.get("x-forwarded-for") || "unknown";
+  const rateLimit = checkRateLimit(clientId);
+
+  if (!rateLimit.allowed) {
+    console.warn(`⚠️ Rate limit exceeded for admin client: ${clientId}`);
+    return new Response(
+      JSON.stringify({ 
+        ok: false, 
+        error: "Rate limit exceeded",
+        retryAfter: 60 
+      }),
+      { 
+        status: 429, 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "Retry-After": "60"
+        } 
+      }
+    );
   }
 
   try {

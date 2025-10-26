@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/useAuth";
 import { useBrowserTransformerEngine } from "@/hooks/useBrowserTransformerEngine";
+import { ConsentBanner } from "@/components/ConsentBanner";
 
 const Index = lazy(() => import("./pages/Index"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -46,6 +47,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <ConsentBanner />
         <AppContent />
       </TooltipProvider>
     </AuthProvider>

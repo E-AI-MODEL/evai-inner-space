@@ -11,9 +11,56 @@ const OPENAI_PRIMARY = Deno.env.get("OPENAI_API_KEY");
 const OPENAI_SAFETY = Deno.env.get("OPENAI_API_KEY_SAFETY");
 const VECTOR_API_KEY = Deno.env.get("VECTOR_API_KEY");
 
+// Rate limiting: 60 requests per minute per IP
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 60;
+const RATE_WINDOW_MS = 60 * 1000; // 1 minute
+
+function checkRateLimit(clientId: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const record = rateLimitMap.get(clientId);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(clientId, { count: 1, resetTime: now + RATE_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT - 1 };
+  }
+
+  if (record.count >= RATE_LIMIT) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  record.count++;
+  return { allowed: true, remaining: RATE_LIMIT - record.count };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Rate limiting check
+  const clientId = req.headers.get("x-forwarded-for") || "unknown";
+  const rateLimit = checkRateLimit(clientId);
+
+  if (!rateLimit.allowed) {
+    console.warn(`⚠️ Rate limit exceeded for client: ${clientId}`);
+    return new Response(
+      JSON.stringify({ 
+        ok: false, 
+        error: "Rate limit exceeded. Please try again later.",
+        retryAfter: 60 
+      }),
+      { 
+        status: 429, 
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "application/json",
+          "X-RateLimit-Limit": RATE_LIMIT.toString(),
+          "X-RateLimit-Remaining": "0",
+          "Retry-After": "60"
+        } 
+      }
+    );
   }
 
   try {
