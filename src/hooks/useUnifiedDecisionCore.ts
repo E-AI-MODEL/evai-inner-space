@@ -141,6 +141,9 @@ export function useUnifiedDecisionCore() {
 
       if (error) {
         console.error('❌ Unified knowledge search error:', error);
+        toast.error('Knowledge base zoeken mislukt', {
+          description: `Database error: ${error.message}. Probeer het opnieuw.`
+        });
         return [];
       }
 
@@ -377,15 +380,38 @@ export function useUnifiedDecisionCore() {
         version: metadata.version || '2.0'
       };
 
+      const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unified-decision-' + Date.now();
+
+      // 🆕 FIX: Log naar BEIDE tabellen voor complete tracking
+      // 1️⃣ Log naar api_collaboration_logs (bestaand)
       await supabase.rpc('log_evai_workflow', {
-        p_conversation_id: 'unified-decision-' + Date.now(),
+        p_conversation_id: sessionId,
         p_workflow_type: 'unified_decision_v2',
         p_api_collaboration: apiCollaboration,
         p_success: true,
         p_processing_time: 0
       });
 
-      console.log('📝 Unified decision v2.0 logged successfully');
+      // 2️⃣ Log naar decision_logs (NIEUW - voor knowledge tracking)
+      await supabase.from('decision_logs').insert({
+        user_id: user.id,
+        user_input: input,
+        final_response: decision.response,
+        symbolic_matches: symbolicMatches,
+        neural_similarities: neuralSimilarities,
+        hybrid_decision: {
+          emotion: decision.emotion,
+          confidence: decision.confidence,
+          label: decision.label,
+          reasoning: decision.reasoning
+        },
+        confidence_score: decision.confidence,
+        api_collaboration: apiCollaboration,
+        workflow_version: metadata.version || '3.0',
+        conversation_id: sessionId
+      });
+
+      console.log('📝 Unified decision v2.0 logged to BOTH tables successfully');
     } catch (error) {
       console.error('❌ Failed to log unified decision:', error);
     }
