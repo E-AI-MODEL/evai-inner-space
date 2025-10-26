@@ -15,6 +15,8 @@ interface ProcessingStats {
   lastProcessingTime: number;
   errorCount: number;
   lastError?: string;
+  neurosymbolicRate: number; // % of requests that used true neurosymbolic reasoning (not fallback)
+  successfulKnowledgeMatches: number;
 }
 
 export function useProcessingOrchestrator() {
@@ -23,7 +25,9 @@ export function useProcessingOrchestrator() {
     averageProcessingTime: 0,
     successRate: 100,
     lastProcessingTime: 0,
-    errorCount: 0
+    errorCount: 0,
+    neurosymbolicRate: 0,
+    successfulKnowledgeMatches: 0
   });
 
   const { makeUnifiedDecision, isProcessing, knowledgeStats } = useUnifiedDecisionCore();
@@ -214,9 +218,11 @@ OUTPUT (JSON):
           const label = parsed?.label || 'Valideren';
           const reasoning = parsed?.reasoning || 'OpenAI Fallback (geen knowledge match)';
           const symbolicInferences = [
-            `🤖 OpenAI Fallback (GPT-4o-mini)`,
-            `📚 Knowledge Base: geen match gevonden`,
-            strategicBriefing ? `🎭 Regisseur actief: ${strategicBriefing.goal}` : null,
+            `⚠️ FALLBACK MODUS: Knowledge Base ${knowledgeStats.total === 0 ? 'leeg' : 'geen match'}`,
+            `🤖 Direct OpenAI call (GPT-4o-mini)`,
+            `📚 Unified Knowledge: ${knowledgeStats.total} items (0 matches)`,
+            `❌ Geen neurosymbolic reasoning toegepast`,
+            strategicBriefing ? `🎭 Regisseur wel actief: ${strategicBriefing.goal}` : `🎭 Regisseur: niet actief`,
             `🎯 Emotie: ${emotion}`,
             `📊 Vertrouwen: ${Math.round(confidence * 100)}%`
           ].filter(Boolean) as string[];
@@ -225,14 +231,19 @@ OUTPUT (JSON):
       console.log(`✅ Fallback completed in ${processingTime}ms`);
 
       // Update success stats (fallback)
-      setStats(prev => ({
-            totalRequests: prev.totalRequests + 1,
-            averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
-            successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
-            lastProcessingTime: processingTime,
-            errorCount: prev.errorCount,
-            lastError: undefined
-          }));
+      setStats(prev => {
+        const newTotalRequests = prev.totalRequests + 1;
+        return {
+          totalRequests: newTotalRequests,
+          averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / newTotalRequests,
+          successRate: ((prev.successRate * prev.totalRequests + 100) / newTotalRequests),
+          lastProcessingTime: processingTime,
+          errorCount: prev.errorCount,
+          lastError: undefined,
+          successfulKnowledgeMatches: prev.successfulKnowledgeMatches, // No match in fallback
+          neurosymbolicRate: (prev.successfulKnowledgeMatches / newTotalRequests) * 100
+        };
+      });
 
           return {
             content: responseText,
@@ -298,15 +309,21 @@ OUTPUT (JSON):
       const processingTime = Date.now() - startTime;
       console.log(`✅ Processing completed in ${processingTime}ms`);
 
-      // Update success stats
-      setStats(prev => ({
-        totalRequests: prev.totalRequests + 1,
-        averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
-        successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
-        lastProcessingTime: processingTime,
-        errorCount: prev.errorCount,
-        lastError: undefined
-      }));
+      // Update success stats (neurosymbolic match!)
+      setStats(prev => {
+        const newTotalRequests = prev.totalRequests + 1;
+        const newSuccessfulMatches = prev.successfulKnowledgeMatches + 1;
+        return {
+          totalRequests: newTotalRequests,
+          averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / newTotalRequests,
+          successRate: ((prev.successRate * prev.totalRequests + 100) / newTotalRequests),
+          lastProcessingTime: processingTime,
+          errorCount: prev.errorCount,
+          lastError: undefined,
+          successfulKnowledgeMatches: newSuccessfulMatches,
+          neurosymbolicRate: (newSuccessfulMatches / newTotalRequests) * 100
+        };
+      });
 
       return {
         content: decisionResult.response,
@@ -371,14 +388,19 @@ OUTPUT (JSON):
       }
 
       // Update error stats
-      setStats(prev => ({
-        totalRequests: prev.totalRequests + 1,
-        averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
-        successRate: ((prev.successRate * prev.totalRequests + 0) / (prev.totalRequests + 1)),
-        lastProcessingTime: processingTime,
-        errorCount: prev.errorCount + 1,
-        lastError: errorMessage
-      }));
+      setStats(prev => {
+        const newTotalRequests = prev.totalRequests + 1;
+        return {
+          totalRequests: newTotalRequests,
+          averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / newTotalRequests,
+          successRate: ((prev.successRate * prev.totalRequests + 0) / newTotalRequests),
+          lastProcessingTime: processingTime,
+          errorCount: prev.errorCount + 1,
+          lastError: errorMessage,
+          successfulKnowledgeMatches: prev.successfulKnowledgeMatches,
+          neurosymbolicRate: (prev.successfulKnowledgeMatches / newTotalRequests) * 100
+        };
+      });
 
       // Enhanced error handling for production
       if (errorMessage.includes('API key') || errorMessage.includes('401')) {
