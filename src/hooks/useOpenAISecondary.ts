@@ -25,14 +25,14 @@ Rubric beoordelingen: ${rubricAssessments.length ? rubricAssessments.join(', ') 
 Seed match: ${seedMatch || 'geen'}
 Geef je antwoord in JSON met de velden goal, context, keyPoints (array) en priority.`;
 
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
+      const { data, error } = await supabase.functions.invoke('evai-core', {
         body: {
+          operation: 'chat',
           model: OPENAI_MODEL,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.4,
           max_tokens: 300,
-          response_format: { type: 'json_object' },
-          use_secondary: true
+          response_format: { type: 'json_object' }
         }
       });
 

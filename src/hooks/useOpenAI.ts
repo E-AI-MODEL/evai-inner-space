@@ -102,14 +102,14 @@ Focus op Nederlandse therapeutische context met empathie en begrip.`;
 
       messages.push({ role: 'user', content: prompt });
 
-      const { data, error } = await supabase.functions.invoke('openai-chat', {
+      const { data, error } = await supabase.functions.invoke('evai-core', {
         body: {
+          operation: 'chat',
           model: OPENAI_MODEL,
           messages,
           temperature: 0.7,
           max_tokens: 500,
-          response_format: { type: 'json_object' },
-          use_secondary: false
+          response_format: { type: 'json_object' }
         }
       });
 

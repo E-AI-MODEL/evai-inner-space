@@ -32,8 +32,8 @@ export function useVectorEmbeddings() {
       
       // Generate embedding for query via backend
       incrementApiUsage('vector');
-      const { data, error } = await supabase.functions.invoke('openai-embedding', {
-        body: { input: query, model: 'text-embedding-3-small' }
+      const { data, error } = await supabase.functions.invoke('evai-core', {
+        body: { operation: 'embedding', input: query, model: 'text-embedding-3-small' }
       });
 
       if (error) {
@@ -83,8 +83,8 @@ export function useVectorEmbeddings() {
           // Generate embedding for seed via backend
           incrementApiUsage('vector');
           const text = seed.response?.nl || seed.emotion;
-          const { data, error } = await supabase.functions.invoke('openai-embedding', {
-            body: { input: text, model: 'text-embedding-3-small' }
+          const { data, error } = await supabase.functions.invoke('evai-core', {
+            body: { operation: 'embedding', input: text, model: 'text-embedding-3-small' }
           });
 
           if (error) {
