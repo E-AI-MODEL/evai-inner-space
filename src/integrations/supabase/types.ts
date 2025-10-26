@@ -220,6 +220,60 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_queue: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          curation_status: string
+          feedback_text: string | null
+          id: string
+          metadata: Json | null
+          prompt_id: string | null
+          seed_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          curation_status?: string
+          feedback_text?: string | null
+          id?: string
+          metadata?: Json | null
+          prompt_id?: string | null
+          seed_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          curation_status?: string
+          feedback_text?: string | null
+          id?: string
+          metadata?: Json | null
+          prompt_id?: string | null
+          seed_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_queue_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_queue_seed_id_fkey"
+            columns: ["seed_id"]
+            isOneToOne: false
+            referencedRelation: "emotion_seeds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
