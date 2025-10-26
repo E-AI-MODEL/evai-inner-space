@@ -5,6 +5,7 @@ import { generateEmbedding } from '../lib/embeddingUtils';
 import { EmotionDetection } from './useOpenAI';
 import { ChatHistoryItem } from '../types';
 import { useBrowserTransformerEngine } from './useBrowserTransformerEngine';
+import { toast } from 'sonner';
 
 export interface UnifiedKnowledgeItem {
   id: string;
@@ -125,6 +126,9 @@ export function useUnifiedDecisionCore() {
           queryEmbedding = await generateEmbedding(query, vectorApiKey);
         } catch (error) {
           console.warn('⚠️ Failed to generate embedding, continuing with text search only');
+          toast.warning('Vector zoeken niet beschikbaar', {
+            description: 'Gebruikt alleen tekst-matching voor zoekresultaten'
+          });
         }
       }
 

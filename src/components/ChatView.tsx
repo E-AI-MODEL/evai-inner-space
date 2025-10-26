@@ -2,6 +2,7 @@
 import React from 'react';
 import ChatBubble from "./ChatBubble";
 import { Message } from '../types';
+import { ConversationHealthMonitor } from './ConversationHealthMonitor';
 
 interface ChatViewProps {
     messages: Message[];
@@ -28,6 +29,13 @@ const ChatView: React.FC<ChatViewProps> = ({
 
     return (
         <div className="space-y-3 pb-4">
+            {/* System Health Monitor */}
+            {messages && messages.length > 0 && (
+                <div className="mb-3">
+                    <ConversationHealthMonitor />
+                </div>
+            )}
+            
             {messages && messages.length > 0 && (
                 messages.map((msg) => (
                     <ChatBubble

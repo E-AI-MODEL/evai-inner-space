@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { incrementApiUsage } from '@/utils/apiUsageTracker';
+import { toast } from 'sonner';
 
 export interface SimilarityResult {
   content_id: string;
@@ -38,12 +39,18 @@ export function useVectorEmbeddings() {
 
       if (error) {
         console.error('❌ Embedding edge error:', error);
+        toast.error('Vector embedding generatie gefaald', {
+          description: 'Zoekfunctie gebruikt alleen tekst-matching'
+        });
         return [];
       }
 
       const queryEmbedding = (data as any)?.embedding;
       if (!queryEmbedding) {
         console.error('❌ No embedding returned from edge function');
+        toast.error('Vector embedding generatie gefaald', {
+          description: 'Zoekfunctie gebruikt alleen tekst-matching'
+        });
         return [];
       }
 
@@ -89,6 +96,9 @@ export function useVectorEmbeddings() {
 
           if (error) {
             console.error('❌ Embedding edge error for seed:', seed.id, error);
+            toast.error('Embedding generatie gefaald voor seed', {
+              description: `Seed ${seed.id} overgeslagen`
+            });
             failed++;
             continue;
           }
@@ -96,6 +106,9 @@ export function useVectorEmbeddings() {
           const embedding = (data as any)?.embedding;
           if (!embedding) {
             console.error('❌ No embedding returned for seed:', seed.id);
+            toast.error('Geen embedding ontvangen voor seed', {
+              description: `Seed ${seed.id} overgeslagen`
+            });
             failed++;
             continue;
           }
