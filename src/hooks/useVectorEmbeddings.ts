@@ -85,11 +85,16 @@ export function useVectorEmbeddings() {
     let failed = 0;
 
     try {
+      console.log(`🔄 Processing ${seeds.length} seeds for embedding generation...`);
+      
       for (const seed of seeds) {
         try {
           // Generate embedding for seed via backend
           incrementApiUsage('vector');
           const text = seed.response?.nl || seed.emotion;
+          
+          console.log(`📝 Generating embedding for seed: ${seed.id}`);
+          
           const { data, error } = await supabase.functions.invoke('evai-core', {
             body: { operation: 'embedding', input: text, model: 'text-embedding-3-small' }
           });
@@ -113,31 +118,46 @@ export function useVectorEmbeddings() {
             continue;
           }
 
-          // Store in vector_embeddings table
+          // 🆕 FASE 1 FIX: Store DIRECTLY in unified_knowledge.vector_embedding
+          console.log(`💾 Storing embedding in unified_knowledge for seed: ${seed.id}`);
+          
           const { error: upsertError } = await supabase
-            .from('vector_embeddings')
-            .upsert({
-              content_id: seed.id,
-              content_type: 'seed',
-              content_text: text,
-              embedding: `[${(embedding as number[]).join(',')}]`,
-              metadata: {
-                emotion: seed.emotion,
-                confidence: seed.meta?.confidence || 0.7
-              }
-            });
+            .from('unified_knowledge')
+            .update({
+              vector_embedding: `[${(embedding as number[]).join(',')}]`,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', seed.id);
 
           if (upsertError) {
-            console.error('❌ Failed to store embedding:', upsertError);
+            console.error('❌ Failed to store embedding in unified_knowledge:', upsertError);
             failed++;
           } else {
+            console.log(`✅ Embedding stored successfully for seed: ${seed.id}`);
             success++;
           }
         } catch (error) {
           console.error('❌ Failed to process seed:', seed.id, error);
+          if (error instanceof Error) {
+            console.error('   Error details:', error.message);
+          }
           failed++;
         }
       }
+      
+      console.log(`✅ Batch processing complete: ${success} success, ${failed} failed`);
+      
+      if (success > 0) {
+        toast.success(`${success} embeddings succesvol gegenereerd`, {
+          description: failed > 0 ? `${failed} seeds gefaald` : 'Alle seeds verwerkt'
+        });
+      }
+      
+    } catch (error) {
+      console.error('🔴 Critical error in processSeedBatch:', error);
+      toast.error('Kritieke fout bij batch processing', {
+        description: error instanceof Error ? error.message : 'Onbekende fout'
+      });
     } finally {
       setIsProcessing(false);
     }

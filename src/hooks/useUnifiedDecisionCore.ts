@@ -120,23 +120,27 @@ export function useUnifiedDecisionCore() {
       
       await autoConsolidateIfNeeded();
       
+      // 🆕 FASE 5: Verbeterd error handling voor embedding generatie
       let queryEmbedding: number[] | null = null;
       if (vectorApiKey?.trim()) {
         try {
           queryEmbedding = await generateEmbedding(query, vectorApiKey);
+          console.log('✅ Query embedding generated successfully');
         } catch (error) {
           console.warn('⚠️ Failed to generate embedding, continuing with text search only');
+          console.error('   Embedding error details:', error instanceof Error ? error.message : error);
           toast.warning('Vector zoeken niet beschikbaar', {
             description: 'Gebruikt alleen tekst-matching voor zoekresultaten'
           });
         }
       }
 
+      // 🆕 FASE 2 FIX: Lower threshold from 0.7 to 0.3 for more matches
       const { data, error } = await supabase.rpc('search_unified_knowledge', {
         query_text: query,
         query_embedding: queryEmbedding ? `[${queryEmbedding.join(',')}]` : null,
-        similarity_threshold: 0.7,
-        max_results: maxResults
+        similarity_threshold: 0.3,
+        max_results: 20
       });
 
       if (error) {
@@ -351,8 +355,9 @@ export function useUnifiedDecisionCore() {
   ) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !decision) return;
+      if (!user) return;
 
+      // 🆕 FASE 4 FIX: Log ook wanneer decision NULL is (geen matches) voor self-learning
       const symbolicMatches = sources
         .filter(s => s.content_type === 'seed')
         .map(s => ({
@@ -370,6 +375,11 @@ export function useUnifiedDecisionCore() {
           similarity: s.similarity_score || 0,
           type: s.content_type
         }));
+      
+      // 🆕 Als geen decision maar wel input, log als "no match" scenario
+      if (!decision) {
+        console.warn('⚠️ Logging decision with no match (0 sources)');
+      }
 
       // Log with enhanced v2.0 metadata
       const apiCollaboration = {
@@ -393,27 +403,52 @@ export function useUnifiedDecisionCore() {
       });
 
       // 2️⃣ Log naar decision_logs (NIEUW - voor knowledge tracking)
+      // 🆕 FASE 4 FIX: Log zelfs als decision NULL is (voor self-learning)
       await supabase.from('decision_logs').insert({
         user_id: user.id,
         user_input: input,
-        final_response: decision.response,
-        symbolic_matches: symbolicMatches,
-        neural_similarities: neuralSimilarities,
-        hybrid_decision: {
+        final_response: decision?.response || '[NO MATCH FOUND]',
+        symbolic_matches: symbolicMatches.length > 0 ? symbolicMatches : [{ 
+          id: 'no-match', 
+          emotion: 'no-match', 
+          confidence: 0, 
+          type: 'fallback' 
+        }],
+        neural_similarities: neuralSimilarities.length > 0 ? neuralSimilarities : [{ 
+          id: 'no-match', 
+          emotion: 'no-match', 
+          similarity: 0, 
+          type: 'fallback' 
+        }],
+        hybrid_decision: decision ? {
           emotion: decision.emotion,
           confidence: decision.confidence,
           label: decision.label,
           reasoning: decision.reasoning
+        } : {
+          emotion: 'no-match',
+          confidence: 0,
+          label: 'Fout',
+          reasoning: 'Geen knowledge sources gevonden - self-learning opportunity'
         },
-        confidence_score: decision.confidence,
+        confidence_score: decision?.confidence || 0,
         api_collaboration: apiCollaboration,
         workflow_version: metadata.version || '3.0',
         conversation_id: sessionId
       });
 
       console.log('📝 Unified decision v2.0 logged to BOTH tables successfully');
+      console.log(`   Symbolic matches: ${symbolicMatches.length}, Neural: ${neuralSimilarities.length}`);
     } catch (error) {
       console.error('❌ Failed to log unified decision:', error);
+      // 🆕 FASE 5: Verbeterd error logging
+      if (error instanceof Error) {
+        console.error('   Error message:', error.message);
+        console.error('   Error stack:', error.stack?.substring(0, 200));
+      }
+      toast.error('Logging gefaald', {
+        description: 'Decision werd niet opgeslagen in database'
+      });
     }
   };
 

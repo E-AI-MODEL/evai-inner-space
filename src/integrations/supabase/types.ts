@@ -763,6 +763,8 @@ export type Database = {
           similarity_score: number
         }[]
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       update_setting:
         | {
             Args: { setting_key: string; setting_value: string }
