@@ -20,10 +20,17 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const { preloadModel } = useBrowserTransformerEngine();
 
-  // Preload ML model in background on app mount
+  // Preload ML model in background on app mount (non-blocking)
   useEffect(() => {
-    console.log('🚀 App: Preloading Browser Transformer model...');
-    preloadModel();
+    const loadModel = async () => {
+      try {
+        console.log('🚀 App: Preloading Browser Transformer model...');
+        await preloadModel();
+      } catch (error) {
+        console.warn('⚠️ App: ML model preload failed (app will continue without browser ML):', error);
+      }
+    };
+    loadModel();
   }, [preloadModel]);
 
   return (
