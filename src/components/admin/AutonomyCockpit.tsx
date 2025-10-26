@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Activity, 
@@ -272,13 +273,28 @@ const AutonomyCockpit: React.FC<AutonomyCockpitProps> = ({ systemMetrics, connec
             </div>
             <div className="text-2xl font-bold mt-1">{metrics.averageResponseTime}ms</div>
           </div>
-          <div className="bg-white/10 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Queue Depth</span>
-              <Database className="h-4 w-4 text-purple-400" />
-            </div>
-            <div className="text-2xl font-bold mt-1">{metrics.processingQueue}</div>
-          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="bg-white/10 rounded-lg p-4 cursor-help">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Queue Depth</span>
+                    <Database className="h-4 w-4 text-purple-400" />
+                  </div>
+                  <div className="text-2xl font-bold mt-1">{metrics.processingQueue}</div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="font-semibold">Processing Queue</p>
+                <p className="text-sm">
+                  {metrics.processingQueue === 0
+                    ? '✅ Geen taken in wachtrij - alles is verwerkt!'
+                    : `⏳ ${metrics.processingQueue} taken wachten op verwerking`
+                  }
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -292,33 +308,76 @@ const AutonomyCockpit: React.FC<AutonomyCockpitProps> = ({ systemMetrics, connec
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                {getAgentStatusIcon(metrics.agentStatus.autoLearn)}
-                <span className="font-medium">AutoLearn</span>
-              </div>
-              <Badge variant={metrics.agentStatus.autoLearn === 'active' ? 'default' : 'secondary'}>
-                {metrics.agentStatus.autoLearn}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                {getAgentStatusIcon(metrics.agentStatus.orchestrator)}
-                <span className="font-medium">Orchestrator</span>
-              </div>
-              <Badge variant={metrics.agentStatus.orchestrator === 'active' ? 'default' : 'secondary'}>
-                {metrics.agentStatus.orchestrator}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                {getAgentStatusIcon(metrics.agentStatus.feedbackLoop)}
-                <span className="font-medium">Feedback Loop</span>
-              </div>
-              <Badge variant={metrics.agentStatus.feedbackLoop === 'active' ? 'default' : 'secondary'}>
-                {metrics.agentStatus.feedbackLoop}
-              </Badge>
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-help">
+                    <div className="flex items-center gap-3">
+                      {getAgentStatusIcon(metrics.agentStatus.autoLearn)}
+                      <span className="font-medium">AutoLearn</span>
+                    </div>
+                    <Badge variant={metrics.agentStatus.autoLearn === 'active' ? 'default' : 'secondary'}>
+                      {metrics.agentStatus.autoLearn}
+                    </Badge>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold">AutoLearn Agent</p>
+                  <p className="text-sm">
+                    {metrics.agentStatus.autoLearn === 'active' 
+                      ? '🟢 Scant actief gesprekken voor nieuwe patronen (laatste 10 min)'
+                      : '⚪ Idle - Geen recente scans. Klik "Run Autonomous Scan" om te starten.'
+                    }
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-help">
+                    <div className="flex items-center gap-3">
+                      {getAgentStatusIcon(metrics.agentStatus.orchestrator)}
+                      <span className="font-medium">Orchestrator</span>
+                    </div>
+                    <Badge variant={metrics.agentStatus.orchestrator === 'active' ? 'default' : 'secondary'}>
+                      {metrics.agentStatus.orchestrator}
+                    </Badge>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold">Orchestrator Agent</p>
+                  <p className="text-sm">
+                    {metrics.agentStatus.orchestrator === 'active' 
+                      ? '🟢 Verwerkt actief beslissingen in gesprekken (laatste 5 min)'
+                      : '⚪ Idle - Geen recente gesprekken. Start een chat om te activeren.'
+                    }
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-help">
+                    <div className="flex items-center gap-3">
+                      {getAgentStatusIcon(metrics.agentStatus.feedbackLoop)}
+                      <span className="font-medium">Feedback Loop</span>
+                    </div>
+                    <Badge variant={metrics.agentStatus.feedbackLoop === 'active' ? 'default' : 'secondary'}>
+                      {metrics.agentStatus.feedbackLoop}
+                    </Badge>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="font-semibold">Feedback Loop Agent</p>
+                  <p className="text-sm">
+                    {metrics.agentStatus.feedbackLoop === 'active' 
+                      ? '🟢 Verwerkt actief gebruikersfeedback (laatste 15 min)'
+                      : '⚪ Idle - Geen recente feedback. Klik 👍/👎 in chat om te activeren.'
+                    }
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </CardContent>
         </Card>
 

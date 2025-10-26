@@ -43,6 +43,23 @@ const AdminDashboard = () => {
     seeds: 'loading',
   });
 
+  // Auto-activate AutoLearn on dashboard load
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        console.log('🚀 Auto-triggering AutoLearn scan...');
+        await supabase.functions.invoke('evai-autolearn-scan', {
+          body: { sinceMinutes: 60 }
+        });
+        console.log('✅ AutoLearn scan triggered');
+      } catch (error) {
+        console.warn('⚠️ AutoLearn auto-trigger failed:', error);
+      }
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, []); // Run once on mount
+
   // Essential autonomous system monitoring
   useEffect(() => {
     setSupabaseStatus(

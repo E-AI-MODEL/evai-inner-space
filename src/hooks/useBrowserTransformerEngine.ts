@@ -55,6 +55,7 @@ export function useBrowserTransformerEngine() {
   
   const pipelineRef = useRef<any>(null);
   const isInitializing = useRef(false);
+  const lastProgressUpdate = useRef<number>(0); // Throttle progress updates
 
   /**
    * Initialize the ML pipeline (lazy loading)
@@ -88,9 +89,11 @@ export function useBrowserTransformerEngine() {
         const webgpuPipe: any = await pipeline('text-classification', MODEL_NAME, {
           device: 'webgpu',
           progress_callback: (progress: any) => {
-            console.log('📥 Model download progress:', progress);
-            if (progress.progress) {
+            const now = Date.now();
+            if (progress.progress && now - lastProgressUpdate.current > 500) {
+              console.log('📥 Model download progress:', progress);
               setLoadingProgress(10 + Math.floor(progress.progress * 40));
+              lastProgressUpdate.current = now;
             }
           }
         });
@@ -113,9 +116,11 @@ export function useBrowserTransformerEngine() {
           const wasmPipe: any = await pipeline('text-classification', MODEL_NAME, {
             device: 'wasm',
             progress_callback: (progress: any) => {
-              console.log('📥 Model download progress (WASM):', progress);
-              if (progress.progress) {
+              const now = Date.now();
+              if (progress.progress && now - lastProgressUpdate.current > 500) {
+                console.log('📥 Model download progress (WASM):', progress);
                 setLoadingProgress(50 + Math.floor(progress.progress * 50));
+                lastProgressUpdate.current = now;
               }
             }
           });

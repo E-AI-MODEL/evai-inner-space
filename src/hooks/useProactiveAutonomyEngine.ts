@@ -211,11 +211,15 @@ export function useProactiveAutonomyEngine() {
         });
       }
 
-      // Update predictive accuracy
+      // Update predictive accuracy and reset counters for next loop
       setMetrics(prev => ({
         ...prev,
         predictiveAccuracy: Math.min(prev.predictiveAccuracy + 0.01, 1.0),
-        systemEvolution: Math.min(prev.systemEvolution + 0.005, 1.0)
+        systemEvolution: Math.min(prev.systemEvolution + 0.005, 1.0),
+        // Reset counters to show only active predictions in current loop
+        activePredictions: 0,
+        proactiveInterventions: 0,
+        autonomousOptimizations: 0
       }));
 
       console.log(`🤖 Autonomy Status:
