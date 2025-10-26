@@ -1,10 +1,10 @@
-
 import { useState, useCallback } from 'react';
 import { ProcessingContext, UnifiedResponse } from '@/types/core';
 import { useUnifiedDecisionCore, DecisionResult } from './useUnifiedDecisionCore';
 import { testOpenAIApiKey } from '@/utils/apiKeyTester';
 import { supabase } from '@/integrations/supabase/client';
 import { OPENAI_MODEL } from '../openaiConfig';
+import { useOpenAISecondary } from './useOpenAISecondary';
 
 interface ProcessingStats {
   totalRequests: number;
@@ -25,6 +25,7 @@ export function useProcessingOrchestrator() {
   });
 
   const { makeUnifiedDecision, isProcessing, knowledgeStats } = useUnifiedDecisionCore();
+  const { createStrategicBriefing, isAnalyzing } = useOpenAISecondary();
 
   const validateApiKey = (apiKey: string): boolean => {
     if (!apiKey || !apiKey.trim()) return false;
@@ -67,28 +68,83 @@ export function useProcessingOrchestrator() {
         console.log('🔐 No client API key provided — using server-side keys via Edge Functions');
       }
 
-      // 🧠 NEUROSYMBOLISCH v3.0: Direct naar Unified Decision Core
-      // evai-orchestrate VERWIJDERD - pure neurosymbolische flow
+      // 🎭 STAP 1: Creëer Strategic Briefing (Regisseur)
+      let strategicBriefing = null;
+      if (conversationHistory.length >= 2) {
+        console.log('🎭 Regisseur: Creating Strategic Briefing...');
+        try {
+          strategicBriefing = await createStrategicBriefing(
+            userInput,
+            [],
+            null,
+            apiKey || ''
+          );
+          if (strategicBriefing) {
+            console.log('✅ Strategic Briefing:', strategicBriefing.goal);
+            console.log('📝 Key points:', strategicBriefing.keyPoints);
+          }
+        } catch (briefingError) {
+          console.warn('⚠️ Strategic briefing failed, continuing without:', briefingError);
+        }
+      }
+
+      // 🧠 STAP 2: Neurosymbolisch v3.0 - Direct naar Unified Decision Core
       const vectorApiKey = apiKey;
       const googleApiKey = '';
       
       console.log('🧠 NEUROSYMBOLISCH: Direct naar Unified Decision Core v3.0...');
       console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
+      if (strategicBriefing) {
+        console.log('🎯 Strategic goal:', strategicBriefing.goal);
+      }
       
       const decisionResult: DecisionResult | null = await makeUnifiedDecision(
         userInput,
         apiKey,
         validateApiKey(vectorApiKey) ? vectorApiKey : apiKey,
         googleApiKey,
-        undefined,
+        strategicBriefing,
         conversationHistory
       );
 
       if (!decisionResult) {
         console.warn('⚠️ Geen kennis-match gevonden — val terug op OpenAI via Edge Function');
         try {
+          // Neem laatste 6 berichten uit conversation history voor context
+          const recentHistory = (conversationHistory || [])
+            .slice(-6)
+            .map(h => ({
+              role: h.role,
+              content: h.content
+            }));
+
           const messages = [
-            { role: 'system', content: 'Je bent een empathische therapeutische AI in het Nederlands. Geef antwoord als JSON met velden: emotion, confidence, response, reasoning, label, triggers (array).' },
+            { 
+              role: 'system', 
+              content: `Je bent een warm, empathische gesprekspartner die mensen helpt hun gevoelens te verkennen.
+
+GESPREKSFLOW:
+- Stel 1-2 open, nieuwsgierige vragen om dieper te gaan
+- Valideer gevoelens authentiek ("Dat klinkt zwaar" i.p.v. formele analyses)  
+- Bied concrete handvatten alleen als iemand vastloopt
+- Volg de energie van het gesprek - dwing geen richting
+
+TONE:
+- Gebruik "je" en korte zinnen
+- Wees nieuwsgierig, niet instructief
+- Reflecteer emoties zonder ze te herhalen
+
+OUTPUT (JSON):
+{
+  "emotion": "primaire emotie (verdriet/angst/woede/vreugde/stress/onzekerheid/hoop/eenzaamheid/schuld)",
+  "confidence": 0.0-1.0,
+  "response": "natuurlijk, warm antwoord met 1-2 vragen",
+  "reasoning": "korte onderbouwing van emotie",
+  "label": "Valideren/Reflectievraag/Suggestie/Interventie",
+  "triggers": ["keyword1", "keyword2"]
+}` 
+            },
+            ...recentHistory,
             { role: 'user', content: userInput }
           ];
 
@@ -133,33 +189,17 @@ export function useProcessingOrchestrator() {
           const emotion = parsed?.emotion || 'neutral';
           const confidence = Math.max(0.1, Math.min(1, parsed?.confidence ?? 0.6));
           const label = parsed?.label || 'Valideren';
-          const reasoning = parsed?.reasoning || 'Neural fallback';
+          const reasoning = parsed?.reasoning || 'OpenAI Fallback (geen knowledge match)';
           const symbolicInferences = [
-            `🧠 Neural fallback`,
+            `🤖 OpenAI Fallback (GPT-4o-mini)`,
+            `📚 Knowledge Base: geen match gevonden`,
+            strategicBriefing ? `🎭 Regisseur actief: ${strategicBriefing.goal}` : null,
             `🎯 Emotie: ${emotion}`,
             `📊 Vertrouwen: ${Math.round(confidence * 100)}%`
-          ];
+          ].filter(Boolean) as string[];
 
       const processingTime = Date.now() - startTime;
       console.log(`✅ Fallback completed in ${processingTime}ms`);
-
-      // Bouw een korte grounding op basis van gesprekshistorie zodat het menselijker voelt
-      const groundingNote = (() => {
-        try {
-          const userMsgs = (conversationHistory || [])
-            .filter((h: any) => h.role === 'user')
-            .map((h: any) => String(h.content))
-            .filter(Boolean);
-          if (userMsgs.length < 2) return '';
-          const first = userMsgs[0].slice(0, 100);
-          const prev = userMsgs[userMsgs.length - 2]?.slice(0, 100);
-          if (!prev) return `Eerder noemde je: "${first}". Als dat nog speelt, neem ik dat mee.`;
-          if (first === prev) return `Ik houd rekening met wat je eerder aangaf: "${first}".`;
-          return `Eerder noemde je: "${first}" en later ook: "${prev}". Ik sluit daar graag op aan.`;
-        } catch {
-          return '';
-        }
-      })();
 
       // Update success stats (fallback)
       setStats(prev => ({
@@ -172,7 +212,7 @@ export function useProcessingOrchestrator() {
           }));
 
           return {
-            content: responseText + (groundingNote ? `\n\n${groundingNote}` : ''),
+            content: responseText,
             emotion,
             confidence,
             label,
@@ -184,7 +224,15 @@ export function useProcessingOrchestrator() {
               componentsUsed: [
                 'OpenAI via Edge Functions'
               ],
-              fallback: true
+              fallback: true,
+              apiCollaboration: {
+                api1Used: !!apiKey,
+                api2Used: false,
+                vectorApiUsed: false,
+                googleApiUsed: false,
+                seedGenerated: false,
+                secondaryAnalysis: !!strategicBriefing
+              }
             }
           } as UnifiedResponse;
         } catch (fbErr) {
@@ -227,24 +275,6 @@ export function useProcessingOrchestrator() {
       const processingTime = Date.now() - startTime;
       console.log(`✅ Processing completed in ${processingTime}ms`);
 
-      // Bouw een korte grounding op basis van gesprekshistorie zodat het menselijker voelt
-      const groundingNote = (() => {
-        try {
-          const userMsgs = (conversationHistory || [])
-            .filter((h: any) => h.role === 'user')
-            .map((h: any) => String(h.content))
-            .filter(Boolean);
-          if (userMsgs.length < 2) return '';
-          const first = userMsgs[0].slice(0, 100);
-          const prev = userMsgs[userMsgs.length - 2]?.slice(0, 100);
-          if (!prev) return `Eerder noemde je: "${first}". Als dat nog speelt, neem ik dat mee.`;
-          if (first === prev) return `Ik houd rekening met wat je eerder aangaf: "${first}".`;
-          return `Eerder noemde je: "${first}" en later ook: "${prev}". Ik sluit daar graag op aan.`;
-        } catch {
-          return '';
-        }
-      })();
-
       // Update success stats
       setStats(prev => ({
         totalRequests: prev.totalRequests + 1,
@@ -256,7 +286,7 @@ export function useProcessingOrchestrator() {
       }));
 
       return {
-        content: decisionResult.response + (groundingNote ? `\n\n${groundingNote}` : ''),
+        content: decisionResult.response,
         emotion: decisionResult.emotion,
         confidence: decisionResult.confidence,
         label: decisionResult.label,
@@ -277,9 +307,9 @@ export function useProcessingOrchestrator() {
             api1Used: !!apiKey,
             api2Used: false, // Removed - no longer exists
             vectorApiUsed: !!vectorApiKey && validateApiKey(vectorApiKey),
-            googleApiUsed: false, // Google API not used anymore
+            googleApiUsed: false,
             seedGenerated: false,
-            secondaryAnalysis: false
+            secondaryAnalysis: !!strategicBriefing
           }
         }
       };

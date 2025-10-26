@@ -163,12 +163,13 @@ export function useUnifiedDecisionCore() {
     apiKey?: string,
     vectorApiKey?: string,
     googleApiKey?: string,
-    context?: {
-      dislikedLabel?: "Valideren" | "Reflectievraag" | "Suggestie";
-      secondaryInsights?: string[];
-    },
+    strategicBriefing?: any,
     history?: ChatHistoryItem[]
   ): Promise<DecisionResult | null> => {
+    // Support legacy context parameter structure
+    const context = strategicBriefing && typeof strategicBriefing === 'object' && 'dislikedLabel' in strategicBriefing 
+      ? strategicBriefing 
+      : undefined;
     console.log('🧠 makeUnifiedDecision v3.0 NEUROSYMBOLISCH called with input:', input.substring(0, 50) + '...');
     console.log('🔑 API keys provided - primary:', !!apiKey, 'vector:', !!vectorApiKey, 'google:', !!googleApiKey);
     
@@ -212,8 +213,8 @@ export function useUnifiedDecisionCore() {
         browserEmotion
       );
       
-      // 🚀 NEUROSYMBOLISCH STAP 4: Decision generation
-      const decision = await generateUnifiedDecision(input, rankedSources, context, history, browserEmotion);
+      // 🚀 NEUROSYMBOLISCH STAP 4: Decision generation (met strategic briefing)
+      const decision = await generateUnifiedDecision(input, rankedSources, context, history, browserEmotion, strategicBriefing);
 
       // Log decision with v2.0 metadata
       await logUnifiedDecision(input, rankedSources, decision, {
@@ -280,7 +281,8 @@ export function useUnifiedDecisionCore() {
     sources: UnifiedKnowledgeItem[],
     context?: any,
     history?: ChatHistoryItem[],
-    browserEmotion?: string | null
+    browserEmotion?: string | null,
+    strategicBriefing?: any
   ): Promise<DecisionResult | null> => {
     if (sources.length === 0) {
       return null;
@@ -313,6 +315,7 @@ export function useUnifiedDecisionCore() {
 
     const symbolicInferences = [
       `🧠 NEUROSYMBOLISCH v3.0`,
+      strategicBriefing ? `🎭 Regisseur: ${strategicBriefing.goal}` : null,
       browserEmotion ? `🧠 Browser ML Engine: ${browserEmotion}` : null,
       `🎯 Hoofdemotie: ${bestSource.emotion}`,
       `📊 Vertrouwen: ${Math.round(bestSource.confidence_score * 100)}%`,
@@ -329,7 +332,7 @@ export function useUnifiedDecisionCore() {
       sources,
       label,
       symbolicInferences,
-      meta: `🧠 Neurosymbolisch v3.0: ${sources.length} bronnen${browserEmotion ? ` + Browser ML(${browserEmotion})` : ''}`
+      meta: `🧠 Neurosymbolisch v3.0: ${sources.length} bronnen${strategicBriefing ? ` + Regisseur(${strategicBriefing.priority || 'medium'})` : ''}${browserEmotion ? ` + Browser ML(${browserEmotion})` : ''}`
     };
   };
 
