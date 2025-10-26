@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster as Sonner, toast } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/useAuth";
 import { useBrowserTransformerEngine } from "@/hooks/useBrowserTransformerEngine";
 import { ConsentBanner } from "@/components/ConsentBanner";
@@ -28,6 +28,12 @@ const AppContent = () => {
         await preloadModel();
       } catch (error) {
         console.warn('⚠️ App: ML model preload failed (app will continue without browser ML):', error);
+        
+        // Show user-friendly notification
+        toast.info('Browser AI niet beschikbaar', {
+          description: 'EvAI gebruikt nu Edge Functions voor emotie-detectie. Privacy blijft gewaarborgd.',
+          duration: 5000,
+        });
       }
     };
     loadModel();

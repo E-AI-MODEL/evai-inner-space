@@ -1,8 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Brain, Settings } from "lucide-react";
 import { BrowserMLLoadingIndicator } from "@/components/BrowserMLLoadingIndicator";
+import { useBrowserTransformerEngine } from "@/hooks/useBrowserTransformerEngine";
 
 interface TopBarProps {
   onSettingsClick: () => void;
@@ -10,10 +13,20 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
   const navigate = useNavigate();
+  const { device, modelLoaded } = useBrowserTransformerEngine();
 
   const handleLogoClick = () => {
     navigate('/admin');
   };
+
+  const getBrowserMLStatus = () => {
+    if (!modelLoaded) return { color: 'destructive' as const, text: 'Edge Only', icon: '🔴', description: '☁️ Browser ML niet beschikbaar - gebruikt Edge Functions' };
+    if (device === 'webgpu') return { color: 'default' as const, text: 'WebGPU', icon: '🟢', description: '🚀 Lokale AI via WebGPU - snelste emotie-detectie!' };
+    if (device === 'wasm') return { color: 'secondary' as const, text: 'WASM', icon: '🟡', description: '⚡ Lokale AI via WASM - iets trager maar privacy-vriendelijk' };
+    return { color: 'secondary' as const, text: 'Loading...', icon: '⏳', description: 'Model wordt geladen...' };
+  };
+
+  const status = getBrowserMLStatus();
 
   return (
     <header className="border-b border-zinc-200 bg-white/80 backdrop-blur-sm">
@@ -28,6 +41,17 @@ const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
         </div>
         <div className="flex items-center gap-2">
           <BrowserMLLoadingIndicator />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant={status.color} className="cursor-help gap-1">
+                {status.icon} {status.text}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p className="font-semibold">Browser ML Status</p>
+              <p className="text-sm">{status.description}</p>
+            </TooltipContent>
+          </Tooltip>
           <Button variant="ghost" size="sm" onClick={onSettingsClick} className="text-gray-600 hover:text-gray-800">
             <Settings className="h-4 w-4" />
           </Button>
