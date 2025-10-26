@@ -1,8 +1,7 @@
 
-# EvAI Neurosymbolic Chatbot v5.6
+# EvAI Innerspace
 
-Een geavanceerde, hybride AI-chatbot die neurosymbolische verwerking, therapeutische rubrics-beoordeling, zelflerend gedrag en een innovatief toegangsmechanisme combineert.
-
+Een geavanceerde, hybride AI-chatbot met neurosymbolische verwerking, rubrics-beoordeling, zelflerend gedrag 
 ## 🎯 Kernfuncties
 
 - **Neurosymbolische AI v3.0**: Combineert symbolische patronen met semantische embeddings en neurale netwerken
@@ -14,7 +13,7 @@ Een geavanceerde, hybride AI-chatbot die neurosymbolische verwerking, therapeuti
 
 ## 🔑 Toegang tot de Applicatie
 
-De applicatie gebruikt een uniek "easter egg" toegangsmechanisme:
+De applicatie gebruikt een "easter egg" toegangsmechanisme:
 
 1. Open de applicatie - je ziet de intro-animatie met het 💙 hart-icoon
 2. Klik **3 keer snel** op het hart-icoon (binnen 2 seconden)
