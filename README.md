@@ -1,13 +1,15 @@
 
-# EvAI Neurosymbolic Chatbot
+# EvAI Neurosymbolic Chatbot v5.6
 
-Een geavanceerde, hybride AI-chatbot die neurosymbolische verwerking, zelflerend gedrag en een innovatief toegangsmechanisme combineert.
+Een geavanceerde, hybride AI-chatbot die neurosymbolische verwerking, therapeutische rubrics-beoordeling, zelflerend gedrag en een innovatief toegangsmechanisme combineert.
 
 ## 🎯 Kernfuncties
 
-- **Neurosymbolische AI**: Combineert symbolische patronen met neurale netwerken
-- **Hybride Besluitvorming**: Gebruikt meerdere AI-engines voor optimale responses
-- **Zelflerend**: Leert van gebruikersinteracties en genereert nieuwe kennisstructuren
+- **Neurosymbolische AI v3.0**: Combineert symbolische patronen met semantische embeddings en neurale netwerken
+- **EvAI 5.6 Rubrics**: Therapeutische beoordeling op 5 dimensies met configureerbare strengheid
+- **Hybride Besluitvorming**: 7-laagse AI-pipeline voor optimale responses
+- **Zelflerend + Meta-Learning**: Leert van gebruikersinteracties en analyseert leerpatronen
+- **Safety Layer**: Pre-response harm detection via OpenAI Moderation API
 - **Easter Egg Toegang**: Innovatieve toegangsbeveiliging zonder traditionele login
 
 ## 🔑 Toegang tot de Applicatie
@@ -35,11 +37,16 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 ### 2. API Keys Configuratie
 
-Na toegang tot de applicatie, configureer je API keys via de instellingen:
+**Server-Side (Supabase Edge Functions):**
+- Alle AI-operaties draaien via `evai-core` Edge Function (Deno runtime)
+- OpenAI API keys worden beheerd via Supabase Secrets (server-side)
+- Operaties: `chat` (GPT-4o-mini), `embedding` (text-embedding-3-small), `safety` (Moderation API)
 
-- **OpenAI API Key 1**: Primaire AI-engine voor tekstgeneratie
-- **OpenAI API Key 2**: Secundaire analyse voor neurosymbolische verwerking  
-- **Vector API Key**: Voor embedding-gebaseerde zoekopdrachten
+**Client-Side (Optioneel - voor enhanced local testing):**
+Via Instellingen (⚙️ icon):
+- **OpenAI API Key**: Voor client-side fallbacks en testing (niet vereist voor productie)
+
+**📌 TIP**: De applicatie werkt volledig zonder client-side API keys via Edge Functions!
 
 ### 3. Installatie
 
@@ -55,40 +62,182 @@ npm install
 npm run dev
 ```
 
-## 🧠 Neurosymbolische Architectuur
+## 🧠 Neurosymbolische Architectuur v5.6
 
-### Hybrid Decision Engine
+### 7-Laagse Hybrid Decision Pipeline
 
-De applicatie gebruikt een drielaagse besluitvormingsarchitectuur:
+#### **Laag 1: Safety Layer 🛡️**
+- **Pre-response harm detection** via OpenAI Moderation API
+- **Beslissingen**: `block` (weigeren), `review` (flaggen met toast), `allow` (doorlaten)
+- **Bescherming tegen**: Harmful content, prompt injection, jailbreak attempts
 
-1. **Symbolische Engine**: Pattern matching op basis van vooraf gedefinieerde regels
-2. **Advanced Seed Matcher**: Database-gebaseerde emotie-matching met embeddings
-3. **Neural Engine**: OpenAI GPT-modellen voor complexe tekstverwerking
+#### **Laag 2: EvAI 5.6 Rubrics 📋**
+- **Therapeutische beoordeling** op 5 dimensies:
+  1. **Emotionele Regulatie**: Overweldigd, paniek, woede vs. mindfulness, kalm
+  2. **Zelfbewustzijn**: Zelfverwijt, negatief zelfbeeld vs. zelfkennis, reflectie
+  3. **Copingstrategieën**: Vermijden, isoleren vs. hulp zoeken, actieve coping
+  4. **Sociale Verbinding**: Eenzaam, conflicten vs. ondersteunende relaties
+  5. **Betekenis & Doel**: Zinloos, hopeloos vs. levensdoel, hoopvol
+- **Configureerbare strengheid**: Flexible / Moderate / Strict (via Admin Dashboard)
+- **Output**: Risk scores, protective scores, triggers (opgeslagen in `rubrics_assessments`)
 
-### Regisseur-Stem Pipeline
+#### **Laag 3: Strategic Briefing (Regisseur) 🎭**
+- **Conversatie-strategische analyse** (alleen bij ≥2 berichten history)
+- **Gebruikt**: Rubric assessments + seed matches als context
+- **Output**: `goal`, `context`, `keyPoints`, `priority` (JSON format)
+- **Invloed**: Stuurt Unified Decision Core v3.0
 
-1. **API 2 - Regisseur** analyseert het bericht op basis van rubrieken en seeds
-   en genereert een gestructureerde `StrategicBriefing` in JSON.
-2. **API 1 - Stem** krijgt deze briefing als verborgen instructie en formuleert
-   het uiteindelijke antwoord voor de gebruiker.
-3. De briefing wordt opgeslagen in de metadata zodat het Admin Dashboard en de
-   AI Transparency tooltip de ruwe analyse kunnen tonen.
+#### **Laag 4: Browser ML Engine 🧠**
+- **Client-side emotion pre-detection** (100% local, geen externe server)
+- **Model**: `Xenova/bert-base-multilingual-uncased-sentiment`
+- **Hardware**: WebGPU acceleration + WASM fallback
+- **Output**: Sentiment scores → Dutch emotion mapping → boost voor knowledge search
 
-### Zelflerend Mechaniek
+#### **Laag 5: Unified Decision Core v3.0 🔍**
+- **Hybrid knowledge search** met 3 parallelle engines:
+  - **Symbolic Engine**: Pattern matching op triggers (SeedPatternMatcher)
+  - **Semantic Engine**: Vector similarity (pgvector embeddings, 1536-dim)
+  - **Neural Engine**: OpenAI GPT-4o-mini (fallback bij geen match)
 
-- **Feedback Loop**: Duimpje omhoog/omlaag wordt opgeslagen en gebruikt voor optimalisatie
-- **Automatic Seed Generation**: Nieuwe conversatiepatronen worden automatisch omgezet in herbruikbare "seeds"
-- **Pattern Recognition**: Het systeem leert nieuwe emotionele patronen uit gesprekken
+#### **Laag 6: Hybrid Ranking Systeem 📊**
+Combineert scores voor optimale match:
+- Symbolic match score (triggers × weight)
+- Semantic similarity (cosine distance)
+- Browser ML emotion boost
+- Usage statistics (usage_count)
+- User feedback history (feedback_score)
+
+**Formula**: `finalScore = (symbolic × 0.4) + (semantic × 0.4) + (mlBoost × 0.1) + (feedback × 0.1)`
+
+#### **Laag 7: Self-Learning & Meta-Learning 🔄📈**
+
+**A. Self-Learning Manager**
+- **Trigger condities**:
+  - Lage confidence (<0.4)
+  - Nieuwe topics (geen knowledge match)
+  - User corrections (👎 + nieuwe input)
+- **Output**: Nieuwe seeds → `unified_knowledge` tabel
+
+**B. Meta-Learning Layer**
+- **Analyseert leerpatronen**:
+  - Failures: Welke seeds falen consistent?
+  - Successes: Welke seeds werken best?
+  - User preferences: Wat vindt de gebruiker waardevol?
+  - Temporal patterns: Tijdsgebonden patronen (dag/nacht)
+
+**C. Adaptive Feedback Loop**
+- **Track seed effectiveness**: usage_count, feedback_score, confidence trend
+- **Auto-prune**: Seeds met score <20% worden gemarkeerd voor verwijdering
+- **Optimize**: Adjust weights op basis van performance metrics
+
+---
 
 ### Data Architectuur
 
 ```
-unified_knowledge (Gecombineerde kennisbank)
-├── emotion_seeds (Emotionele response-patronen)
-├── vector_embeddings (Semantische zoekindex)
-├── decision_logs (Besluitvormingsgeschiedenis)
-└── seed_feedback (Gebruikersfeedback voor leren)
+KENNISBANK:
+unified_knowledge
+├── content_type: 'seed' | 'embedding' | 'pattern' | 'insight'
+├── emotion (symbolisch) + triggers (keywords)
+├── embedding (vector[1536]) voor semantische search
+├── response_text (therapeutisch antwoord)
+└── metadata: { confidence, usage_count, feedback_score, category }
+
+LONG-TERM MEMORY:
+chat_messages
+├── user_id (fixed: 00000000-0000-0000-0000-000000000001)
+├── role ('user' | 'assistant')
+├── content (message text)
+├── metadata (emotion, confidence, label, triggers)
+└── created_at
+
+RUBRICS ASSESSMENT:
+rubrics_assessments
+├── user_id
+├── conversation_id
+├── rubric_id (emotional-regulation, self-awareness, etc.)
+├── risk_score, protective_score, overall_score
+├── triggers (matched keywords)
+└── confidence_level ('low' | 'medium' | 'high')
+
+TELEMETRY:
+api_collaboration_logs
+├── api1_used, vector_api_used, google_api_used
+├── strategic_briefing (JSON van Regisseur)
+├── processing_time_ms
+└── success (boolean)
 ```
+
+---
+
+### Edge Functions Architectuur
+
+**Alle AI-operaties draaien via Supabase Edge Functions (Deno runtime)**
+
+#### **`evai-core`** (Production - SINGLE ENDPOINT)
+
+```typescript
+// Operation: 'chat' → OpenAI chat completions (GPT-4o-mini)
+await supabase.functions.invoke('evai-core', {
+  body: { operation: 'chat', model: 'gpt-4o-mini', messages, temperature: 0.7 }
+});
+
+// Operation: 'embedding' → Text embeddings (text-embedding-3-small, 1536-dim)
+await supabase.functions.invoke('evai-core', {
+  body: { operation: 'embedding', input: text, model: 'text-embedding-3-small' }
+});
+
+// Operation: 'safety' → OpenAI Moderation API
+await supabase.functions.invoke('evai-core', {
+  body: { operation: 'safety', text: input }
+});
+```
+
+**Gebruikt in**:
+- `useProcessingOrchestrator.ts` (main orchestrator)
+- `useOpenAI.ts` (OpenAI fallback)
+- `useOpenAISecondary.ts` (Strategic Briefing / Regisseur)
+- `useVectorEmbeddings.ts` (embedding generation)
+- `safetyGuard.ts` (harm detection)
+- `embeddingUtils.ts` (vector utilities)
+
+#### **`evai-admin`** (Management)
+- **Operation: `test-openai-key`** → API key validation
+- **Operation: `autolearn-scan`** → Autonomous learning scan
+
+#### **`python-transformer-engine`** (DEPRECATED)
+- Legacy Hugging Face sentiment analysis
+- Vervangen door Browser ML Engine (client-side)
+
+---
+
+### Regisseur + Rubrics Pipeline (v2.0)
+
+**OUDE ARCHITECTUUR (INCORRECT):**
+- ❌ API 1 = Stem (primaire chat)
+- ❌ API 2 = Regisseur (secundaire analyse)
+
+**NIEUWE ARCHITECTUUR (HUIDIG):**
+
+1. **Rubrics Assessment** (`useEvAI56Rubrics`)
+   - Analyseert user input op 5 therapeutische dimensies
+   - Output: Risk scores, protective scores, triggers
+
+2. **Strategic Briefing** (`useOpenAISecondary.ts`)
+   - Krijgt rubric assessments als context (parameter: `rubricAssessments`)
+   - Creëert strategische briefing via `evai-core` (operation: 'chat')
+   - Output: `{ goal, context, keyPoints, priority }` (JSON)
+
+3. **Unified Decision Core** (`useUnifiedDecisionCore.ts`)
+   - Ontvangt strategic briefing als input
+   - Maakt hybride decision (Symbolic + Semantic + Neural)
+
+4. **OpenAI Fallback** (indien geen knowledge match)
+   - Gebruikt laatste 6 berichten als context
+   - Natural, empathische system prompt
+   - Reageert via `evai-core` (operation: 'chat')
+
+**Alle API calls draaien via DEZELFDE `evai-core` edge function met verschillende operations!**
 
 ## 🎛️ Admin Dashboard
 
@@ -96,6 +245,8 @@ Toegankelijk via `/admin` - bevat:
 
 - **Systeemstatus**: Real-time monitoring van alle AI-engines
 - **Seed Management**: Beheer emotionele response-patronen
+- **Rubrics Configuratie**: Pas strengheid aan (Flexible/Moderate/Strict) via Settings tab
+- **Rubrics Assessments**: Inzicht in therapeutische beoordelingen per gesprek
 - **Analytics**: Prestatiemetrics en usage patterns
 - **Configuration**: API key management en systeem-instellingen
 
@@ -103,10 +254,32 @@ Toegankelijk via `/admin` - bevat:
 
 ### Belangrijke Componenten
 
-- `useUnifiedDecisionEngine`: Kern hybride AI-logic
-- `NeurosymbolicVisualizer`: Real-time analyse-visualisatie
-- `useAuth`: Easter egg toegangsmechanisme
-- `RubricsToggleControl`: Analytics aan/uit schakelaar
+#### **Hooks (Core Logic)**
+- `useProcessingOrchestrator.ts` → Orchestrator voor hele 7-laagse AI pipeline
+- `useUnifiedDecisionCore.ts` → Neurosymbolisch v3.0 (Hybrid Decision Engine)
+- `useEvAI56Rubrics.ts` → Therapeutische rubrics beoordeling (5 dimensies)
+- `useEnhancedEvAI56Rubrics.ts` → Enhanced versie met database logging
+- `useRubricSettings.ts` → Configureerbare rubric strengheid (Flexible/Moderate/Strict)
+- `useOpenAISecondary.ts` → Strategic Briefing (Regisseur) via `evai-core`
+- `useBrowserTransformerEngine.ts` → Client-side ML (WebGPU/WASM) emotion detection
+- `useMetaLearning.ts` → Analyseert leerpatronen (failures, successes, preferences)
+- `useAdaptiveLearningFeedback.ts` → Seed effectiveness tracking + auto-pruning
+- `useContextAwareAnticipation.ts` → Proactieve interventies (risk alerts, escalation)
+- `useEmotionalContextEngine.ts` → Context analyse (tijd, intensiteit, risico) via rubrics
+- `useInsightGenerator.ts` → Genereert persoonlijke insights via rubric assessments
+- `useRiskPredictionEngine.ts` → Voorspelt toekomstige risico's via Enhanced Rubrics
+
+#### **Components (UI)**
+- `NeurosymbolicVisualizer.tsx` → Real-time analyse-visualisatie (emotion, confidence, label)
+- `ChatView.tsx` → Conversatie interface met long-term memory
+- `SettingsSheet.tsx` → API key configuratie (optioneel, alleen voor client-side testing)
+- `RubricSettings.tsx` → Rubric strengheid configuratie (Flexible/Moderate/Strict)
+- `AdminDashboard.tsx` → System management console (Seeds, Settings, Analytics)
+
+#### **Libraries**
+- `safetyGuard.ts` → Pre-response harm detection (OpenAI Moderation API via `evai-core`)
+- `embeddingUtils.ts` → Vector embedding generation (text-embedding-3-small via `evai-core`)
+- `SeedPatternMatcher.ts` → Symbolic pattern matching (legacy, vervangen door Unified Decision Core)
 
 ### Testing
 
@@ -132,11 +305,58 @@ npm run lint
 
 ## 📋 Technische Stack
 
-- **Frontend**: React 18, TypeScript, Tailwind CSS, Shadcn/UI
-- **Backend**: Supabase (PostgreSQL, Auth, Functions)
-- **AI**: OpenAI GPT-4, Vector Embeddings
-- **State Management**: React Query, Context API
-- **Build Tool**: Vite
+### **Frontend**
+- **Framework**: React 18 + TypeScript 5
+- **Styling**: Tailwind CSS 3 + Shadcn/UI
+- **State Management**: React Query v5 (TanStack Query)
+- **Build Tool**: Vite 5
+- **ML Engine**: Transformers.js v3 (WebGPU/WASM)
+
+### **Backend**
+- **Database**: Supabase PostgreSQL 15
+- **Vector DB**: pgvector extension (Postgres `vector` v0.8.0) - 1536-dim embeddings
+- **Auth**: Supabase Auth (Easter Egg access model voor demo)
+- **Edge Functions**: Deno runtime (Supabase Functions)
+- **Storage**: Supabase Storage (future: file uploads)
+
+### **AI Services (Server-Side via Edge Functions)**
+- **Chat**: OpenAI GPT-4o-mini (via `evai-core` operation: 'chat')
+- **Embeddings**: OpenAI text-embedding-3-small, 1536-dim (via `evai-core` operation: 'embedding')
+- **Moderation**: OpenAI Moderation API (via `evai-core` operation: 'safety')
+- **Local ML**: Xenova/bert-base-multilingual-uncased-sentiment (browser, WebGPU/WASM)
+
+### **DevOps**
+- **Hosting**: Vercel / Netlify (frontend static hosting)
+- **Backend**: Supabase Cloud (database + edge functions)
+- **Version Control**: Git
+- **Package Manager**: npm
+
+## 🛡️ Safety & Privacy
+
+### Multi-Layer Safety System
+
+#### **1. Pre-Response Harm Detection**
+- **OpenAI Moderation API** via `evai-core` (operation: 'safety')
+- **Beslissingen**:
+  - `block`: Schadelijke inhoud wordt geweigerd + toast error
+  - `review`: Gevoelige inhoud wordt geflagd + toast warning
+  - `allow`: Veilige inhoud gaat door naar processing
+- **Bescherming tegen**: Self-harm, hate speech, harassment, violence
+
+#### **2. Client-Side Privacy**
+- **Browser ML Engine**: 100% local inference (geen data naar externe servers)
+- **Data minimalisatie**: Alleen essentiële data naar OpenAI (chat/embeddings via Edge Functions)
+- **localStorage**: API keys (optioneel, alleen voor client-side testing)
+
+#### **3. Database Security**
+- **Supabase Row Level Security (RLS)** policies op alle tabellen
+- **Anonymous user model**: Fixed UUID voor demo (`00000000-0000-0000-0000-000000000001`)
+- **Encrypted secrets**: API keys opgeslagen in Supabase Edge Function environment vars
+
+#### **4. Rate Limiting & Usage Tracking**
+- **API usage tracking** via `apiUsageTracker.ts`
+- **Automatic throttling** bij overmatig gebruik
+- **Telemetry**: `api_collaboration_logs` voor monitoring
 
 ## 🚀 Deployment
 
@@ -152,8 +372,8 @@ De applicatie is geoptimaliseerd voor deployment op Vercel, Netlify, of andere s
 
 ## 🔒 Beveiliging
 
-- **Anonymous User Model**: Alle database-operaties gebruiken een vast, anoniem user ID
-- **API Key Encryption**: Keys worden veilig opgeslagen in localStorage
+- **Anonymous User Model**: Alle database-operaties gebruiken een vast, anoniem user ID voor demo
+- **API Key Encryption**: Keys worden veilig opgeslagen in Supabase Edge Function environment vars
 - **Rate Limiting**: Ingebouwde bescherming tegen misbruik
 - **Easter Egg Access**: Verhindert ongeautoriseerde toegang tot de demo
 
@@ -163,13 +383,14 @@ De applicatie is geoptimaliseerd voor deployment op Vercel, Netlify, of andere s
 - **Code Splitting**: Optimale bundle-grootte
 - **Caching**: React Query voor efficiente data-fetching
 - **Hybrid Processing**: Intelligente fallback-strategieën
+- **Client-Side ML**: WebGPU/WASM acceleration voor lokale inferentie
 
 ## 🐛 Troubleshooting
 
 ### Veelvoorkomende Problemen
 
 1. **Toegang werkt niet**: Zorg ervoor dat je precies 3x klikt binnen 2 seconden
-2. **API Errors**: Controleer API keys in instellingen
+2. **API Errors**: Edge Functions gebruiken server-side keys (geen client-side keys nodig)
 3. **Database Errors**: Verificeer Supabase verbinding in Admin Dashboard
 
 ### Debug Mode
@@ -182,4 +403,4 @@ Voor technische ondersteuning of vragen over de neurosymbolische architectuur, r
 
 ---
 
-**EvAI - Waar symbolische intelligentie en neurale netwerken samenkomen** 🧠💙
+**EvAI v5.6 - Waar symbolische intelligentie, therapeutische rubrics en neurale netwerken samenkomen** 🧠💙
