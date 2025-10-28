@@ -1,8 +1,8 @@
 import React from 'react';
-import AutonomyCockpit from './AutonomyCockpit';
+import { SimpleXAIDashboard } from './SimpleXAIDashboard';
 
 const AutonomyConsole: React.FC<{ systemMetrics?: any; connectionStatus?: any }> = ({ systemMetrics, connectionStatus }) => {
-  return <AutonomyCockpit systemMetrics={systemMetrics} connectionStatus={connectionStatus} />;
+  return <SimpleXAIDashboard />;
 };
 
 export default AutonomyConsole;
