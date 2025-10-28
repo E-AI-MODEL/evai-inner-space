@@ -297,6 +297,9 @@ export function useUnifiedDecisionCore() {
           score *= 0.3;
         }
         
+        // 🚨 CRITICAL FIX: Cap confidence at 100% (1.0)
+        score = Math.min(score, 1.0);
+        
         return { ...source, confidence_score: score };
       })
       .sort((a, b) => b.confidence_score - a.confidence_score)
