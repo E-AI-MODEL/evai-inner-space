@@ -8,6 +8,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import AutonomyConsole from '@/components/admin/AutonomyConsole';
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
+import { EmbeddingHealthPanel } from '@/components/admin/EmbeddingHealthPanel';
 import MLEngineMonitor from '@/components/admin/MLEngineMonitor';
 import { useNavigate } from 'react-router-dom';
 import { useSystemConnectivity } from '@/hooks/useSystemConnectivity';
@@ -242,6 +243,7 @@ const AdminDashboard = () => {
         </TabsContent>
 
             <TabsContent value="seeds" className="space-y-4">
+              <EmbeddingHealthPanel />
               <AdvancedSeedManager />
             </TabsContent>
 

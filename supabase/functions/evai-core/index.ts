@@ -80,13 +80,18 @@ serve(async (req) => {
       return await handleEmbedding(body);
     }
 
+    // OPERATION: batch-embed (NEW - FASE 2)
+    if (operation === "batch-embed") {
+      return await handleBatchEmbed(body);
+    }
+
     // OPERATION: safety
     if (operation === "safety") {
       return await handleSafety(body);
     }
 
     return new Response(
-      JSON.stringify({ ok: false, error: "Unknown operation. Use: chat, embedding, or safety" }),
+      JSON.stringify({ ok: false, error: "Unknown operation. Use: chat, embedding, batch-embed, or safety" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
@@ -294,6 +299,107 @@ async function handleSafety(body: any) {
       safe: safetyResult.safe !== false,
       reason: safetyResult.reason || "No concerns detected",
       severity: safetyResult.severity || "low",
+    }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  );
+}
+
+async function handleBatchEmbed(body: any) {
+  const keyToUse = VECTOR_API_KEY || OPENAI_PRIMARY;
+  if (!keyToUse) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "No embeddings API key configured" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const { items = [], batchSize = 10 } = body || {};
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Invalid items array for batch embedding" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  console.log(`🔄 Batch embed: Processing ${items.length} items in batches of ${batchSize}`);
+
+  const results: any[] = [];
+  const errors: any[] = [];
+  
+  // Process in batches to avoid rate limits
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(items.length / batchSize)}`);
+    
+    for (const item of batch) {
+      const { id, text } = item;
+      
+      if (!id || !text) {
+        errors.push({ id: id || 'unknown', error: 'Missing id or text' });
+        continue;
+      }
+
+      try {
+        const resp = await fetch("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${keyToUse}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "text-embedding-3-small",
+            input: text.substring(0, 8000),
+          }),
+        });
+
+        const data = await resp.json().catch(() => ({}));
+
+        if (!resp.ok) {
+          const errMsg = data?.error?.message || resp.statusText || "OpenAI embedding error";
+          console.error(`❌ Batch embed error for item ${id}:`, errMsg);
+          errors.push({ id, error: errMsg, status: resp.status });
+          continue;
+        }
+
+        const embedding = data?.data?.[0]?.embedding;
+        if (!embedding) {
+          errors.push({ id, error: 'No embedding returned' });
+          continue;
+        }
+
+        results.push({ id, embedding, success: true });
+        
+      } catch (error) {
+        console.error(`❌ Batch embed exception for item ${id}:`, error);
+        errors.push({ id, error: (error as Error).message });
+      }
+    }
+    
+    // Rate limiting: small delay between batches
+    if (i + batchSize < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  const successCount = results.length;
+  const errorCount = errors.length;
+  const totalProcessed = successCount + errorCount;
+
+  console.log(`✅ Batch embed complete: ${successCount}/${totalProcessed} successful, ${errorCount} errors`);
+
+  return new Response(
+    JSON.stringify({
+      ok: true,
+      results,
+      errors,
+      summary: {
+        total: items.length,
+        processed: totalProcessed,
+        successful: successCount,
+        failed: errorCount,
+        successRate: (successCount / totalProcessed * 100).toFixed(2) + '%'
+      }
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );

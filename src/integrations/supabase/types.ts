@@ -630,6 +630,27 @@ export type Database = {
               similarity_score: number
             }[]
           }
+      get_embedding_health: {
+        Args: never
+        Returns: {
+          content_type: string
+          count: number
+          embedded_items: number
+          embedding_coverage_pct: number
+          missing_embeddings: number
+          total_items: number
+        }[]
+      }
+      get_items_needing_embeddings: {
+        Args: { p_limit?: number }
+        Returns: {
+          content_type: string
+          emotion: string
+          id: string
+          response_text: string
+          triggers: string[]
+        }[]
+      }
       get_recent_api_collaboration_logs: {
         Args: { p_limit?: number }
         Returns: {
@@ -746,6 +767,20 @@ export type Database = {
         }
         Returns: string
       }
+      log_unified_decision_v3: {
+        Args: {
+          p_api_collaboration?: Json
+          p_confidence: number
+          p_conversation_id: string
+          p_emotion: string
+          p_label: string
+          p_processing_time_ms: number
+          p_response: string
+          p_sources: Json
+          p_user_input: string
+        }
+        Returns: string
+      }
       search_unified_knowledge: {
         Args: {
           max_results?: number
@@ -765,6 +800,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      update_item_embedding: {
+        Args: { p_embedding: string; p_item_id: string }
+        Returns: boolean
+      }
       update_setting:
         | {
             Args: { setting_key: string; setting_value: string }
