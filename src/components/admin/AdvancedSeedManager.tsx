@@ -1,13 +1,10 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Database, Download, BrainCircuit } from 'lucide-react';
+import { Plus, Database, Download } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useVectorEmbeddings } from '../../hooks/useVectorEmbeddings';
-import { useSeeds } from '../../hooks/useSeeds';
 import { useAdvancedSeedManager } from '../../hooks/useAdvancedSeedManager';
 import AdvancedSeedEditor from './AdvancedSeedEditor';
 import AdvancedSeedTable from './AdvancedSeedTable';
@@ -34,40 +31,6 @@ const AdvancedSeedManager = () => {
     exportSeeds,
     loadSeedsData
   } = useAdvancedSeedManager();
-
-  const { data: seedsDataFromHook } = useSeeds();
-  const { processSeedBatch, isProcessing: isEmbedding } = useVectorEmbeddings();
-
-  const handleEmbedAllSeeds = async () => {
-    if (!seedsDataFromHook || seedsDataFromHook.length === 0) {
-      toast({ 
-        title: "Geen seeds om te embedden", 
-        description: "Er zijn geen actieve seeds beschikbaar.",
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    toast({ 
-      title: "Starten met embedden van alle seeds...", 
-      description: `${seedsDataFromHook.length} seeds worden verwerkt via Edge Functions. Dit kan even duren.` 
-    });
-    
-    try {
-      // processSeedBatch uses server-side Edge Functions for embeddings
-      const result = await processSeedBatch(seedsDataFromHook);
-      toast({
-        title: "Embedding voltooid",
-        description: `${result.success} seeds succesvol verwerkt via server-side embeddings, ${result.failed} mislukt.`
-      });
-    } catch (error) {
-      toast({
-        title: "Embedding gefaald",
-        description: "Er is een fout opgetreden tijdens het verwerken van embeddings.",
-        variant: "destructive"
-      });
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -129,15 +92,6 @@ const AdvancedSeedManager = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button 
-                      onClick={handleEmbedAllSeeds}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                      disabled={isEmbedding}
-                    >
-                      <BrainCircuit size={16} />
-                      {isEmbedding ? 'Bezig...' : 'Genereer Alle Embeddings'}
-                    </Button>
-                    <Button 
                       onClick={exportSeeds}
                       variant="outline"
                       className="flex items-center gap-2"
@@ -157,11 +111,6 @@ const AdvancedSeedManager = () => {
                 
                 <div className="text-sm text-gray-600">
                   {filteredSeeds.length} van {seedsData.length} seeds ({seedsData.filter(s => s.isActive).length} actief)
-                  {seedsDataFromHook && (
-                    <span className="ml-4 text-blue-600">
-                      • {seedsDataFromHook.length} Supabase seeds beschikbaar voor embedding
-                    </span>
-                  )}
                 </div>
               </div>
 

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/sidebar';
 
 interface AdminSidebarProps {
-  active: 'autonomy' | 'seeds' | 'settings' | 'python';
+  active: 'autonomy' | 'seeds' | 'settings';
   onChange: (value: AdminSidebarProps['active']) => void;
 }
 
@@ -21,7 +21,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ active, onChange }) => {
     { key: 'autonomy', label: 'Autonomous', icon: Zap },
     { key: 'seeds', label: 'Knowledge', icon: Database },
     { key: 'settings', label: 'Settings', icon: Settings },
-    { key: 'python', label: 'Python Engine', icon: Cpu },
   ] as const;
 
   return (

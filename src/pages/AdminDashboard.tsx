@@ -26,7 +26,7 @@ import { LogOut, Trash2 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { isAdminAuthorized, authorizeAdmin, logoutAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState<'autonomy' | 'seeds' | 'settings' | 'python'>('autonomy');
+  const [activeTab, setActiveTab] = useState<'autonomy' | 'seeds' | 'settings'>('autonomy');
   const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [isConsolidating, setIsConsolidating] = useState(false);
   const { toast } = useToast();
@@ -237,10 +237,13 @@ const AdminDashboard = () => {
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">
             <TabsContent value="autonomy" className="space-y-4">
               <AutonomyConsole systemMetrics={systemMetrics} connectionStatus={connectionStatus} />
-          <div className="mt-6">
-            <RetroactiveLearningStatus />
-          </div>
-        </TabsContent>
+              <div className="mt-6">
+                <MLEngineMonitor />
+              </div>
+              <div className="mt-6">
+                <RetroactiveLearningStatus />
+              </div>
+            </TabsContent>
 
             <TabsContent value="seeds" className="space-y-4">
               <EmbeddingHealthPanel />
@@ -249,10 +252,6 @@ const AdminDashboard = () => {
 
             <TabsContent value="settings" className="space-y-4">
               <ConfigurationPanel />
-            </TabsContent>
-
-            <TabsContent value="python" className="space-y-4">
-              <MLEngineMonitor />
             </TabsContent>
           </Tabs>
         </main>
