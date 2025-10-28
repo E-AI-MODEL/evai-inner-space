@@ -6,7 +6,6 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AutonomyConsole from '@/components/admin/AutonomyConsole';
-import { ProactiveAutonomyConsole } from '@/components/admin/ProactiveAutonomyConsole';
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
 import MLEngineMonitor from '@/components/admin/MLEngineMonitor';
@@ -237,13 +236,10 @@ const AdminDashboard = () => {
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">
             <TabsContent value="autonomy" className="space-y-4">
               <AutonomyConsole systemMetrics={systemMetrics} connectionStatus={connectionStatus} />
-              <div className="mt-6">
-                <ProactiveAutonomyConsole />
-              </div>
-              <div className="mt-6">
-                <RetroactiveLearningStatus />
-              </div>
-            </TabsContent>
+          <div className="mt-6">
+            <RetroactiveLearningStatus />
+          </div>
+        </TabsContent>
 
             <TabsContent value="seeds" className="space-y-4">
               <AdvancedSeedManager />

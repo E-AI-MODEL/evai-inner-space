@@ -4,7 +4,6 @@ import { useProcessingOrchestrator } from './useProcessingOrchestrator';
 import { v4 as uuidv4 } from 'uuid';
 import { useSelfLearningManager } from './useSelfLearningManager';
 import { saveChatMessage } from '@/lib/chatHistoryStorage';
-import { useContextAwareAnticipation } from './useContextAwareAnticipation';
 import { useEmotionalContextEngine } from './useEmotionalContextEngine';
 import { toast } from 'sonner';
 
@@ -15,7 +14,6 @@ export function useChat() {
   console.log('🔄 useChat hook initialized - Production mode');
   const { orchestrateProcessing, isProcessing, stats } = useProcessingOrchestrator();
   const { analyzeTurn } = useSelfLearningManager();
-  const { anticipateUserNeeds } = useContextAwareAnticipation();
   const { analyzeContext } = useEmotionalContextEngine();
 
   const onSend = useCallback(async (message: string) => {
@@ -84,25 +82,6 @@ export function useChat() {
 
       // 💾 Long-Term Memory: Save AI response to database
       await saveChatMessage(aiResponse);
-
-      // 🔮 Context-Aware Anticipation: Check if proactive intervention needed
-      const contextAnalysis = analyzeContext(messages);
-      if (contextAnalysis.escalate) {
-        console.warn('⚠️ Escalation needed - Risk score:', contextAnalysis.riskScore);
-        toast.warning('Intensief gesprek gedetecteerd', {
-          description: 'We blijven alert op je welzijn. Neem bij nood contact op met een professional.'
-        });
-      }
-
-      // 🔮 Anticipate future needs (background)
-      if (messages.length % 5 === 0) { // Every 5 messages
-        void anticipateUserNeeds().then(anticipations => {
-          const highPriority = anticipations.filter(a => a.priority === 'high');
-          if (highPriority.length > 0) {
-            console.log('🔮 High priority needs anticipated:', highPriority.map(a => a.need));
-          }
-        });
-      }
 
       // Proactief zelflerend proces (fire-and-forget)
       void analyzeTurn(
