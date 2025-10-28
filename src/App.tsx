@@ -13,7 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 const Index = lazy(() => import("./pages/Index"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminGuide = lazy(() => import("./pages/AdminGuide"));
-const TestPage = lazy(() => import("./pages/TestPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -81,7 +80,6 @@ const AppContent = () => {
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/guide" element={<AdminGuide />} />
-          <Route path="/test" element={<TestPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

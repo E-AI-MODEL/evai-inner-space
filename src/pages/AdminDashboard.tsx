@@ -48,8 +48,8 @@ const AdminDashboard = () => {
     const timer = setTimeout(async () => {
       try {
         console.log('🚀 Auto-triggering AutoLearn scan...');
-        await supabase.functions.invoke('evai-autolearn-scan', {
-          body: { sinceMinutes: 60 }
+        await supabase.functions.invoke('evai-admin', {
+          body: { operation: 'autolearn-scan', sinceMinutes: 60 }
         });
         console.log('✅ AutoLearn scan triggered');
       } catch (error) {

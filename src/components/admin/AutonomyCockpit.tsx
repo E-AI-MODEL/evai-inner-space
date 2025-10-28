@@ -165,14 +165,14 @@ const AutonomyCockpit: React.FC<AutonomyCockpitProps> = ({ systemMetrics, connec
   const runAutonomousScan = useCallback(async () => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('evai-autolearn-scan', {
-        body: { sinceMinutes: 60 }
+      const { data, error } = await supabase.functions.invoke('evai-admin', {
+        body: { operation: 'autolearn-scan', sinceMinutes: 60 }
       });
       if (error) {
         toast({ title: 'Autonomous scan failed', description: error.message, variant: 'destructive' });
       } else {
         const d = data as any;
-        toast({ title: 'Autonomous scan completed', description: `Scanned: ${d.scanned}, Low confidence: ${d.lowConfidence}` });
+        toast({ title: 'Autonomous scan completed', description: d?.message || 'Scan completed' });
       }
     } catch (e: any) {
       toast({ title: 'Autonomous scan error', description: e.message, variant: 'destructive' });

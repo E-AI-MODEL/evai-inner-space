@@ -21,44 +21,57 @@ const DebugPanel: React.FC = () => {
       setDebugInfo(prev => prev + `• Security Mode: Production (no client-side keys)\n`);
       
       setDebugInfo(prev => prev + `\n🧪 TESTING EDGE FUNCTIONS:\n`);
-      setDebugInfo(prev => prev + `• evai-orchestrate: Testing...\n`);
+      setDebugInfo(prev => prev + `• evai-core (chat): Testing...\n`);
       
       try {
         const testStart = Date.now();
-        const { data, error } = await supabase.functions.invoke('evai-orchestrate', {
-          body: { userInput: 'test diagnostic message', history: [] }
+        const { data, error } = await supabase.functions.invoke('evai-core', {
+          body: { 
+            operation: 'chat',
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: 'test' }],
+            max_tokens: 10
+          }
         });
         const testDuration = Date.now() - testStart;
         
         if (error) {
-          setDebugInfo(prev => prev + `• evai-orchestrate: ❌ ${error.message}\n`);
+          setDebugInfo(prev => prev + `• evai-core (chat): ❌ ${error.message}\n`);
         } else {
-          setDebugInfo(prev => prev + `• evai-orchestrate: ✅ Connected (${testDuration}ms)\n`);
-          setDebugInfo(prev => prev + `• Response received: ${data ? 'Valid' : 'Empty'}\n`);
+          const payload = data as any;
+          setDebugInfo(prev => prev + `• evai-core (chat): ${payload?.ok ? '✅' : '❌'} (${testDuration}ms)\n`);
+          if (payload?.content) {
+            setDebugInfo(prev => prev + `• Response content length: ${payload.content.length} chars\n`);
+          }
         }
       } catch (err) {
-        setDebugInfo(prev => prev + `• evai-orchestrate: ❌ ${err instanceof Error ? err.message : 'Unknown error'}\n`);
+        setDebugInfo(prev => prev + `• evai-core (chat): ❌ ${err instanceof Error ? err.message : 'Unknown error'}\n`);
       }
       
       setDebugInfo(prev => prev + `\n🧠 TESTING EMBEDDING FUNCTION:\n`);
-      setDebugInfo(prev => prev + `• openai-embedding: Testing...\n`);
+      setDebugInfo(prev => prev + `• evai-core (embedding): Testing...\n`);
       
       try {
         const embStart = Date.now();
-        const { data: embData, error: embError } = await supabase.functions.invoke('openai-embedding', {
-          body: { input: 'test', model: 'text-embedding-3-small' }
+        const { data: embData, error: embError } = await supabase.functions.invoke('evai-core', {
+          body: { 
+            operation: 'embedding',
+            input: 'test diagnostic embedding', 
+            model: 'text-embedding-3-small' 
+          }
         });
         const embDuration = Date.now() - embStart;
         
         if (embError) {
-          setDebugInfo(prev => prev + `• openai-embedding: ❌ ${embError.message}\n`);
+          setDebugInfo(prev => prev + `• evai-core (embedding): ❌ ${embError.message}\n`);
         } else {
-          setDebugInfo(prev => prev + `• openai-embedding: ✅ Connected (${embDuration}ms)\n`);
-          const embedding = (embData as any)?.embedding;
-          setDebugInfo(prev => prev + `• Embedding vector: ${embedding ? `${embedding.length} dimensions` : 'Invalid'}\n`);
+          const payload = embData as any;
+          setDebugInfo(prev => prev + `• evai-core (embedding): ${payload?.ok ? '✅' : '❌'} (${embDuration}ms)\n`);
+          const embedding = payload?.embedding;
+          setDebugInfo(prev => prev + `• Embedding vector: ${embedding && Array.isArray(embedding) ? `${embedding.length} dimensions` : 'Invalid'}\n`);
         }
       } catch (err) {
-        setDebugInfo(prev => prev + `• openai-embedding: ❌ ${err instanceof Error ? err.message : 'Unknown error'}\n`);
+        setDebugInfo(prev => prev + `• evai-core (embedding): ❌ ${err instanceof Error ? err.message : 'Unknown error'}\n`);
       }
 
       setDebugInfo(prev => prev + `\n🌐 NETWORK CHECK:\n`);
