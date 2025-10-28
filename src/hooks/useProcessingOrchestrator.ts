@@ -103,9 +103,14 @@ export function useProcessingOrchestrator() {
         console.log('🎭 Regisseur: ACTIEF - Creating Strategic Briefing...');
         console.log('📝 User input voor briefing:', userInput.substring(0, 100));
         try {
+          // Pass conversation history as string array for context
+          const historyContext = conversationHistory.slice(-6).map(msg => 
+            `${msg.from === 'user' ? 'Gebruiker' : 'AI'}: ${msg.content}`
+          );
+          
           strategicBriefing = await createStrategicBriefing(
             userInput,
-            [],
+            historyContext,
             null,
             apiKey || ''
           );

@@ -227,6 +227,24 @@ export function useUnifiedDecisionCore() {
       // 🚀 NEUROSYMBOLISCH STAP 4: Decision generation (met strategic briefing)
       const decision = await generateUnifiedDecision(input, rankedSources, context, history, browserEmotion, strategicBriefing);
 
+      // 🆕 CRITICAL FIX: Update usage_count en last_used voor gebruikte seeds
+      if (decision && rankedSources.length > 0) {
+        try {
+          for (const source of rankedSources.slice(0, 3)) {
+            await supabase
+              .from('unified_knowledge')
+              .update({
+                usage_count: (source.metadata?.usageCount || 0) + 1,
+                last_used: new Date().toISOString()
+              })
+              .eq('id', source.id);
+          }
+          console.log(`✅ Updated usage_count for ${rankedSources.slice(0, 3).length} seeds`);
+        } catch (usageError) {
+          console.warn('⚠️ Failed to update usage_count:', usageError);
+        }
+      }
+
       // Log decision with v2.0 metadata
       await logUnifiedDecision(input, rankedSources, decision, {
         googleApiUsed: !!googleApiKey,
@@ -367,14 +385,23 @@ export function useUnifiedDecisionCore() {
           type: s.content_type
         }));
 
-      const neuralSimilarities = sources
-        .filter(s => s.content_type === 'embedding')
-        .map(s => ({
-          id: s.id,
-          emotion: s.emotion,
-          similarity: s.similarity_score || 0,
-          type: s.content_type
-        }));
+      const neuralSimilarities = [
+        // 🆕 CRITICAL FIX: Voeg Browser ML data toe aan neural_similarities
+        ...(sources.some(() => true) && decision ? [{
+          type: 'browser_ml',
+          emotion: decision.emotion,
+          confidence: decision.confidence,
+          source: 'Browser Transformer Engine'
+        }] : []),
+        ...sources
+          .filter(s => s.content_type === 'embedding')
+          .map(s => ({
+            id: s.id,
+            emotion: s.emotion,
+            similarity: s.similarity_score || 0,
+            type: s.content_type
+          }))
+      ];
       
       // 🆕 Als geen decision maar wel input, log als "no match" scenario
       if (!decision) {
