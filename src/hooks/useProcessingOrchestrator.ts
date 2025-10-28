@@ -53,11 +53,54 @@ export function useProcessingOrchestrator() {
   ): Promise<UnifiedResponse> => {
     console.log('🎼 Production orchestration starting...');
     console.log('📝 User input:', userInput.substring(0, 50) + '...');
+    
+    const startTime = Date.now();
+    
+    // 🚀 FAST PATH: Detect simple greetings/short inputs
+    const simpleGreetings = /^(hi|hallo|hey|hoi|dag|hello|yo|hé|hee|sup|hiya)[\s!?.]*$/i;
+    const isSimpleInput = userInput.trim().length < 15 && simpleGreetings.test(userInput.trim());
+    
+    if (isSimpleInput) {
+      console.log('⚡ Fast path: Simple greeting detected, skipping complex analysis');
+      const processingTime = Date.now() - startTime;
+      
+      setStats(prev => {
+        const newTotalRequests = prev.totalRequests + 1;
+        return {
+          ...prev,
+          totalRequests: newTotalRequests,
+          averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / newTotalRequests,
+          lastProcessingTime: processingTime
+        };
+      });
+      
+      return {
+        content: "Hey! Fijn dat je er bent. Waar kan ik je mee helpen vandaag?",
+        emotion: "neutraal",
+        confidence: 0.95,
+        label: "Valideren",
+        reasoning: "Simple greeting - fast path response",
+        symbolicInferences: ["⚡ Fast Path (greeting)", "🎯 Simple input detected"],
+        metadata: {
+          processingPath: 'fast',
+          totalProcessingTime: processingTime,
+          componentsUsed: ['Fast Path Handler'],
+          fallback: false,
+          apiCollaboration: {
+            api1Used: false,
+            api2Used: false,
+            vectorApiUsed: false,
+            googleApiUsed: false,
+            seedGenerated: false,
+            secondaryAnalysis: false
+          }
+        }
+      };
+    }
+    
     console.log('📚 Conversation history length:', conversationHistory?.length || 0);
     console.log('📊 Current stats:', stats);
     console.log('🧠 Knowledge stats:', knowledgeStats);
-    
-    const startTime = Date.now();
     
     try {
       // 🛡️ VEILIGHEIDSLAG: Pre-response harm detection
