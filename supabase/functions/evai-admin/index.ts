@@ -76,18 +76,13 @@ serve(async (req) => {
       return await handleTestOpenAIKey(body);
     }
 
-    // OPERATION: autolearn-scan
-    if (operation === "autolearn-scan") {
-      return handleAutolearnScan(body);
-    }
-
     // OPERATION: consolidate-knowledge
     if (operation === "consolidate-knowledge") {
       return await handleConsolidateKnowledge(body);
     }
 
     return new Response(
-      JSON.stringify({ ok: false, error: "Unknown operation. Use: auth, test-openai-key, autolearn-scan, or consolidate-knowledge" }),
+      JSON.stringify({ ok: false, error: "Unknown operation. Use: auth, test-openai-key, or consolidate-knowledge" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
@@ -165,21 +160,6 @@ async function handleTestOpenAIKey(body: any) {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-}
-
-function handleAutolearnScan(body: any) {
-  // Placeholder voor autolearn scan functionality
-  console.log("🤖 Autolearn scan triggered");
-  
-  return new Response(
-    JSON.stringify({
-      ok: true,
-      message: "Autolearn scan completed",
-      findings: [],
-      timestamp: new Date().toISOString(),
-    }),
-    { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
 }
 
 /**

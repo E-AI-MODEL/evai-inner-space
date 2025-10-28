@@ -138,7 +138,6 @@ export function useProcessingOrchestrator() {
 
       // 🧠 Neurosymbolisch v3.0 - Unified Decision Core with Briefing
       const vectorApiKey = apiKey;
-      const googleApiKey = '';
       
       console.log('🧠 NEUROSYMBOLISCH: Unified Decision Core v3.0 met', briefing ? 'Strategic Briefing' : 'Direct Decision');
       console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
@@ -147,7 +146,6 @@ export function useProcessingOrchestrator() {
         userInput,
         apiKey,
         validateApiKey(vectorApiKey) ? vectorApiKey : apiKey,
-        googleApiKey,
         briefing, // Strategic briefing (conditionally created)
         conversationHistory
       );
@@ -280,7 +278,6 @@ OUTPUT (JSON):
                 api1Used: !!apiKey,
                 api2Used: false,
                 vectorApiUsed: false,
-                googleApiUsed: false,
                 seedGenerated: false,
                 secondaryAnalysis: false
               }
@@ -294,14 +291,13 @@ OUTPUT (JSON):
             await supabase.rpc('log_evai_workflow', {
               p_conversation_id: sessionStorage.getItem('evai-current-session-id') || 'unknown',
               p_workflow_type: 'orchestrate-fallback-failed',
-              p_api_collaboration: {
-                api1Used: false,
-                api2Used: false,
-                vectorApiUsed: false,
-                googleApiUsed: false,
-                seedGenerated: false,
-                secondaryAnalysis: false
-              },
+          p_api_collaboration: {
+            api1Used: false,
+            api2Used: false,
+            vectorApiUsed: false,
+            seedGenerated: false,
+            secondaryAnalysis: false
+          },
               p_rubrics_data: null,
               p_processing_time: Date.now() - startTime,
               p_success: false,
@@ -361,24 +357,24 @@ OUTPUT (JSON):
         metadata: {
           processingPath: 'hybrid',
           totalProcessingTime: processingTime,
-          componentsUsed: [
-            `🧠 Neurosymbolisch v3.0`,
-            `Unified Core (${decisionResult.sources.length} sources)`,
-            `Knowledge Base: ${knowledgeStats.total} items`,
-            `Browser ML Engine (WebGPU/WASM)`,
-            ...(briefing ? ['🎯 Strategic Briefing (conditional)'] : []),
-            `📊 Rubrics Assessment (EvAI 5.6)`,
-            'Edge Functions'
-          ],
-          fallback: false,
-          apiCollaboration: {
-            api1Used: !!apiKey,
-            api2Used: !!briefing,
-            vectorApiUsed: !!vectorApiKey && validateApiKey(vectorApiKey),
-            googleApiUsed: false,
-            seedGenerated: false,
-            secondaryAnalysis: !!briefing
-          }
+              componentsUsed: [
+                `🧠 Neurosymbolisch v3.0`,
+                `Unified Core (${decisionResult.sources.length} sources)`,
+                `Knowledge Base: ${knowledgeStats.total} items`,
+                `Browser ML Engine (WebGPU/WASM)`,
+                ...(briefing ? ['🎯 Strategic Briefing (conditional)'] : []),
+                `📊 Rubrics Assessment (EvAI 5.6)`,
+                'Edge Functions'
+              ],
+              fallback: false,
+              apiCollaboration: {
+                api1Used: !!apiKey,
+                api2Used: !!briefing,
+                vectorApiUsed: !!vectorApiKey && validateApiKey(vectorApiKey),
+                googleApiUsed: false,
+                seedGenerated: false,
+                secondaryAnalysis: !!briefing
+              }
         }
       };
     } catch (error) {
@@ -398,7 +394,6 @@ OUTPUT (JSON):
             api1Used: false,
             api2Used: false,
             vectorApiUsed: false,
-            googleApiUsed: false,
             seedGenerated: false,
             secondaryAnalysis: false
           },

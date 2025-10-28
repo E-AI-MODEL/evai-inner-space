@@ -43,21 +43,10 @@ const AdminDashboard = () => {
     seeds: 'loading',
   });
 
-  // Auto-activate AutoLearn on dashboard load
+  // AutoLearn feature deprecated - removed auto-trigger
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      try {
-        console.log('🚀 Auto-triggering AutoLearn scan...');
-        await supabase.functions.invoke('evai-admin', {
-          body: { operation: 'autolearn-scan', sinceMinutes: 60 }
-        });
-        console.log('✅ AutoLearn scan triggered');
-      } catch (error) {
-        console.warn('⚠️ AutoLearn auto-trigger failed:', error);
-      }
-    }, 5000);
-    
-    return () => clearTimeout(timer);
+    console.log('📊 Admin Dashboard loaded');
+    // AutoLearn functionality has been removed
   }, []); // Run once on mount
 
   // Essential autonomous system monitoring

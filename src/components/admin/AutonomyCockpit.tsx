@@ -107,16 +107,8 @@ const AutonomyCockpit: React.FC<AutonomyCockpitProps> = ({ systemMetrics, connec
   // Check actual agent activity for real-time status
   const checkAgentActivity = useCallback(async () => {
     try {
-      // AutoLearn: Check last autolearn scan execution (last 10 minutes)
-      const { data: autolearnLogs } = await supabase
-        .from('api_collaboration_logs')
-        .select('created_at')
-        .eq('workflow_type', 'autolearn_scan')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      const autolearnActive = autolearnLogs?.[0] && 
-        new Date(autolearnLogs[0].created_at) > new Date(Date.now() - 10 * 60 * 1000);
+      // AutoLearn: Deprecated - always idle
+      const autolearnActive = false;
       
       // Orchestrator: Check recent decision logs (last 5 minutes)
       const { data: decisionLogs } = await supabase
@@ -165,15 +157,12 @@ const AutonomyCockpit: React.FC<AutonomyCockpitProps> = ({ systemMetrics, connec
   const runAutonomousScan = useCallback(async () => {
     setIsProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('evai-admin', {
-        body: { operation: 'autolearn-scan', sinceMinutes: 60 }
+      console.warn('⚠️ Autonomous scan feature deprecated');
+      toast({ 
+        title: 'Autonomous scan deprecated', 
+        description: 'This feature has been removed from the system', 
+        variant: 'destructive' 
       });
-      if (error) {
-        toast({ title: 'Autonomous scan failed', description: error.message, variant: 'destructive' });
-      } else {
-        const d = data as any;
-        toast({ title: 'Autonomous scan completed', description: d?.message || 'Scan completed' });
-      }
     } catch (e: any) {
       toast({ title: 'Autonomous scan error', description: e.message, variant: 'destructive' });
     } finally {

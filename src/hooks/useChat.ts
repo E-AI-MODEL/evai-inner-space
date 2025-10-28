@@ -4,7 +4,6 @@ import { useProcessingOrchestrator } from './useProcessingOrchestrator';
 import { v4 as uuidv4 } from 'uuid';
 import { useSelfLearningManager } from './useSelfLearningManager';
 import { saveChatMessage } from '@/lib/chatHistoryStorage';
-import { useEmotionalContextEngine } from './useEmotionalContextEngine';
 import { toast } from 'sonner';
 
 export function useChat() {
@@ -14,7 +13,6 @@ export function useChat() {
   console.log('🔄 useChat hook initialized - Production mode');
   const { orchestrateProcessing, isProcessing, stats } = useProcessingOrchestrator();
   const { analyzeTurn } = useSelfLearningManager();
-  const { analyzeContext } = useEmotionalContextEngine();
 
   const onSend = useCallback(async (message: string) => {
     console.log('📤 useChat onSend called with message:', message);

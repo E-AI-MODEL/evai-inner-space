@@ -173,7 +173,6 @@ export function useUnifiedDecisionCore() {
     input: string,
     apiKey?: string,
     vectorApiKey?: string,
-    googleApiKey?: string,
     strategicBriefing?: any,
     history?: ChatHistoryItem[]
   ): Promise<DecisionResult | null> => {
@@ -182,7 +181,7 @@ export function useUnifiedDecisionCore() {
       ? strategicBriefing 
       : undefined;
     console.log('🧠 makeUnifiedDecision v3.0 NEUROSYMBOLISCH called with input:', input.substring(0, 50) + '...');
-    console.log('🔑 API keys provided - primary:', !!apiKey, 'vector:', !!vectorApiKey, 'google:', !!googleApiKey);
+    console.log('🔑 API keys provided - primary:', !!apiKey, 'vector:', !!vectorApiKey);
     
     if (!input?.trim()) {
       console.log('❌ Empty input provided to makeUnifiedDecision');
@@ -247,7 +246,6 @@ export function useUnifiedDecisionCore() {
 
       // Log decision with v3.0 metadata
       await logUnifiedDecision(input, rankedSources, decision, {
-        googleApiUsed: !!googleApiKey,
         version: '3.0'
       });
 

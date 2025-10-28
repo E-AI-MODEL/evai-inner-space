@@ -29,17 +29,17 @@ export function useAutonomousScan() {
   const runScan = async (sinceMinutes: number = 60) => {
     setIsScanning(true);
     try {
-      const { data, error } = await supabase.functions.invoke('evai-admin', {
-        body: { operation: 'autolearn-scan', sinceMinutes }
-      });
-
-      if (error) throw error;
-
-      const result = data as ScanResult;
-      setLastScanResult(result);
-      
-      console.log('🔍 Autonomous scan completed:', result);
-      return result;
+      console.warn('⚠️ Autonomous scan feature deprecated - no longer available');
+      const errorResult: ScanResult = {
+        ok: false,
+        scanned: 0,
+        lowConfidence: 0,
+        seedsGenerated: 0,
+        version: 'deprecated',
+        error: 'Autonomous scan feature has been removed'
+      };
+      setLastScanResult(errorResult);
+      return errorResult;
     } catch (error) {
       console.error('❌ Autonomous scan failed:', error);
       const errorResult: ScanResult = {
