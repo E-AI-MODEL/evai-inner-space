@@ -6,6 +6,7 @@
 
 import { decideNextStep, Context as PolicyContext, explainDecision } from '../policy/decision.policy';
 import { validatePlan, validateResponse } from '../policy/validation.policy';
+import { checkConstraints, ConstraintContext } from '../policy/constraints';
 import { suggestInterventions, getAllowedInterventions, checkContraIndications } from '../semantics/graph';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -153,7 +154,7 @@ export async function orchestrate(
         break;
     }
 
-    // STAP 5: Validate plan en response (als applicable)
+    // STAP 5: Validate plan (traditional validation + Z3 constraints)
     if (plan) {
       const planValidation = validatePlan(plan, policyCtx);
       validated = planValidation.ok;
@@ -163,6 +164,27 @@ export async function orchestrate(
       }
       if (planValidation.warnings.length > 0) {
         auditLog.push(`  Warnings: ${planValidation.warnings.join(', ')}`);
+      }
+
+      // 🔒 Z3 Constraint Layer - Formele verificatie
+      const constraintCtx: ConstraintContext = {
+        rubric: policyCtx.rubric,
+        seed: policyCtx.seed,
+        plan: {
+          strategy: plan.strategy,
+          containsPII: plan.containsPII,
+          length: plan.goal ? plan.goal.length + (plan.steps?.join('').length || 0) : 0
+        }
+      };
+      
+      const constraintResult = await checkConstraints(constraintCtx);
+      constraintsOK = constraintResult.ok;
+      auditLog.push(`🔒 Z3 Constraints: ${constraintsOK ? 'SATISFIED' : 'VIOLATED'}`);
+      
+      if (!constraintsOK) {
+        auditLog.push(`  Violations: ${constraintResult.violations.join('; ')}`);
+        // BLOCK plan if constraints violated
+        validated = false;
       }
     }
 
