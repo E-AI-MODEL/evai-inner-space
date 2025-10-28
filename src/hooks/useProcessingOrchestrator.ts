@@ -4,7 +4,9 @@ import { useUnifiedDecisionCore, DecisionResult } from './useUnifiedDecisionCore
 import { testOpenAIApiKey } from '@/utils/apiKeyTester';
 import { supabase } from '@/integrations/supabase/client';
 import { OPENAI_MODEL } from '../openaiConfig';
-
+import { useEnhancedEvAI56Rubrics } from './useEnhancedEvAI56Rubrics';
+import { runConditionalSecondaryAnalysis } from './useSecondaryAnalysisRunner';
+import { useBriefingCache } from './useBriefingCache';
 import { checkPromptSafety } from '@/lib/safetyGuard';
 import { toast } from 'sonner';
 
@@ -29,8 +31,11 @@ export function useProcessingOrchestrator() {
     neurosymbolicRate: 0,
     successfulKnowledgeMatches: 0
   });
+  const [lastConfidence, setLastConfidence] = useState<number>(1.0);
 
   const { makeUnifiedDecision, isProcessing, knowledgeStats } = useUnifiedDecisionCore();
+  const { performEnhancedAssessment } = useEnhancedEvAI56Rubrics();
+  const { getCached, setCached } = useBriefingCache();
 
   const validateApiKey = (apiKey: string): boolean => {
     if (!apiKey || !apiKey.trim()) return false;
@@ -94,13 +99,48 @@ export function useProcessingOrchestrator() {
         console.log('🔐 No client API key provided — using server-side keys via Edge Functions');
       }
 
-      // Strategic Briefing REMOVED - was overengineered and caused extra OpenAI calls
+      // 📊 RUBRICS ASSESSMENT (EvAI 5.6)
+      console.log('📊 Running Rubrics Assessment...');
+      const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unknown';
+      const rubricResult = await performEnhancedAssessment(
+        userInput,
+        sessionId,
+        'balanced'
+      );
+      
+      console.log('📊 Rubrics result:', {
+        risk: rubricResult.overallRisk,
+        protective: rubricResult.overallProtective,
+        pattern: rubricResult.dominantPattern
+      });
 
-      // 🧠 Neurosymbolisch v3.0 - Direct naar Unified Decision Core
+      // 🎯 CONDITIONAL STRATEGIC BRIEFING
+      // Check cache first
+      const cachedBriefing = getCached(sessionId);
+      let briefing = cachedBriefing;
+      
+      if (!cachedBriefing) {
+        console.log('🎯 Evaluating need for Strategic Briefing...');
+        briefing = await runConditionalSecondaryAnalysis(
+          userInput,
+          conversationHistory,
+          rubricResult,
+          lastConfidence
+        );
+        
+        if (briefing) {
+          setCached(sessionId, briefing);
+          console.log('✅ Strategic Briefing created and cached');
+        } else {
+          console.log('⏭️ Skipped Strategic Briefing (not needed)');
+        }
+      }
+
+      // 🧠 Neurosymbolisch v3.0 - Unified Decision Core with Briefing
       const vectorApiKey = apiKey;
       const googleApiKey = '';
       
-      console.log('🧠 NEUROSYMBOLISCH: Direct naar Unified Decision Core v3.0...');
+      console.log('🧠 NEUROSYMBOLISCH: Unified Decision Core v3.0 met', briefing ? 'Strategic Briefing' : 'Direct Decision');
       console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
       
       const decisionResult: DecisionResult | null = await makeUnifiedDecision(
@@ -108,7 +148,7 @@ export function useProcessingOrchestrator() {
         apiKey,
         validateApiKey(vectorApiKey) ? vectorApiKey : apiKey,
         googleApiKey,
-        undefined, // No strategic briefing
+        briefing, // Strategic briefing (conditionally created)
         conversationHistory
       );
 
@@ -286,6 +326,9 @@ OUTPUT (JSON):
       const processingTime = Date.now() - startTime;
       console.log(`✅ Processing completed in ${processingTime}ms`);
 
+      // Store confidence for next iteration
+      setLastConfidence(decisionResult.confidence);
+
       // Update success stats (neurosymbolic match!)
       setStats(prev => {
         const newTotalRequests = prev.totalRequests + 1;
@@ -308,7 +351,13 @@ OUTPUT (JSON):
         confidence: decisionResult.confidence,
         label: decisionResult.label,
         reasoning: decisionResult.reasoning,
-        symbolicInferences: decisionResult.symbolicInferences,
+        symbolicInferences: [
+          ...decisionResult.symbolicInferences,
+          ...(briefing ? [`🎯 Strategic Briefing: ${briefing.goal}`] : []),
+          `📊 Rubrics Risk: ${rubricResult.overallRisk}%`,
+          `🛡️ Rubrics Protection: ${rubricResult.overallProtective}%`,
+          `🎭 Dominant Pattern: ${rubricResult.dominantPattern}`
+        ],
         metadata: {
           processingPath: 'hybrid',
           totalProcessingTime: processingTime,
@@ -317,16 +366,18 @@ OUTPUT (JSON):
             `Unified Core (${decisionResult.sources.length} sources)`,
             `Knowledge Base: ${knowledgeStats.total} items`,
             `Browser ML Engine (WebGPU/WASM)`,
+            ...(briefing ? ['🎯 Strategic Briefing (conditional)'] : []),
+            `📊 Rubrics Assessment (EvAI 5.6)`,
             'Edge Functions'
           ],
           fallback: false,
           apiCollaboration: {
             api1Used: !!apiKey,
-            api2Used: false,
+            api2Used: !!briefing,
             vectorApiUsed: !!vectorApiKey && validateApiKey(vectorApiKey),
             googleApiUsed: false,
             seedGenerated: false,
-            secondaryAnalysis: false
+            secondaryAnalysis: !!briefing
           }
         }
       };
