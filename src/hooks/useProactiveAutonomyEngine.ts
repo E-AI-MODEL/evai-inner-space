@@ -235,15 +235,15 @@ export function useProactiveAutonomyEngine() {
     }
   }, [isActive, seedGenerator, riskEngine, windowDetector, qualityController, maintenanceAgent, anticipationEngine, executeProactiveAction, recentActions, metrics]);
 
-  // Start autonomous background loop
+  // 🆕 FASE 2 FIX: Rate limiting - 1x per uur in plaats van 3 minuten (spam preventie)
   useEffect(() => {
     if (!isActive) return;
 
     // Run immediately
     autonomousIntelligenceLoop();
 
-    // Run every 3 minutes for proactive intelligence
-    const interval = setInterval(autonomousIntelligenceLoop, 3 * 60 * 1000);
+    // Run every 60 minutes (was: 3 minutes) to prevent database spam
+    const interval = setInterval(autonomousIntelligenceLoop, 60 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [isActive, autonomousIntelligenceLoop]);
