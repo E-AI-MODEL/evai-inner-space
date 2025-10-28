@@ -245,10 +245,10 @@ export function useUnifiedDecisionCore() {
         }
       }
 
-      // Log decision with v2.0 metadata
+      // Log decision with v3.0 metadata
       await logUnifiedDecision(input, rankedSources, decision, {
         googleApiUsed: !!googleApiKey,
-        version: '2.0'
+        version: '3.0'
       });
 
       console.log('✅ Unified decision v2.0 complete:', decision?.emotion);
@@ -344,7 +344,6 @@ export function useUnifiedDecisionCore() {
 
     const symbolicInferences = [
       `🧠 NEUROSYMBOLISCH v3.0`,
-      strategicBriefing ? `🎭 Regisseur: ${strategicBriefing.goal}` : null,
       browserEmotion ? `🧠 Browser ML Engine: ${browserEmotion}` : null,
       `🎯 Hoofdemotie: ${bestSource.emotion}`,
       `📊 Vertrouwen: ${Math.round(bestSource.confidence_score * 100)}%`,
@@ -361,7 +360,7 @@ export function useUnifiedDecisionCore() {
       sources,
       label,
       symbolicInferences,
-      meta: `🧠 Neurosymbolisch v3.0: ${sources.length} bronnen${strategicBriefing ? ` + Regisseur(${strategicBriefing.priority || 'medium'})` : ''}${browserEmotion ? ` + Browser ML(${browserEmotion})` : ''}`
+      meta: `🧠 Neurosymbolisch v3.0: ${sources.length} bronnen${browserEmotion ? ` + Browser ML(${browserEmotion})` : ''}`
     };
   };
 
@@ -372,106 +371,53 @@ export function useUnifiedDecisionCore() {
     metadata: { googleApiUsed?: boolean; version?: string } = {}
   ) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // 🆕 FASE 4 FIX: Log ook wanneer decision NULL is (geen matches) voor self-learning
-      const symbolicMatches = sources
-        .filter(s => s.content_type === 'seed')
-        .map(s => ({
-          id: s.id,
-          emotion: s.emotion,
-          confidence: s.confidence_score,
-          type: s.content_type
-        }));
-
-      const neuralSimilarities = [
-        // 🆕 CRITICAL FIX: Voeg Browser ML data toe aan neural_similarities
-        ...(sources.some(() => true) && decision ? [{
-          type: 'browser_ml',
-          emotion: decision.emotion,
-          confidence: decision.confidence,
-          source: 'Browser Transformer Engine'
-        }] : []),
-        ...sources
-          .filter(s => s.content_type === 'embedding')
-          .map(s => ({
-            id: s.id,
-            emotion: s.emotion,
-            similarity: s.similarity_score || 0,
-            type: s.content_type
-          }))
-      ];
+      // 🆕 V3.0: Use new log_unified_decision_v3 RPC for simplified, reliable logging
+      const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unified-decision-' + Date.now();
       
-      // 🆕 Als geen decision maar wel input, log als "no match" scenario
-      if (!decision) {
-        console.warn('⚠️ Logging decision with no match (0 sources)');
-      }
+      const sourcesJson = sources.map(s => ({
+        id: s.id,
+        emotion: s.emotion,
+        confidence: s.confidence_score,
+        content_type: s.content_type,
+        similarity: s.similarity_score || 0
+      }));
 
-      // Log with enhanced v2.0 metadata
       const apiCollaboration = {
         api1Used: true,
         api2Used: false,
         vectorApiUsed: sources.some(s => s.similarity_score),
         googleApiUsed: metadata.googleApiUsed || false,
-        version: metadata.version || '2.0'
+        seedGenerated: false,
+        secondaryAnalysis: false
       };
 
-      const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unified-decision-' + Date.now();
-
-      // 🆕 FIX: Log naar BEIDE tabellen voor complete tracking
-      // 1️⃣ Log naar api_collaboration_logs (bestaand)
-      await supabase.rpc('log_evai_workflow', {
+      // Call new v3.0 RPC function
+      const { data: logId, error } = await supabase.rpc('log_unified_decision_v3', {
+        p_user_input: input,
+        p_emotion: decision?.emotion || 'no-match',
+        p_response: decision?.response || '[NO MATCH FOUND]',
+        p_confidence: decision?.confidence || 0,
+        p_label: decision?.label || 'Fout',
+        p_sources: sourcesJson,
         p_conversation_id: sessionId,
-        p_workflow_type: 'unified_decision_v2',
-        p_api_collaboration: apiCollaboration,
-        p_success: true,
-        p_processing_time: 0
+        p_processing_time_ms: 0,
+        p_api_collaboration: apiCollaboration
       });
 
-      // 2️⃣ Log naar decision_logs (NIEUW - voor knowledge tracking)
-      // 🆕 FASE 4 FIX: Log zelfs als decision NULL is (voor self-learning)
-      await supabase.from('decision_logs').insert({
-        user_id: user.id,
-        user_input: input,
-        final_response: decision?.response || '[NO MATCH FOUND]',
-        symbolic_matches: symbolicMatches.length > 0 ? symbolicMatches : [{ 
-          id: 'no-match', 
-          emotion: 'no-match', 
-          confidence: 0, 
-          type: 'fallback' 
-        }],
-        neural_similarities: neuralSimilarities.length > 0 ? neuralSimilarities : [{ 
-          id: 'no-match', 
-          emotion: 'no-match', 
-          similarity: 0, 
-          type: 'fallback' 
-        }],
-        hybrid_decision: decision ? {
-          emotion: decision.emotion,
-          confidence: decision.confidence,
-          label: decision.label,
-          reasoning: decision.reasoning
-        } : {
-          emotion: 'no-match',
-          confidence: 0,
-          label: 'Fout',
-          reasoning: 'Geen knowledge sources gevonden - self-learning opportunity'
-        },
-        confidence_score: decision?.confidence || 0,
-        api_collaboration: apiCollaboration,
-        workflow_version: metadata.version || '3.0',
-        conversation_id: sessionId
-      });
+      if (error) {
+        console.error('❌ Failed to log decision via RPC:', error);
+        toast.error('Logging gefaald', {
+          description: 'Decision werd niet opgeslagen in database'
+        });
+        return;
+      }
 
-      console.log('📝 Unified decision v2.0 logged to BOTH tables successfully');
-      console.log(`   Symbolic matches: ${symbolicMatches.length}, Neural: ${neuralSimilarities.length}`);
+      console.log('✅ Decision logged successfully via v3.0 RPC:', logId);
+      console.log(`   Sources: ${sources.length}, Emotion: ${decision?.emotion || 'no-match'}`);
     } catch (error) {
       console.error('❌ Failed to log unified decision:', error);
-      // 🆕 FASE 5: Verbeterd error logging
       if (error instanceof Error) {
         console.error('   Error message:', error.message);
-        console.error('   Error stack:', error.stack?.substring(0, 200));
       }
       toast.error('Logging gefaald', {
         description: 'Decision werd niet opgeslagen in database'

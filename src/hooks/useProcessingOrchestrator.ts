@@ -4,7 +4,7 @@ import { useUnifiedDecisionCore, DecisionResult } from './useUnifiedDecisionCore
 import { testOpenAIApiKey } from '@/utils/apiKeyTester';
 import { supabase } from '@/integrations/supabase/client';
 import { OPENAI_MODEL } from '../openaiConfig';
-import { useOpenAISecondary } from './useOpenAISecondary';
+
 import { checkPromptSafety } from '@/lib/safetyGuard';
 import { toast } from 'sonner';
 
@@ -31,7 +31,6 @@ export function useProcessingOrchestrator() {
   });
 
   const { makeUnifiedDecision, isProcessing, knowledgeStats } = useUnifiedDecisionCore();
-  const { createStrategicBriefing, isAnalyzing } = useOpenAISecondary();
 
   const validateApiKey = (apiKey: string): boolean => {
     if (!apiKey || !apiKey.trim()) return false;
@@ -95,56 +94,21 @@ export function useProcessingOrchestrator() {
         console.log('🔐 No client API key provided — using server-side keys via Edge Functions');
       }
 
-      // 🎭 STAP 1: Creëer Strategic Briefing (Regisseur)
-      let strategicBriefing = null;
-      console.log(`🎭 Regisseur check: conversationHistory.length = ${conversationHistory.length}`);
-      
-      if (conversationHistory.length >= 1) {
-        console.log('🎭 Regisseur: ACTIEF - Creating Strategic Briefing...');
-        console.log('📝 User input voor briefing:', userInput.substring(0, 100));
-        try {
-          // Pass conversation history as string array for context
-          const historyContext = conversationHistory.slice(-6).map(msg => 
-            `${msg.from === 'user' ? 'Gebruiker' : 'AI'}: ${msg.content}`
-          );
-          
-          strategicBriefing = await createStrategicBriefing(
-            userInput,
-            historyContext,
-            null,
-            apiKey || ''
-          );
-          if (strategicBriefing) {
-            console.log('✅ Strategic Briefing SUCCESS:', strategicBriefing.goal);
-            console.log('📝 Key points:', strategicBriefing.keyPoints);
-            console.log('🎯 Priority:', strategicBriefing.priority);
-          } else {
-            console.warn('⚠️ Strategic Briefing returned NULL');
-          }
-        } catch (briefingError) {
-          console.error('🔴 Strategic briefing FAILED:', briefingError);
-          console.warn('⚠️ Continuing without Strategic Briefing');
-        }
-      } else {
-        console.log('⏭️ Regisseur: SKIP - te kort conversation history');
-      }
+      // Strategic Briefing REMOVED - was overengineered and caused extra OpenAI calls
 
-      // 🧠 STAP 2: Neurosymbolisch v3.0 - Direct naar Unified Decision Core
+      // 🧠 Neurosymbolisch v3.0 - Direct naar Unified Decision Core
       const vectorApiKey = apiKey;
       const googleApiKey = '';
       
       console.log('🧠 NEUROSYMBOLISCH: Direct naar Unified Decision Core v3.0...');
       console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
-      if (strategicBriefing) {
-        console.log('🎯 Strategic goal:', strategicBriefing.goal);
-      }
       
       const decisionResult: DecisionResult | null = await makeUnifiedDecision(
         userInput,
         apiKey,
         validateApiKey(vectorApiKey) ? vectorApiKey : apiKey,
         googleApiKey,
-        strategicBriefing,
+        undefined, // No strategic briefing
         conversationHistory
       );
 
@@ -236,7 +200,6 @@ OUTPUT (JSON):
             `🤖 Direct OpenAI call (GPT-4o-mini)`,
             `📚 Unified Knowledge: ${knowledgeStats.total} items (0 matches)`,
             `❌ Geen neurosymbolic reasoning toegepast`,
-            strategicBriefing ? `🎭 Regisseur wel actief: ${strategicBriefing.goal}` : `🎭 Regisseur: niet actief`,
             `🎯 Emotie: ${emotion}`,
             `📊 Vertrouwen: ${Math.round(confidence * 100)}%`
           ].filter(Boolean) as string[];
@@ -279,7 +242,7 @@ OUTPUT (JSON):
                 vectorApiUsed: false,
                 googleApiUsed: false,
                 seedGenerated: false,
-                secondaryAnalysis: !!strategicBriefing
+                secondaryAnalysis: false
               }
             }
           } as UnifiedResponse;
@@ -359,11 +322,11 @@ OUTPUT (JSON):
           fallback: false,
           apiCollaboration: {
             api1Used: !!apiKey,
-            api2Used: false, // Removed - no longer exists
+            api2Used: false,
             vectorApiUsed: !!vectorApiKey && validateApiKey(vectorApiKey),
             googleApiUsed: false,
             seedGenerated: false,
-            secondaryAnalysis: !!strategicBriefing
+            secondaryAnalysis: false
           }
         }
       };
