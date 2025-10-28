@@ -4,7 +4,6 @@ import { UnifiedResponse, ChatHistoryItem } from '../types';
 import { useUnifiedDecisionCore } from './useUnifiedDecisionCore';
 import { useEnhancedSeedGeneration } from './useEnhancedSeedGeneration';
 import { addAdvancedSeed } from '@/lib/advancedSeedStorage';
-import { useVectorEmbeddings } from './useVectorEmbeddings';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SelfLearningOutcome {
@@ -17,7 +16,6 @@ export function useSelfLearningManager() {
   const [isLearning, setIsLearning] = useState(false);
   const { searchUnifiedKnowledge } = useUnifiedDecisionCore();
   const { generateEnhancedSeed } = useEnhancedSeedGeneration();
-  const { processSeedBatch } = useVectorEmbeddings();
 
   const analyzeTurn = useCallback(async (
     userInput: string,
@@ -90,7 +88,7 @@ export function useSelfLearningManager() {
         return { triggered: false };
       }
 
-      // 4) Opslaan als AdvancedSeed in emotion_seeds
+      // 4) Opslaan als AdvancedSeed in emotion_seeds (+ auto-embed in unified_knowledge)
       await addAdvancedSeed(newSeed);
 
       // Log succesvolle zelfleer-actie
@@ -113,16 +111,7 @@ export function useSelfLearningManager() {
         console.warn('⚠️ Self-learning: log_reflection_event failed');
       }
 
-      // 5) Embedden voor vector search en consolideren naar unified_knowledge
-      try {
-        // processSeedBatch now uses server-side Edge Functions
-        await processSeedBatch([newSeed]);
-        await supabase.rpc('consolidate_knowledge');
-      } catch (embedErr) {
-        console.warn('⚠️ Self-learning: embedding/consolidation failed', embedErr);
-      }
-
-      console.log('🌱 Self-learning added seed:', newSeed.id, newSeed.emotion, newSeed.label);
+      console.log('🌱 Self-learning added seed (auto-embedded):', newSeed.id, newSeed.emotion, newSeed.label);
       return { triggered: true, reason: lowConfidence ? 'low_confidence' : 'novel_topic', seedId: newSeed.id };
     } catch (err) {
       console.error('🔴 Self-learning pipeline error:', err);
@@ -130,7 +119,7 @@ export function useSelfLearningManager() {
     } finally {
       setIsLearning(false);
     }
-  }, [generateEnhancedSeed, processSeedBatch, searchUnifiedKnowledge]);
+  }, [generateEnhancedSeed, searchUnifiedKnowledge]);
 
   return { analyzeTurn, isLearning };
 }

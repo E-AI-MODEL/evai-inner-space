@@ -90,6 +90,53 @@ export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
       console.error('Error adding advanced seed:', error);
       throw error;
     }
+
+    // 🆕 Auto-generate embedding and add to unified_knowledge
+    try {
+      const text = seed.response?.nl || seed.emotion;
+      const { data: embeddingData, error: embError } = await supabase.functions.invoke('evai-core', {
+        body: { 
+          operation: 'embedding', 
+          input: text.substring(0, 8000),
+          model: 'text-embedding-3-small'
+        }
+      });
+
+      if (embError) {
+        console.warn('⚠️ Auto-embedding failed for seed:', seed.id, embError);
+      } else {
+        const embedding = embeddingData?.embedding;
+        
+        if (embedding && Array.isArray(embedding)) {
+          // Add to unified_knowledge with embedding
+          await supabase.from('unified_knowledge').insert({
+            id: seed.id,
+            user_id: '00000000-0000-0000-0000-000000000001',
+            content_type: 'seed',
+            emotion: seed.emotion,
+            triggers: seed.triggers,
+            response_text: seed.response?.nl || '',
+            vector_embedding: `[${embedding.join(',')}]`,
+            confidence_score: seed.meta.confidence,
+            usage_count: 0,
+            metadata: {
+              type: seed.type,
+              tags: seed.tags,
+              context: seed.context,
+              createdBy: seed.createdBy,
+              version: seed.version,
+              priority: seed.meta.priority,
+              weight: seed.meta.weight
+            },
+            active: seed.isActive
+          });
+          console.log('✅ Auto-embedded seed:', seed.id, seed.emotion);
+        }
+      }
+    } catch (embedError) {
+      console.warn('⚠️ Auto-embedding pipeline failed for seed:', seed.id, embedError);
+      // Don't block seed creation
+    }
   } catch (error) {
     console.error('Error adding advanced seed:', error);
     throw error;
