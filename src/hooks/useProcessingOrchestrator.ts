@@ -9,6 +9,8 @@ import { runConditionalSecondaryAnalysis } from './useSecondaryAnalysisRunner';
 import { useBriefingCache } from './useBriefingCache';
 import { checkPromptSafety } from '@/lib/safetyGuard';
 import { toast } from 'sonner';
+import { orchestrate, OrchestrationContext } from '@/orchestrator/hybrid';
+import { getGraphStats } from '@/semantics/graph';
 
 interface ProcessingStats {
   totalRequests: number;
@@ -46,12 +48,15 @@ export function useProcessingOrchestrator() {
     return true;
   };
 
+  console.log('🧠 EvAI v16 NEUROSYMBOLISCH initialized');
+  console.log('📊 Semantic Graph Stats:', getGraphStats());
+
   const orchestrateProcessing = useCallback(async (
     userInput: string,
     conversationHistory: any[],
     apiKey?: string
   ): Promise<UnifiedResponse> => {
-    console.log('🎼 Orchestrator v4.0: Intelligent pipeline starting...');
+    console.log('🎼 Orchestrator v16 NEUROSYMBOLISCH: Policy + Semantic + Validation');
     console.log('📝 User input:', userInput.substring(0, 50) + '...');
     console.log('📚 Conversation history length:', conversationHistory?.length || 0);
     
@@ -148,12 +153,13 @@ export function useProcessingOrchestrator() {
         console.log('⏭️ Regisseur besluit: Simpel gesprek, Strategic Briefing overgeslagen');
       }
 
-      // 🧠 Neurosymbolisch v3.0 - Unified Decision Core with Briefing
+      // 🧠 Neurosymbolisch v16 - Hybrid Orchestrator (Policy + Semantic + Validation)
       const vectorApiKey = apiKey;
       
-      console.log('🧠 NEUROSYMBOLISCH: Unified Decision Core v3.0 met', briefing ? 'Strategic Briefing' : 'Direct Decision');
+      console.log('🧠 NEUROSYMBOLISCH v16: Starting Hybrid Orchestrator...');
       console.log('📊 Knowledge base status:', knowledgeStats.total > 0 ? 'Active' : 'Initializing');
       
+      // First, try unified decision for seed matching
       const decisionResult: DecisionResult | null = await makeUnifiedDecision(
         userInput,
         apiKey,
@@ -161,6 +167,112 @@ export function useProcessingOrchestrator() {
         briefing, // Strategic briefing (conditionally created)
         conversationHistory
       );
+
+      // 🎯 V16: If high confidence match, route through hybrid orchestrator for validation
+      let finalResult: UnifiedResponse | null = null;
+      
+      if (decisionResult && decisionResult.confidence > 0.70) {
+        console.log('✅ High confidence decision (>70%), routing through Hybrid Orchestrator v16...');
+        
+        try {
+          const orchestrationCtx: OrchestrationContext = {
+            userInput,
+            rubric: {
+              crisis: rubricResult?.overallRisk || 0,
+              distress: rubricResult?.overallRisk || 0,
+              support: rubricResult?.overallProtective || 0,
+              coping: 100 - (rubricResult?.overallRisk || 0),
+              overallRisk: rubricResult?.overallRisk || 0,
+              overallProtective: rubricResult?.overallProtective || 0,
+              dominantPattern: rubricResult?.dominantPattern || 'unknown'
+            },
+            seed: {
+              matchScore: decisionResult.confidence,
+              templateId: decisionResult.sources[0]?.id,
+              emotion: decisionResult.emotion,
+              response: decisionResult.response
+            },
+            consent: true,
+            conversationHistory,
+            topEmotion: decisionResult.emotion
+          };
+
+          const hybridResult = await orchestrate(orchestrationCtx);
+          
+          // Only use hybrid result if validation passed
+          if (hybridResult.metadata.validated && hybridResult.metadata.constraintsOK) {
+            console.log('✅ Hybrid orchestration VALIDATED and PASSED constraints');
+            
+            finalResult = {
+              content: hybridResult.answer,
+              emotion: hybridResult.emotion,
+              confidence: hybridResult.confidence,
+              label: hybridResult.label as any,
+              reasoning: hybridResult.reasoning,
+              symbolicInferences: [
+                `🧠 EvAI v16 NEUROSYMBOLISCH`,
+                `📋 Policy: ${hybridResult.metadata.policyDecision}`,
+                `🎯 Rule: ${hybridResult.metadata.ruleId}`,
+                `💡 Semantic Interventions: ${hybridResult.metadata.semanticInterventions.join(', ')}`,
+                `✅ Validation: PASSED`,
+                `🛡️ Constraints: OK`,
+                ...decisionResult.symbolicInferences.slice(0, 3)
+              ],
+              secondaryInsights: hybridResult.metadata.auditLog.slice(0, 5),
+              metadata: {
+                processingPath: 'hybrid',
+                totalProcessingTime: Date.now() - startTime,
+                componentsUsed: [
+                  '🎯 Policy Engine v16',
+                  '💡 Semantic Graph',
+                  '🛡️ Validation Layer',
+                  `Knowledge Base (${knowledgeStats.total} items)`,
+                  ...(briefing ? ['Strategic Briefing'] : [])
+                ],
+                fallback: false,
+                apiCollaboration: {
+                  api1Used: true,
+                  api2Used: !!briefing,
+                  vectorApiUsed: !!vectorApiKey,
+                  googleApiUsed: false,
+                  seedGenerated: false,
+                  secondaryAnalysis: !!briefing
+                }
+              }
+            };
+          } else {
+            console.warn('⚠️ Hybrid orchestration validation FAILED, falling back to unified decision');
+          }
+        } catch (hybridError) {
+          console.error('❌ Hybrid orchestration error, falling back to unified decision:', hybridError);
+        }
+      } else {
+        console.log('⏭️ Low confidence or no decision, skipping hybrid orchestrator');
+      }
+
+      // If hybrid orchestrator produced a result, use it
+      if (finalResult) {
+        const processingTime = Date.now() - startTime;
+        console.log(`✅ Hybrid orchestration completed in ${processingTime}ms`);
+        
+        setLastConfidence(finalResult.confidence);
+        setStats(prev => {
+          const newTotalRequests = prev.totalRequests + 1;
+          const newSuccessfulMatches = prev.successfulKnowledgeMatches + 1;
+          return {
+            totalRequests: newTotalRequests,
+            averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / newTotalRequests,
+            successRate: ((prev.successRate * prev.totalRequests + 100) / newTotalRequests),
+            lastProcessingTime: processingTime,
+            errorCount: prev.errorCount,
+            lastError: undefined,
+            successfulKnowledgeMatches: newSuccessfulMatches,
+            neurosymbolicRate: (newSuccessfulMatches / newTotalRequests) * 100
+          };
+        });
+        
+        return finalResult;
+      }
 
       if (!decisionResult) {
         console.warn('⚠️ Geen kennis-match gevonden — val terug op OpenAI via Edge Function');
