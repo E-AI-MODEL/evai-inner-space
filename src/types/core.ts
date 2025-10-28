@@ -17,7 +17,7 @@ export interface UnifiedResponse {
   symbolicInferences: string[];
   secondaryInsights?: string[];
   metadata?: {
-    processingPath: 'symbolic' | 'hybrid' | 'neural' | 'fast' | 'error';
+    processingPath: 'symbolic' | 'hybrid' | 'neural' | 'error';
     totalProcessingTime: number;
     componentsUsed: string[];
     fallback?: boolean;
