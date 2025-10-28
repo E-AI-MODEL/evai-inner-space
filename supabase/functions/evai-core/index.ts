@@ -204,9 +204,10 @@ async function handleEmbedding(body: any) {
 
   if (!resp.ok) {
     const errMsg = data?.error?.message || resp.statusText || "OpenAI embedding error";
+    console.error('🔴 OpenAI embedding error:', errMsg, 'status:', status);
     return new Response(
       JSON.stringify({ ok: false, status, error: errMsg }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 

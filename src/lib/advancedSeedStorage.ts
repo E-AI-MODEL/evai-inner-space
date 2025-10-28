@@ -102,8 +102,8 @@ export async function addAdvancedSeed(seed: AdvancedSeed): Promise<void> {
         }
       });
 
-      if (embError) {
-        console.warn('⚠️ Auto-embedding failed for seed:', seed.id, embError);
+      if (embError || !embeddingData?.ok) {
+        console.warn('⚠️ Auto-embedding failed for seed:', seed.id, embError || embeddingData?.error);
       } else {
         const embedding = embeddingData?.embedding;
         
