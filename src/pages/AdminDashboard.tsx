@@ -1,149 +1,54 @@
+/**
+ * EvAI Admin Intelligence Dashboard v16
+ * Unified dashboard with three layers:
+ * 1. Symbolische Controle (symbolic control - rules, seeds, constraints)
+ * 2. Neurale Samenwerking (neural collaboration - LLM integration)
+ * 3. Audit & Debug (audit trail and diagnostics)
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import AutonomyConsole from '@/components/admin/AutonomyConsole';
+import { Section } from '@/components/admin/Section';
+import { MetricGrid } from '@/components/admin/MetricGrid';
+import { DecisionLogTable } from '@/components/admin/DecisionLogTable';
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
-import { EmbeddingHealthPanel } from '@/components/admin/EmbeddingHealthPanel';
-import MLEngineMonitor from '@/components/admin/MLEngineMonitor';
 import { useNavigate } from 'react-router-dom';
 import { useSystemConnectivity } from '@/hooks/useSystemConnectivity';
-import { getStatusIcon as getStatusIconGeneric, getStatusColor as getStatusColorGeneric } from '@/utils/statusUtils';
-import { useSeeds } from '../hooks/useSeeds';
 import { supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { ANONYMOUS_SUPER_USER, useAuth } from '../hooks/useAuth';
-import { testSupabaseOpenAIKey } from '@/services/OpenAIKeyTester';
-import { ConnectionStatus } from '../types/connectionStatus';
-import { useRetroactiveLearning } from '@/hooks/useRetroactiveLearning';
-import { RetroactiveLearningStatus } from '@/components/admin/RetroactiveLearningStatus';
 import AdminAuth from '@/components/admin/AdminAuth';
-import { LogOut, Trash2 } from 'lucide-react';
+import { LogOut, Trash2, Shield, Brain, FileText, Activity } from 'lucide-react';
+import { getAuditStats, getDecisionLogs } from '@/services/AuditService';
 
 const AdminDashboard = () => {
   const { isAdminAuthorized, authorizeAdmin, logoutAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<'autonomy' | 'seeds' | 'settings'>('autonomy');
-  const [supabaseStatus, setSupabaseStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const [isConsolidating, setIsConsolidating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
-  const { status: connectivity, refresh: refreshConnectivity, isChecking } = useSystemConnectivity();
-  const { data: seeds = [] } = useSeeds();
-  
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
-    supabase: 'checking',
-    openaiApi1: 'checking',
-    browserML: 'checking',
-    vectorApi: 'checking',
-    seeds: 'loading',
+  const { status: connectivity, refresh: refreshConnectivity } = useSystemConnectivity();
+
+  // Fetch audit statistics
+  const { data: auditStats, refetch: refetchStats } = useQuery({
+    queryKey: ['audit-stats'],
+    queryFn: async () => getAuditStats(ANONYMOUS_SUPER_USER.id, 200),
+    refetchInterval: 15000, // Update every 15 seconds
   });
 
-  // AutoLearn feature deprecated - removed auto-trigger
-  useEffect(() => {
-    console.log('📊 Admin Dashboard loaded');
-    // AutoLearn functionality has been removed
-  }, []); // Run once on mount
-
-  // Essential autonomous system monitoring
-  useEffect(() => {
-    setSupabaseStatus(
-      connectivity.supabase === 'connected'
-        ? 'connected'
-        : connectivity.supabase === 'checking'
-        ? 'connecting'
-        : 'disconnected'
-    );
-  }, [connectivity.supabase]);
-
-  useEffect(() => {
-    setConnectionStatus({
-      supabase:
-        connectivity.supabase === 'connected'
-          ? 'connected'
-          : connectivity.supabase === 'checking'
-          ? 'checking'
-          : 'error',
-      openaiApi1: connectivity.openaiApi1,
-      browserML: connectivity.browserML,
-      vectorApi: connectivity.vectorApi,
-      seeds: seeds.length > 0 ? 'loaded' : 'error',
-    });
-  }, [connectivity, seeds]);
-
-  // Autonomous system health check
-  useEffect(() => {
-    if (supabaseStatus !== 'connected') return;
-    (async () => {
-      const res = await testSupabaseOpenAIKey();
-      if (res.ok) {
-        toast({ title: 'Autonomous system online', description: res.model ? `Model: ${res.model}` : undefined });
-      } else {
-        toast({ title: 'Autonomous system degraded', description: res.error || 'API key validation failed', variant: 'destructive' });
-      }
-    })();
-  }, [supabaseStatus, toast]);
-
-  // Essential analytics for autonomous decision making
-  const { data: systemMetrics } = useQuery({
-    queryKey: ['autonomous-metrics'],
-    queryFn: async () => {
-      const userId = ANONYMOUS_SUPER_USER.id;
-      
-      // Get recent decisions for autonomous learning
-      const { data: decisions, error: decErr } = await supabase
-        .from('decision_logs')
-        .select('confidence_score, created_at, user_input, final_response')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (decErr) throw decErr;
-
-      // Get API performance for autonomous optimization
-      const { data: apiLogs, error: apiErr } = await supabase
-        .from('api_collaboration_logs')
-        .select('success, processing_time_ms, api1_used, api2_used, vector_api_used, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (apiErr) throw apiErr;
-
-      // Get seed performance for autonomous seed management
-      const { data: seedRows, error: seedErr } = await supabase
-        .from('emotion_seeds')
-        .select('id, active, emotion, meta, created_at')
-        .eq('user_id', userId);
-      if (seedErr) throw seedErr;
-
-      // Calculate autonomous system health metrics
-      const successes = apiLogs?.filter((l) => l.success).length || 0;
-      const totalRequests = apiLogs?.length || 1;
-      const successRate = (successes / totalRequests) * 100;
-      const avgResponseTime = apiLogs && apiLogs.length > 0
-        ? Math.round(apiLogs.reduce((sum, l) => sum + (l.processing_time_ms || 0), 0) / apiLogs.length)
-        : 0;
-
-      const avgConfidence = decisions && decisions.length > 0
-        ? decisions.reduce((sum, d) => sum + (d.confidence_score || 0), 0) / decisions.length
-        : 0;
-
-      return {
-        successRate,
-        avgResponseTime,
-        avgConfidence,
-        totalDecisions: decisions?.length || 0,
-        activeSeedCount: seedRows?.filter((s) => s.active).length || 0,
-        systemHealth: successRate > 90 ? 'excellent' : successRate > 75 ? 'good' : 'warning'
-      };
-    },
-    refetchInterval: 10000, // Update every 10 seconds for autonomous monitoring
+  // Fetch decision logs
+  const { data: decisionLogs, isLoading: logsLoading, refetch: refetchLogs } = useQuery({
+    queryKey: ['decision-logs'],
+    queryFn: async () => getDecisionLogs(ANONYMOUS_SUPER_USER.id, 50),
+    refetchInterval: 15000,
   });
 
-  // Database cleanup and consolidation
+  // Database cleanup
   const handleConsolidateKnowledge = async () => {
     setIsConsolidating(true);
     
@@ -157,17 +62,16 @@ const AdminDashboard = () => {
       toast({
         title: '✅ Database Cleanup Successful',
         description: data?.cleanup 
-          ? `Removed ${data.cleanup[0]} invalid seeds, ${data.cleanup[1]} invalid knowledge entries, normalized ${data.cleanup[2]} emotions`
-          : 'Knowledge base consolidated and cleaned',
+          ? `Removed ${data.cleanup[0]} invalid seeds, ${data.cleanup[1]} invalid knowledge entries`
+          : 'Knowledge base consolidated',
       });
       
-      // Refresh data
-      await refreshConnectivity();
+      await Promise.all([refreshConnectivity(), refetchStats(), refetchLogs()]);
       
     } catch (error) {
       console.error('Consolidation error:', error);
       toast({
-        title: '❌ Consolidation Failed',
+        title: '❌ Cleanup Failed',
         description: error instanceof Error ? error.message : 'Failed to clean database',
         variant: 'destructive',
       });
@@ -176,10 +80,68 @@ const AdminDashboard = () => {
     }
   };
 
-  // Auth guard: Render AdminAuth scherm als niet geauthoriseerd
+  // Run diagnostics
+  const [diagnosticsResult, setDiagnosticsResult] = useState<string>('');
+  const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
+
+  const runDiagnostics = async () => {
+    setIsRunningDiagnostics(true);
+    let result = '🔍 Running system diagnostics...\n\n';
+
+    try {
+      result += '📋 ARCHITECTURE:\n';
+      result += '• Server-Side (Production) ✅\n';
+      result += '• Security: Edge Functions ✅\n\n';
+
+      result += '🧪 EDGE FUNCTIONS:\n';
+      
+      // Test chat
+      const chatStart = Date.now();
+      const { data: chatData, error: chatError } = await supabase.functions.invoke('evai-core', {
+        body: { 
+          operation: 'chat',
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: 'test' }],
+          max_tokens: 10
+        }
+      });
+      const chatTime = Date.now() - chatStart;
+      result += `• evai-core (chat): ${chatError ? '❌' : '✅'} (${chatTime}ms)\n`;
+
+      // Test embedding
+      const embStart = Date.now();
+      const { data: embData, error: embError } = await supabase.functions.invoke('evai-core', {
+        body: { 
+          operation: 'embedding',
+          input: 'test',
+          model: 'text-embedding-3-small'
+        }
+      });
+      const embTime = Date.now() - embStart;
+      result += `• evai-core (embedding): ${embError ? '❌' : '✅'} (${embTime}ms)\n\n`;
+
+      result += '🌐 NETWORK:\n';
+      result += `• Online: ${navigator.onLine ? '✅' : '❌'}\n`;
+      result += `• Connection: ${(navigator as any).connection?.effectiveType || 'unknown'}\n\n`;
+      result += '✅ Diagnostics completed!';
+
+    } catch (error) {
+      result += `\n❌ Error: ${error instanceof Error ? error.message : 'Unknown'}`;
+    } finally {
+      setDiagnosticsResult(result);
+      setIsRunningDiagnostics(false);
+    }
+  };
+
+  // Auth guard
   if (!isAdminAuthorized) {
     return <AdminAuth onAuthenticated={authorizeAdmin} />;
   }
+
+  // Calculate safety index
+  const safetyIndex = auditStats 
+    ? (100 - (auditStats.constraintsBlocked / Math.max(1, auditStats.totalDecisions)) * 100).toFixed(1)
+    : '0';
 
   return (
     <SidebarProvider>
@@ -187,13 +149,14 @@ const AdminDashboard = () => {
         <AdminSidebar active={activeTab} onChange={setActiveTab} />
 
         <main className="flex-1 p-4 md:p-8 pt-6">
-          <div className="mb-4 flex items-center justify-between">
+          {/* Header */}
+          <div className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
-                EvAI Autonomous System
-              </h2>
-              <p className="text-muted-foreground">
-                Real-time autonomous AI operations center • Health: {systemMetrics?.systemHealth || 'initializing'} • Success Rate: {systemMetrics?.successRate.toFixed(1) || '0'}%
+              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-700 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
+                EvAI Admin Intelligence Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Neurosymbolisch AI systeem • v16 • Safety Index: {safetyIndex}%
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -201,44 +164,153 @@ const AdminDashboard = () => {
                 variant="outline" 
                 onClick={handleConsolidateKnowledge}
                 disabled={isConsolidating}
-                className="flex items-center gap-2"
+                size="sm"
               >
-                <Trash2 className="h-4 w-4" />
-                {isConsolidating ? 'Cleaning...' : 'Clean Database'}
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isConsolidating ? 'Cleaning...' : 'Clean DB'}
               </Button>
               <Button 
                 variant="outline" 
                 onClick={() => {
                   logoutAdmin();
-                  toast({ 
-                    title: "Uitgelogd", 
-                    description: "Admin sessie beëindigd. Refresh om opnieuw in te loggen." 
-                  });
+                  toast({ title: "Logged out", description: "Admin session ended" });
                 }}
-                className="flex items-center gap-2"
+                size="sm"
               >
-                <LogOut className="h-4 w-4" />
-                Uitloggen
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
               </Button>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-4">
-            <TabsContent value="autonomy" className="space-y-4">
-              <AutonomyConsole systemMetrics={systemMetrics} connectionStatus={connectionStatus} />
-              <div className="mt-6">
-                <MLEngineMonitor />
-              </div>
-              <div className="mt-6">
-                <RetroactiveLearningStatus />
-              </div>
+          {/* Main Tabs */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="autonomy">Intelligence Overview</TabsTrigger>
+              <TabsTrigger value="seeds">Seed Management</TabsTrigger>
+              <TabsTrigger value="settings">System Settings</TabsTrigger>
+            </TabsList>
+
+            {/* AUTONOMY TAB */}
+            <TabsContent value="autonomy" className="space-y-6">
+              
+              {/* 1. SYMBOLISCHE CONTROLE */}
+              <Section 
+                title="🛡️ Symbolische Controle" 
+                subtitle="Regelgebaseerde beslissingen, kennis en veiligheidsconstraints"
+                variant="symbolic"
+              >
+                <MetricGrid 
+                  metrics={[
+                    {
+                      label: 'Symbolische dekking',
+                      value: `${auditStats?.seedCoverage.toFixed(1) || 0}%`,
+                      tooltip: 'Percentage beslissingen op basis van rubrics of seeds zonder LLM',
+                      icon: <Shield className="h-4 w-4 text-green-600" />
+                    },
+                    {
+                      label: 'Toegepaste regels',
+                      value: auditStats?.policyHits || 0,
+                      tooltip: 'Aantal keer dat decision.policy actief was',
+                      icon: <FileText className="h-4 w-4 text-green-600" />
+                    },
+                    {
+                      label: 'Voorkomen overtredingen',
+                      value: auditStats?.constraintsBlocked || 0,
+                      tooltip: 'Plannen gestopt door Z3 constraint layer',
+                      icon: <Activity className="h-4 w-4 text-green-600" />
+                    },
+                    {
+                      label: 'Veiligheidsindex',
+                      value: `${safetyIndex}%`,
+                      tooltip: '100 - (blocked% × 100) - hogere score = veiliger systeem',
+                      icon: <Shield className="h-4 w-4 text-green-600" />
+                    }
+                  ]}
+                />
+              </Section>
+
+              {/* 2. NEURALE SAMENWERKING */}
+              <Section 
+                title="🧠 Neurale Samenwerking" 
+                subtitle="LLM wordt alleen ingezet voor creatieve planning binnen constraints"
+                variant="neural"
+              >
+                <MetricGrid 
+                  metrics={[
+                    {
+                      label: 'GPT-calls per sessie',
+                      value: auditStats 
+                        ? (auditStats.totalLLMCalls / Math.max(1, auditStats.sessions)).toFixed(1)
+                        : '0',
+                      tooltip: 'Hoe vaak de LLM wordt ingeschakeld per gebruikerssessie',
+                      icon: <Brain className="h-4 w-4 text-blue-600" />
+                    },
+                    {
+                      label: 'LLM-bypass ratio',
+                      value: `${auditStats?.llmBypassRatio.toFixed(1) || 0}%`,
+                      tooltip: 'Percentage beslissingen zonder OpenAI - hogere score = efficiënter',
+                      icon: <Activity className="h-4 w-4 text-blue-600" />
+                    },
+                    {
+                      label: 'Gemiddelde reactietijd',
+                      value: `${auditStats?.avgResponseTime || 0}ms`,
+                      tooltip: 'Snelheid van de orkestratie pipeline',
+                      icon: <Activity className="h-4 w-4 text-blue-600" />
+                    },
+                    {
+                      label: 'Totaal beslissingen',
+                      value: auditStats?.totalDecisions || 0,
+                      tooltip: 'Totaal aantal verwerkte beslissingen in deze periode',
+                      icon: <FileText className="h-4 w-4 text-blue-600" />
+                    }
+                  ]}
+                />
+              </Section>
+
+              {/* 3. AUDIT & DEBUG */}
+              <Section 
+                title="🔍 Audit & Debug" 
+                subtitle="Technische controle, beslislogs en reproduceerbare sessies"
+                variant="audit"
+              >
+                <Tabs defaultValue="logs" className="w-full">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="logs">Decision Logs</TabsTrigger>
+                    <TabsTrigger value="diagnostics">System Diagnostics</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="logs">
+                    <DecisionLogTable logs={decisionLogs || []} isLoading={logsLoading} />
+                  </TabsContent>
+
+                  <TabsContent value="diagnostics">
+                    <div className="space-y-4">
+                      <Button 
+                        onClick={runDiagnostics} 
+                        disabled={isRunningDiagnostics}
+                        className="w-full"
+                      >
+                        {isRunningDiagnostics ? 'Running...' : 'Run Full Diagnostics'}
+                      </Button>
+                      
+                      {diagnosticsResult && (
+                        <div className="bg-slate-900 text-green-400 p-4 rounded font-mono text-sm overflow-auto max-h-96">
+                          <pre className="whitespace-pre-wrap">{diagnosticsResult}</pre>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </Section>
             </TabsContent>
 
+            {/* SEEDS TAB */}
             <TabsContent value="seeds" className="space-y-4">
-              <EmbeddingHealthPanel />
               <AdvancedSeedManager />
             </TabsContent>
 
+            {/* SETTINGS TAB */}
             <TabsContent value="settings" className="space-y-4">
               <ConfigurationPanel />
             </TabsContent>
