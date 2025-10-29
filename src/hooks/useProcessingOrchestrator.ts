@@ -102,26 +102,11 @@ export function useProcessingOrchestrator() {
         console.log('🔐 No client API key provided — using server-side keys via Edge Functions');
       }
 
-      // 📊 RUBRICS ASSESSMENT (EvAI 5.6) - Altijd uitvoeren, regisseur bepaalt relevantie
-      console.log('📊 Rubrics Assessment: Analyzing conversation context...');
-      const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unknown';
-      const rubricResult = await performEnhancedAssessment(
-        userInput,
-        sessionId,
-        'balanced'
-      );
-      
-      console.log('📊 Rubrics result:', {
-        risk: rubricResult.overallRisk,
-        protective: rubricResult.overallProtective,
-        pattern: rubricResult.dominantPattern
-      });
-      
-      // 🎯 REGISSEUR BESLISSING 1: Is dit een simpele greeting? -> Fast-path!
+      // 🎯 REGISSEUR BESLISSING 1: Is dit een simpele greeting? -> Fast-path! (VÓÓr rubrics!)
       const isSimpleGreeting = /^(hi|hallo|hey|hoi|dag|hello|yo|hé|hee|sup|hiya|ok|oké|ja|nee|hmm)[\s!?.]*$/i.test(userInput.trim());
       
       if (isSimpleGreeting) {
-        console.log('⚡ FAST-PATH: Simpele greeting gedetecteerd, skip volledige pipeline');
+        console.log('⚡ FAST-PATH: Simpele greeting, skip Rubrics + hele pipeline');
         const fastGreetings = [
           'Hoi! Hoe kan ik je helpen?',
           'Hey! Vertel, waar loop je tegenaan?',
@@ -131,7 +116,6 @@ export function useProcessingOrchestrator() {
         
         const processingTime = Date.now() - startTime;
         
-        // Update statistics
         setStats(prev => ({
           totalRequests: prev.totalRequests + 1,
           averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
@@ -147,12 +131,12 @@ export function useProcessingOrchestrator() {
           emotion: 'neutraal',
           confidence: 0.95,
           label: 'Valideren',
-          reasoning: 'Fast-path voor simpele greeting (v16 symbolic bypass)',
-          symbolicInferences: ['greeting_detected', 'fast_path_used'],
+          reasoning: 'Fast-path: Skip Rubrics Assessment voor simpele greeting',
+          symbolicInferences: ['⚡ Fast-path', '✅ Bypassed: Rubrics, Orchestrator, Knowledge matching'],
           metadata: {
             processingPath: 'symbolic',
             totalProcessingTime: processingTime,
-            componentsUsed: ['fast-path', 'greeting-detector'],
+            componentsUsed: ['Fast-path greeting detector'],
             apiCollaboration: {
               api1Used: false,
               api2Used: false,
@@ -164,6 +148,21 @@ export function useProcessingOrchestrator() {
           }
         };
       }
+
+      // 📊 RUBRICS ASSESSMENT (EvAI 5.6) - Alleen voor niet-greetings
+      console.log('📊 Rubrics Assessment: Analyzing conversation context...');
+      const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unknown';
+      const rubricResult = await performEnhancedAssessment(
+        userInput,
+        sessionId,
+        'balanced'
+      );
+      
+      console.log('📊 Rubrics result:', {
+        risk: rubricResult.overallRisk,
+        protective: rubricResult.overallProtective,
+        pattern: rubricResult.dominantPattern
+      });
       
       // 🎯 REGISSEUR BESLISSING 2: Is dit gesprek complex genoeg voor Strategic Briefing?
       const inputComplexity = userInput.trim().length;
