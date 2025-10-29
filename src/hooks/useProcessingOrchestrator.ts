@@ -117,7 +117,55 @@ export function useProcessingOrchestrator() {
         pattern: rubricResult.dominantPattern
       });
       
-      // 🎯 REGISSEUR BESLISSING: Is dit gesprek complex genoeg voor Strategic Briefing?
+      // 🎯 REGISSEUR BESLISSING 1: Is dit een simpele greeting? -> Fast-path!
+      const isSimpleGreeting = /^(hi|hallo|hey|hoi|dag|hello|yo|hé|hee|sup|hiya|ok|oké|ja|nee|hmm)[\s!?.]*$/i.test(userInput.trim());
+      
+      if (isSimpleGreeting) {
+        console.log('⚡ FAST-PATH: Simpele greeting gedetecteerd, skip volledige pipeline');
+        const fastGreetings = [
+          'Hoi! Hoe kan ik je helpen?',
+          'Hey! Vertel, waar loop je tegenaan?',
+          'Hallo! Fijn dat je er bent. Wat wil je delen?'
+        ];
+        const response = fastGreetings[Math.floor(Math.random() * fastGreetings.length)];
+        
+        const processingTime = Date.now() - startTime;
+        
+        // Update statistics
+        setStats(prev => ({
+          totalRequests: prev.totalRequests + 1,
+          averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
+          successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
+          lastProcessingTime: processingTime,
+          errorCount: prev.errorCount,
+          neurosymbolicRate: ((prev.neurosymbolicRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
+          successfulKnowledgeMatches: prev.successfulKnowledgeMatches
+        }));
+
+        return {
+          content: response,
+          emotion: 'neutraal',
+          confidence: 0.95,
+          label: 'Valideren',
+          reasoning: 'Fast-path voor simpele greeting (v16 symbolic bypass)',
+          symbolicInferences: ['greeting_detected', 'fast_path_used'],
+          metadata: {
+            processingPath: 'symbolic',
+            totalProcessingTime: processingTime,
+            componentsUsed: ['fast-path', 'greeting-detector'],
+            apiCollaboration: {
+              api1Used: false,
+              api2Used: false,
+              vectorApiUsed: false,
+              googleApiUsed: false,
+              seedGenerated: false,
+              secondaryAnalysis: false
+            }
+          }
+        };
+      }
+      
+      // 🎯 REGISSEUR BESLISSING 2: Is dit gesprek complex genoeg voor Strategic Briefing?
       const inputComplexity = userInput.trim().length;
       const conversationDepth = conversationHistory?.length || 0;
       const needsDeepAnalysis = inputComplexity > 20 || conversationDepth > 3 || rubricResult.overallRisk > 40;
