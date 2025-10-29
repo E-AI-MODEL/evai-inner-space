@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { useSeeds } from './useSeeds';
 import { HealthCheckResult } from '../types/healthCheck';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -9,8 +8,6 @@ export const useHealthCheck = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<HealthCheckResult[]>([]);
-  
-  const { data: seeds, refetch: refetchSeeds } = useSeeds();
   // Using server-side checks via Edge Functions
 
   const runHealthCheck = async () => {
@@ -19,7 +16,7 @@ export const useHealthCheck = () => {
     setResults([]);
     
     const tests: HealthCheckResult[] = [];
-    const totalTests = 6;
+    const totalTests = 4; // Reduced from 6
     let currentTest = 0;
 
     const updateProgress = () => {
@@ -28,31 +25,8 @@ export const useHealthCheck = () => {
     };
 
     try {
-      // Test 1: Seeds Loading
-      console.log('🧪 Test 1: Seeds Loading');
-      try {
-        await refetchSeeds();
-        const seedCount = seeds?.length || 0;
-        const activeSeeds = seeds?.filter(s => s.isActive).length || 0;
-        
-        tests.push({
-          component: 'Seeds Database',
-          status: seedCount > 0 ? 'success' : 'warning',
-          message: `${seedCount} seeds geladen (${activeSeeds} actief)`,
-          details: seedCount === 0 ? 'Geen seeds beschikbaar' : undefined
-        });
-      } catch (error) {
-        tests.push({
-          component: 'Seeds Database',
-          status: 'error',
-          message: 'Failed to load seeds',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-      updateProgress();
-
-      // Test 2: OpenAI API 1 (server-side)
-      console.log('🧪 Test 2: OpenAI API 1 (edge)');
+      // Test 1: OpenAI API 1 (server-side)
+      console.log('🧪 Test 1: OpenAI API 1 (edge)');
       try {
         const { data, error } = await supabase.functions.invoke('evai-admin', {
           body: { operation: 'test-openai-key', apiKey: 'server-key-test' }
@@ -75,8 +49,8 @@ export const useHealthCheck = () => {
       }
       updateProgress();
 
-      // Test 3: VERWIJDERD - OpenAI API 2 niet meer nodig in neurosymbolische architectuur
-      console.log('🧪 Test 3: SKIPPED (API 2 removed)');
+      // Test 2: Neurosymbolisch Core
+      console.log('🧪 Test 2: Neurosymbolic Core');
       tests.push({
         component: 'Neurosymbolisch Core',
         status: 'success',
@@ -85,42 +59,19 @@ export const useHealthCheck = () => {
       });
       updateProgress();
 
-      // Test 4: Unified Decision Core Integration (Simplified test)
-      console.log('🧪 Test 4: Unified Decision Core Integration');
-      try {
-        // Since useSeedEngine was removed, we'll just test if we have active seeds
-        const activeSeeds = seeds?.filter(s => s.isActive).length || 0;
-        
-        tests.push({
-          component: 'Unified Decision Core',
-          status: activeSeeds > 0 ? 'success' : 'warning',
-          message: activeSeeds > 0 ? 'Core werkend' : 'Beperkte functionaliteit',
-          details: `${activeSeeds} actieve seeds beschikbaar voor besluitvorming`
-        });
-      } catch (error) {
-        tests.push({
-          component: 'Unified Decision Core',
-          status: 'error',
-          message: 'Core test failed',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-      updateProgress();
-
-      // Test 5: Neurosymbolisch Integration
-      console.log('🧪 Test 5: Neurosymbolische Integratie');
+      // Test 3: Neurosymbolisch Integration
+      console.log('🧪 Test 3: Neurosymbolische Integratie');
       const api1Working = tests.find(t => t.component === 'OpenAI API 1')?.status === 'success';
       const neurosymbolicWorking = tests.find(t => t.component === 'Neurosymbolisch Core')?.status === 'success';
-      const seedsWorking = tests.find(t => t.component === 'Seeds Database')?.status === 'success';
       
-      if (api1Working && neurosymbolicWorking && seedsWorking) {
+      if (api1Working && neurosymbolicWorking) {
         tests.push({
           component: '🧠 Neurosymbolische Integratie',
           status: 'success',
           message: 'Volledige neurosymbolische flow actief',
           details: 'Browser ML + Unified Core + Embeddings'
         });
-      } else if (api1Working && seedsWorking) {
+      } else if (api1Working) {
         tests.push({
           component: '🧠 Neurosymbolische Integratie',
           status: 'warning',
@@ -137,8 +88,8 @@ export const useHealthCheck = () => {
       }
       updateProgress();
 
-      // Test 6: Overall System Health
-      console.log('🧪 Test 6: Overall System Health');
+      // Test 4: Overall System Health
+      console.log('🧪 Test 4: Overall System Health');
       const successCount = tests.filter(t => t.status === 'success').length;
       const warningCount = tests.filter(t => t.status === 'warning').length;
       const errorCount = tests.filter(t => t.status === 'error').length;
