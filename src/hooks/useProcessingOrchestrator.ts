@@ -11,6 +11,7 @@ import { checkPromptSafety } from '@/lib/safetyGuard';
 import { toast } from 'sonner';
 import { orchestrate, OrchestrationContext } from '@/orchestrator/hybrid';
 import { getGraphStats } from '@/semantics/graph';
+import { useEnhancedSeedGeneration } from './useEnhancedSeedGeneration';
 
 interface ProcessingStats {
   totalRequests: number;
@@ -38,6 +39,7 @@ export function useProcessingOrchestrator() {
   const { makeUnifiedDecision, isProcessing, knowledgeStats } = useUnifiedDecisionCore();
   const { performEnhancedAssessment } = useEnhancedEvAI56Rubrics();
   const { getCached, setCached } = useBriefingCache();
+  const { generateEnhancedSeed } = useEnhancedSeedGeneration();
 
   const validateApiKey = (apiKey: string): boolean => {
     if (!apiKey || !apiKey.trim()) return false;
@@ -349,170 +351,124 @@ export function useProcessingOrchestrator() {
       }
 
       if (!decisionResult) {
-        console.warn('⚠️ Geen kennis-match gevonden — val terug op OpenAI via Edge Function');
+        console.warn('❌ Geen kennis-match gevonden → Activeer LEARNING MODE');
+        
         try {
-          // Neem laatste 6 berichten uit conversation history voor context
-          const recentHistory = (conversationHistory || [])
-            .slice(-6)
-            .map(h => ({
-              role: h.role,
-              content: h.content
-            }));
-
-          const messages = [
-            { 
-              role: 'system', 
-              content: `Je bent een empathische gesprekspartner. Geef KORTE (max 2 zinnen), to-the-point responses.
-
-BELANGRIJKSTE REGELS:
-- Max 2 korte zinnen
-- GEEN lange uitleg of vragen
-- Valideer het gevoel simpel en direct
-- Gebruik "je" en natuurlijke taal
-
-OUTPUT (JSON):
-{
-  "emotion": "primaire emotie (verdriet/angst/woede/blijdschap/stress/onzekerheid/hoop/eenzaamheid)",
-  "confidence": 0.0-1.0,
-  "response": "korte, directe validatie (MAX 2 zinnen!)",
-  "reasoning": "korte emotie detectie",
-  "label": "Valideren/Reflectievraag/Suggestie",
-  "triggers": ["keyword1", "keyword2"]
-}
-
-VOORBEELDEN GOEDE RESPONSES:
-- "Dat klinkt zwaar. Ik begrijp dat je je zo voelt."
-- "Ik hoor frustratie. Wat vervelend voor je."
-- "Dat is fijn om te horen! Geniet ervan."` 
-            },
-            ...recentHistory,
-            { role: 'user', content: userInput }
-          ];
-
-          const { data, error } = await supabase.functions.invoke('evai-core', {
-            body: {
-              operation: 'chat',
-              model: OPENAI_MODEL,
-              messages,
-              temperature: 0.7,
-              max_tokens: 400,
-              response_format: { type: 'json_object' },
-              use_secondary: false
-            }
+          // 🎓 LEARNING MODE: Genereer nieuwe seed + gebruik direct
+          console.log('🎓 Learning Mode: Analyseer waarom geen match + genereer nieuwe seed...');
+          
+          const { addAdvancedSeed } = await import('@/lib/advancedSeedStorage');
+          
+          // Bepaal severity op basis van rubric risk
+          const severity: 'low' | 'medium' | 'high' | 'critical' = 
+            rubricResult.overallRisk > 70 ? 'critical' :
+            rubricResult.overallRisk > 50 ? 'high' :
+            rubricResult.overallRisk > 30 ? 'medium' : 'low';
+          
+          console.log(`🎓 Severity bepaald: ${severity} (risk: ${rubricResult.overallRisk})`);
+          
+          // Genereer nieuwe seed via OpenAI
+          const seedRequest = {
+            emotion: rubricResult.dominantPattern || 'onzekerheid',
+            context: userInput.slice(0, 240),
+            severity,
+            conversationHistory: (conversationHistory || []).slice(-6).map(h => h.content)
+          };
+          
+          console.log('🎓 Genereer nieuwe seed met context:', seedRequest.emotion);
+          const newSeed = await generateEnhancedSeed(seedRequest, '');
+          
+          if (!newSeed) {
+            throw new Error('Learning Mode: Seed generatie mislukt');
+          }
+          
+          console.log('✅ Nieuwe seed gegenereerd:', {
+            id: newSeed.id,
+            emotion: newSeed.emotion,
+            type: newSeed.type,
+            triggers: newSeed.triggers?.slice(0, 3)
           });
-
-          if (error) {
-            console.error('❌ OpenAI fallback edge error:', error);
-            throw new Error(error.message || 'OpenAI fallback mislukt');
-          }
-
-          const payload: any = data;
-          if (!payload?.ok) {
-            console.error('❌ OpenAI payload not ok:', payload);
-            const status = payload?.status;
-            const err = payload?.error || 'Onbekende fout';
-            if (String(err).toLowerCase().includes('insufficient_quota')) {
-              throw new Error('OpenAI-tegoed mogelijk op. Controleer je account/keys.');
-            }
-            throw new Error(`OpenAI fout: ${err}${status ? ` (status ${status})` : ''}`);
-          }
-
-          const content = payload.content as string;
-          let parsed: any = null;
-          try {
-            const match = content.match(/\{[\s\S]*\}/);
-            parsed = match ? JSON.parse(match[0]) : JSON.parse(content);
-          } catch {
-            parsed = null;
-          }
-
-          const responseText = parsed?.response || content;
-          const emotion = parsed?.emotion || 'neutral';
-          const confidence = Math.max(0.1, Math.min(1, parsed?.confidence ?? 0.6));
-          const label = parsed?.label || 'Valideren';
-          const reasoning = parsed?.reasoning || 'OpenAI Fallback (geen knowledge match)';
-          const symbolicInferences = [
-            `⚠️ FALLBACK MODUS: Knowledge Base ${knowledgeStats.total === 0 ? 'leeg' : 'geen match'}`,
-            `🤖 Direct OpenAI call (GPT-4o-mini)`,
-            `📚 Unified Knowledge: ${knowledgeStats.total} items (0 matches)`,
-            `❌ Geen neurosymbolic reasoning toegepast`,
-            `🎯 Emotie: ${emotion}`,
-            `📊 Vertrouwen: ${Math.round(confidence * 100)}%`
-          ].filter(Boolean) as string[];
-
-      const processingTime = Date.now() - startTime;
-      console.log(`✅ Fallback completed in ${processingTime}ms`);
-
-      // Update success stats (fallback)
-      setStats(prev => {
-        const newTotalRequests = prev.totalRequests + 1;
-        return {
-          totalRequests: newTotalRequests,
-          averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / newTotalRequests,
-          successRate: ((prev.successRate * prev.totalRequests + 100) / newTotalRequests),
-          lastProcessingTime: processingTime,
-          errorCount: prev.errorCount,
-          lastError: undefined,
-          successfulKnowledgeMatches: prev.successfulKnowledgeMatches, // No match in fallback
-          neurosymbolicRate: (prev.successfulKnowledgeMatches / newTotalRequests) * 100
-        };
-      });
-
+          
+          // Sla seed op in database (met embedding via server)
+          await addAdvancedSeed(newSeed);
+          console.log('💾 Seed opgeslagen in database');
+          
+          // Log learning event
+          await supabase.rpc('log_reflection_event', {
+            p_trigger_type: 'no_match_learning',
+            p_context: {
+              userInput,
+              knowledgeBaseSize: knowledgeStats.total,
+              generatedEmotion: newSeed.emotion,
+              seedType: newSeed.type,
+              severity
+            },
+            p_new_seeds_generated: 1,
+            p_learning_impact: 0.8
+          });
+          
+          const processingTime = Date.now() - startTime;
+          
+          // Update stats (learning success!)
+          setStats(prev => {
+            const newTotalRequests = prev.totalRequests + 1;
+            const newSuccessfulMatches = prev.successfulKnowledgeMatches + 1;
+            return {
+              totalRequests: newTotalRequests,
+              averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / newTotalRequests,
+              successRate: ((prev.successRate * prev.totalRequests + 100) / newTotalRequests),
+              lastProcessingTime: processingTime,
+              errorCount: prev.errorCount,
+              lastError: undefined,
+              successfulKnowledgeMatches: newSuccessfulMatches,
+              neurosymbolicRate: (newSuccessfulMatches / newTotalRequests) * 100
+            };
+          });
+          
+          // Gebruik nieuwe seed direct voor response
           return {
-            content: responseText,
-            emotion,
-            confidence,
-            label,
-            reasoning,
-            symbolicInferences,
+            content: newSeed.response.nl,
+            emotion: newSeed.emotion,
+            confidence: 0.75, // Medium confidence voor nieuwe seed
+            label: newSeed.label,
+            reasoning: `🎓 LEARNING MODE: Nieuwe seed gegenereerd en direct gebruikt`,
+            symbolicInferences: [
+              `🎓 LEARNING MODE ACTIVATED`,
+              `📊 Knowledge Base: ${knowledgeStats.total} items (geen match)`,
+              `🆕 Nieuwe seed gegenereerd: ${newSeed.emotion}`,
+              `💾 Seed opgeslagen voor toekomstig gebruik`,
+              `🎯 Severity: ${severity}`,
+              `📈 Learning impact: 0.8`
+            ],
             metadata: {
-              processingPath: 'neural',
+              processingPath: 'hybrid', // Hybrid = learning + generation
               totalProcessingTime: processingTime,
               componentsUsed: [
-                'OpenAI via Edge Functions'
+                '🎓 Learning Mode',
+                'Enhanced Seed Generator',
+                'Unified Knowledge (write)',
+                'Edge Functions'
               ],
-              fallback: true,
+              fallback: false,
               apiCollaboration: {
-                api1Used: !!apiKey,
+                api1Used: true, // OpenAI voor seed generatie
                 api2Used: false,
-                vectorApiUsed: false,
-                seedGenerated: false,
+                vectorApiUsed: true, // Embedding via server
+                googleApiUsed: false,
+                seedGenerated: true, // ✅ Nieuwe seed gegenereerd!
                 secondaryAnalysis: false
               }
             }
           } as UnifiedResponse;
-        } catch (fbErr) {
-          console.error('🔴 Fallback ook mislukt:', fbErr);
           
-          // Log error naar database
-          try {
-            await supabase.rpc('log_evai_workflow', {
-              p_conversation_id: sessionStorage.getItem('evai-current-session-id') || 'unknown',
-              p_workflow_type: 'orchestrate-fallback-failed',
-          p_api_collaboration: {
-            api1Used: false,
-            api2Used: false,
-            vectorApiUsed: false,
-            seedGenerated: false,
-            secondaryAnalysis: false
-          },
-              p_rubrics_data: null,
-              p_processing_time: Date.now() - startTime,
-              p_success: false,
-              p_error_details: {
-                error: fbErr instanceof Error ? fbErr.message : 'Unknown error',
-                stack: fbErr instanceof Error ? fbErr.stack : undefined,
-                timestamp: new Date().toISOString()
-              }
-            });
-          } catch (logError) {
-            console.error('Failed to log error to database:', logError);
-          }
+        } catch (learningError) {
+          console.error('🔴 Learning Mode mislukt:', learningError);
           
+          // Als learning ook faalt, dan pas echt error
           throw new Error(
-            fbErr instanceof Error
-              ? fbErr.message
-              : 'Geen resultaat en fallback mislukt.'
+            learningError instanceof Error
+              ? `Learning Mode error: ${learningError.message}`
+              : 'Geen match én learning mislukt - mogelijk API issue'
           );
         }
       }

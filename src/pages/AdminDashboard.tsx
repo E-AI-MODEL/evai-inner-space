@@ -19,6 +19,7 @@ import { SeedCoherencePanel } from '@/components/admin/SeedCoherencePanel';
 import { TemplateParameterDocs } from '@/components/admin/TemplateParameterDocs';
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
+import { EmbeddingHealthPanel } from '@/components/admin/EmbeddingHealthPanel';
 import { useNavigate } from 'react-router-dom';
 import { useSystemConnectivity } from '@/hooks/useSystemConnectivity';
 import { supabase } from '../integrations/supabase/client';
@@ -310,6 +311,15 @@ const AdminDashboard = () => {
             {/* SEEDS TAB */}
             <TabsContent value="seeds" className="space-y-6">
               <AdvancedSeedManager />
+              
+              {/* Embedding Health Monitor */}
+              <Section 
+                title="⚡ Embedding Health" 
+                subtitle="Vector embedding coverage voor neurosymbolic search"
+                variant="neural"
+              >
+                <EmbeddingHealthPanel />
+              </Section>
               
               {/* Template Parameter Documentation */}
               <Section 
