@@ -317,54 +317,73 @@ async function compileSeedResponse(
   ctx: OrchestrationContext, 
   auditLog: string[]
 ): Promise<{ answer: string }> {
-  // Extract context parameters from user input
-  const contextParams = extractContextParams(ctx.userInput, ctx.conversationHistory);
-  auditLog.push(`📋 Extracted params: ${JSON.stringify(contextParams)}`);
-  
-  // If seed has template parameters, compile with extracted context
-  if (ctx.seed.templateId) {
-    try {
-      const { data: seedData, error } = await supabase
-        .from('unified_knowledge')
-        .select('*')
-        .eq('id', ctx.seed.templateId)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Failed to load seed:', error);
-        return { answer: ctx.seed.response || 'Ik begrijp je.' };
-      }
-      
-      if (seedData) {
-        const seedForCompilation = {
-          id: seedData.id,
-          emotion: seedData.emotion,
-          type: (seedData.metadata as any)?.type || 'validation',
-          label: (seedData.metadata as any)?.label || 'Valideren',
-          triggers: seedData.triggers || [],
-          response: { nl: seedData.response_text || '' },
-          context: (seedData.metadata as any)?.context || { severity: 'medium' },
-          meta: (seedData.metadata as any)?.meta || {},
-          tags: (seedData.metadata as any)?.tags || [],
-          createdAt: new Date(seedData.created_at || Date.now()),
-          updatedAt: new Date(seedData.updated_at || Date.now()),
-          createdBy: (seedData.metadata as any)?.createdBy || 'system',
-          isActive: seedData.active,
-          version: '1.0'
-        } as any;
-        
-        if (hasTemplateParameters(seedForCompilation)) {
-          const compiled = compileReflection(seedForCompilation, contextParams);
-          auditLog.push(`🔧 Template compiled with params`);
-          return { answer: compiled };
-        }
-      }
-    } catch (err) {
-      console.error('Failed to compile seed:', err);
+  try {
+    // Extract context parameters from user input
+    const contextParams = extractContextParams(ctx.userInput, ctx.conversationHistory);
+    auditLog.push(`📋 Extracted params: ${JSON.stringify(contextParams)}`);
+    
+    // Use seed response directly if no templateId
+    if (!ctx.seed.templateId) {
+      console.log('ℹ️ No templateId, using direct response');
+      return { answer: ctx.seed.response || 'Ik begrijp je.' };
     }
+    
+    // Try to load seed for template compilation
+    console.log(`🔍 Loading seed ${ctx.seed.templateId} for template compilation...`);
+    const { data: seedData, error } = await supabase
+      .from('unified_knowledge')
+      .select('*')
+      .eq('id', ctx.seed.templateId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('⚠️ Failed to load seed:', error);
+      auditLog.push(`⚠️ Seed load error: ${error.message}`);
+      return { answer: ctx.seed.response || 'Ik begrijp je.' };
+    }
+    
+    if (!seedData) {
+      console.warn('⚠️ Seed not found in database, using fallback');
+      auditLog.push('⚠️ Seed not found, using fallback response');
+      return { answer: ctx.seed.response || 'Ik begrijp je.' };
+    }
+    
+    // Build seed object for compilation
+    const seedForCompilation = {
+      id: seedData.id,
+      emotion: seedData.emotion,
+      type: (seedData.metadata as any)?.type || 'validation',
+      label: (seedData.metadata as any)?.label || 'Valideren',
+      triggers: seedData.triggers || [],
+      response: { nl: seedData.response_text || ctx.seed.response || 'Ik begrijp je.' },
+      context: (seedData.metadata as any)?.context || { severity: 'medium' },
+      meta: (seedData.metadata as any)?.meta || {},
+      tags: (seedData.metadata as any)?.tags || [],
+      createdAt: new Date(seedData.created_at || Date.now()),
+      updatedAt: new Date(seedData.updated_at || Date.now()),
+      createdBy: (seedData.metadata as any)?.createdBy || 'system',
+      isActive: seedData.active,
+      version: '1.0'
+    } as any;
+    
+    // Check if template compilation is needed
+    if (hasTemplateParameters(seedForCompilation)) {
+      const compiled = compileReflection(seedForCompilation, contextParams);
+      auditLog.push(`🔧 Template compiled with params`);
+      console.log('✅ Template compiled successfully');
+      return { answer: compiled };
+    }
+    
+    // No template parameters, use response as-is
+    console.log('ℹ️ No template parameters found, using response directly');
+    return { answer: seedForCompilation.response.nl };
+    
+  } catch (err) {
+    console.error('❌ compileSeedResponse error:', err);
+    auditLog.push(`❌ Compilation error: ${err instanceof Error ? err.message : String(err)}`);
+    // Always return a safe fallback
+    return { answer: ctx.seed.response || 'Ik begrijp je. Kun je me meer vertellen?' };
   }
-  
-  return { answer: ctx.seed.response || 'Ik begrijp je.' };
 }
 
 /**

@@ -175,6 +175,14 @@ export function useProcessingOrchestrator() {
         console.log('✅ High confidence decision (>70%), routing through Hybrid Orchestrator v16...');
         
         try {
+          console.log('🎯 High confidence decision, invoking hybrid orchestrator...');
+          console.log('📊 Decision details:', {
+            emotion: decisionResult.emotion,
+            confidence: decisionResult.confidence,
+            sources: decisionResult.sources?.length || 0,
+            firstSourceId: decisionResult.sources[0]?.id
+          });
+          
           const orchestrationCtx: OrchestrationContext = {
             userInput,
             rubric: {
@@ -197,7 +205,19 @@ export function useProcessingOrchestrator() {
             topEmotion: decisionResult.emotion
           };
 
+          console.log('🎼 Calling orchestrate with seed:', {
+            templateId: orchestrationCtx.seed.templateId,
+            hasResponse: !!orchestrationCtx.seed.response
+          });
+
           const hybridResult = await orchestrate(orchestrationCtx);
+          
+          console.log('✅ Orchestrate completed:', {
+            validated: hybridResult.metadata.validated,
+            constraintsOK: hybridResult.metadata.constraintsOK,
+            processingPath: hybridResult.metadata.processingPath,
+            hasAnswer: !!hybridResult.answer
+          });
           
           // Only use hybrid result if validation passed
           if (hybridResult.metadata.validated && hybridResult.metadata.constraintsOK) {
@@ -242,12 +262,19 @@ export function useProcessingOrchestrator() {
             };
           } else {
             console.warn('⚠️ Hybrid orchestration validation FAILED, falling back to unified decision');
+            console.warn('  Validated:', hybridResult.metadata.validated);
+            console.warn('  Constraints OK:', hybridResult.metadata.constraintsOK);
+            console.warn('  Audit log:', hybridResult.metadata.auditLog.slice(-3));
           }
         } catch (hybridError) {
-          console.error('❌ Hybrid orchestration error, falling back to unified decision:', hybridError);
+          console.error('❌ HYBRID ORCHESTRATION ERROR - falling back to unified decision');
+          console.error('  Error type:', hybridError instanceof Error ? 'Error' : typeof hybridError);
+          console.error('  Message:', hybridError instanceof Error ? hybridError.message : String(hybridError));
+          console.error('  Stack:', hybridError instanceof Error ? hybridError.stack : 'No stack trace');
         }
       } else {
         console.log('⏭️ Low confidence or no decision, skipping hybrid orchestrator');
+        console.log('  Confidence:', decisionResult?.confidence || 0);
       }
 
       // If hybrid orchestrator produced a result, use it
