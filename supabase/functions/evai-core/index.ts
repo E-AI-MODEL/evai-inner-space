@@ -150,9 +150,10 @@ async function handleChat(body: any) {
 
   if (!resp.ok) {
     const errMsg = data?.error?.message || resp.statusText || "OpenAI chat error";
+    console.error('🔴 OpenAI chat error:', errMsg, 'status:', status);
     return new Response(
       JSON.stringify({ ok: false, status, error: errMsg }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -279,9 +280,10 @@ async function handleSafety(body: any) {
 
   if (!resp.ok) {
     const errMsg = data?.error?.message || resp.statusText || "OpenAI safety error";
+    console.error('🔴 OpenAI safety error:', errMsg, 'status:', status);
     return new Response(
       JSON.stringify({ ok: false, status, error: errMsg }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
