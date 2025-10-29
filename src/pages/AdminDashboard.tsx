@@ -15,6 +15,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import { Section } from '@/components/admin/Section';
 import { MetricGrid } from '@/components/admin/MetricGrid';
 import { DecisionLogTable } from '@/components/admin/DecisionLogTable';
+import { SeedCoherencePanel } from '@/components/admin/SeedCoherencePanel';
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
 import { useNavigate } from 'react-router-dom';
@@ -287,7 +288,7 @@ const AdminDashboard = () => {
                   <TabsContent value="diagnostics">
                     <div className="space-y-4">
                       <Button 
-                        onClick={runDiagnostics} 
+                        onClick={runDiagnostics}
                         disabled={isRunningDiagnostics}
                         className="w-full"
                       >

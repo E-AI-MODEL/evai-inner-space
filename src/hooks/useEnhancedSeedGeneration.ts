@@ -6,6 +6,7 @@ import { SeedGenerationRequest, OpenAISeedGeneratorConfig } from '../types/openA
 import { OPENAI_MODEL } from '../openaiConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidEmotion, sanitizeSeed, normalizeEmotion } from '../utils/seedValidator';
+import { validateSeedCoherence } from '../utils/seedCoherenceValidator';
 
 const DEFAULT_CONFIG: OpenAISeedGeneratorConfig = {
   model: OPENAI_MODEL,
@@ -103,25 +104,29 @@ export function useEnhancedSeedGeneration() {
         - Erken en valideer de emotie zonder oordeel
         - Gebruik empathische bevestiging ("Het is begrijpelijk dat...")
         - Normaliseer de ervaring ("Veel mensen voelen...")
-        - Bied emotionele steun en begrip`,
+        - Bied emotionele steun en begrip
+        - BELANGRIJK: Maak GEEN aannames over specifieke situaties (bijv. "na een goede nachtrust")`,
       
       reflection: `
         - Stel open, nieuwsgierige vragen die tot inzicht leiden
         - Gebruik "Wat zou er gebeuren als..." of "Hoe zou het zijn om..."
         - Help de persoon dieper na te denken over hun situatie
-        - Stimuleer zelf-ontdekking en bewustwording`,
+        - Stimuleer zelf-ontdekking en bewustwording
+        - BELANGRIJK: Blijf generiek, vermijd specifieke tijden/gebeurtenissen`,
       
       suggestion: `
         - Bied concrete, haalbare actiestappen
         - Geef praktische coping strategieën
         - Stel gezonde alternatieven voor
-        - Focus op oplossingsgerichte aanpak`,
+        - Focus op oplossingsgerichte aanpak
+        - BELANGRIJK: Adviezen moeten breed toepasbaar zijn`,
       
       intervention: `
         - Bied directe, ondersteunende begeleiding
         - Focus op stabilisatie en veiligheid
         - Geef duidelijke, geruststellende instructies
-        - Moedig professionele hulp aan indien nodig`
+        - Moedig professionele hulp aan indien nodig
+        - BELANGRIJK: Vermijd aannames over timing of context`
     };
 
     return `Je bent een expert therapeut die gespecialiseerde emotionele ondersteuning biedt. Genereer een ${targetType} seed (${targetLabel}) voor therapeutische AI.
@@ -163,7 +168,23 @@ BELANGRIJKE VEREISTEN:
 - Gebruik natuurlijke, empathische Nederlandse taal
 - Triggers moeten specifiek zijn voor de emotie
 - Geen therapeutische jargon, wel professioneel
-- Response moet direct toepasbaar zijn in gesprek`;
+- Response moet direct toepasbaar zijn in gesprek
+
+KRITIEKE ANTI-OVERFITTING REGELS:
+- ❌ VERBODEN: Specifieke tijden ("vannacht", "gisteren", "deze ochtend")
+- ❌ VERBODEN: Specifieke gebeurtenissen ("na een goede nachtrust", "na je werk")
+- ❌ VERBODEN: Aannames over situaties ("waarschijnlijk", "je hebt vast")
+- ✅ TOEGESTAAN: Generieke tijdsaanduidingen ("recent", "{timeOfDay}")
+- ✅ TOEGESTAAN: Template parameters voor variabele context
+- ✅ GEBRUIK placeholders: {timeOfDay}, {situation}, {recentEvent}, {temporalRef}
+
+VOORBEELD GOED:
+"Het is begrijpelijk dat je je verdrietig voelt {timeOfDay}. Deze emotie is helemaal normaal."
+
+VOORBEELD FOUT:
+"Het is begrijpelijk dat je je verdrietig voelt, vooral na een goede nachtrust."
+
+De response moet breed toepasbaar zijn zonder hardcoded context!`;
   };
 
   const generateEnhancedSeed = async (
@@ -223,7 +244,19 @@ BELANGRIJKE VEREISTEN:
       }
 
       console.log('🟢 Enhanced seed generation response (edge):', content);
-      return parseEnhancedSeed(content, request, targetType, targetLabel);
+      const parsedSeed = parseEnhancedSeed(content, request, targetType, targetLabel);
+      
+      // Validate coherence
+      const coherenceResult = validateSeedCoherence(parsedSeed);
+      if (!coherenceResult.isValid) {
+        console.warn('⚠️ Seed coherence validation failed:', coherenceResult.errors);
+        console.warn('  Warnings:', coherenceResult.warnings);
+        console.warn('  Suggestions:', coherenceResult.suggestions);
+      } else if (coherenceResult.warnings.length > 0) {
+        console.warn('⚠️ Seed coherence warnings:', coherenceResult.warnings);
+      }
+      
+      return parsedSeed;
 
     } catch (error) {
       console.error('🔴 Enhanced seed generation error:', error);

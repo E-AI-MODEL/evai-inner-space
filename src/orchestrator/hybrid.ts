@@ -9,6 +9,8 @@ import { validatePlan, validateResponse } from '../policy/validation.policy';
 import { checkConstraints, ConstraintContext } from '../policy/constraints';
 import { suggestInterventions, getAllowedInterventions, checkContraIndications } from '../semantics/graph';
 import { supabase } from '@/integrations/supabase/client';
+import { compileReflection, hasTemplateParameters } from '../lib/ReflectionCompiler';
+import { extractContextParams } from '../utils/contextExtractor';
 
 export interface OrchestrationContext {
   userInput: string;
@@ -111,7 +113,56 @@ export async function orchestrate(
     switch (policyDecision.action) {
       case 'USE_SEED':
         auditLog.push(`🎯 Executing: USE_SEED`);
-        answer = ctx.seed.response || 'Ik begrijp je.';
+        
+        // Extract context parameters from user input
+        const contextParams = extractContextParams(ctx.userInput, ctx.conversationHistory);
+        auditLog.push(`📋 Extracted params: ${JSON.stringify(contextParams)}`);
+        
+        // If seed has template parameters, compile with extracted context
+        if (ctx.seed.templateId) {
+          // Try to load the full seed for template compilation
+          try {
+            const { data: seedData } = await supabase
+              .from('unified_knowledge')
+              .select('*')
+              .eq('id', ctx.seed.templateId)
+              .single();
+            
+            if (seedData) {
+              const seedForCompilation = {
+                id: seedData.id,
+                emotion: seedData.emotion,
+                type: (seedData.metadata as any)?.type || 'validation',
+                label: (seedData.metadata as any)?.label || 'Valideren',
+                triggers: seedData.triggers || [],
+                response: { nl: seedData.response_text || '' },
+                context: (seedData.metadata as any)?.context || { severity: 'medium' },
+                meta: (seedData.metadata as any)?.meta || {},
+                tags: (seedData.metadata as any)?.tags || [],
+                createdAt: new Date(seedData.created_at || Date.now()),
+                updatedAt: new Date(seedData.updated_at || Date.now()),
+                createdBy: (seedData.metadata as any)?.createdBy || 'system',
+                isActive: seedData.active,
+                version: '1.0'
+              } as any;
+              
+              if (hasTemplateParameters(seedForCompilation)) {
+                answer = compileReflection(seedForCompilation, contextParams);
+                auditLog.push(`🔧 Template compiled with params`);
+              } else {
+                answer = ctx.seed.response || 'Ik begrijp je.';
+              }
+            } else {
+              answer = ctx.seed.response || 'Ik begrijp je.';
+            }
+          } catch (err) {
+            console.error('Failed to load seed for compilation:', err);
+            answer = ctx.seed.response || 'Ik begrijp je.';
+          }
+        } else {
+          answer = ctx.seed.response || 'Ik begrijp je.';
+        }
+        
         processingPath = 'seed';
         label = 'Valideren';
         break;
