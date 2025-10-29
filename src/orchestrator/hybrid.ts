@@ -113,56 +113,8 @@ export async function orchestrate(
     switch (policyDecision.action) {
       case 'USE_SEED':
         auditLog.push(`🎯 Executing: USE_SEED`);
-        
-        // Extract context parameters from user input
-        const contextParams = extractContextParams(ctx.userInput, ctx.conversationHistory);
-        auditLog.push(`📋 Extracted params: ${JSON.stringify(contextParams)}`);
-        
-        // If seed has template parameters, compile with extracted context
-        if (ctx.seed.templateId) {
-          // Try to load the full seed for template compilation
-          try {
-            const { data: seedData } = await supabase
-              .from('unified_knowledge')
-              .select('*')
-              .eq('id', ctx.seed.templateId)
-              .single();
-            
-            if (seedData) {
-              const seedForCompilation = {
-                id: seedData.id,
-                emotion: seedData.emotion,
-                type: (seedData.metadata as any)?.type || 'validation',
-                label: (seedData.metadata as any)?.label || 'Valideren',
-                triggers: seedData.triggers || [],
-                response: { nl: seedData.response_text || '' },
-                context: (seedData.metadata as any)?.context || { severity: 'medium' },
-                meta: (seedData.metadata as any)?.meta || {},
-                tags: (seedData.metadata as any)?.tags || [],
-                createdAt: new Date(seedData.created_at || Date.now()),
-                updatedAt: new Date(seedData.updated_at || Date.now()),
-                createdBy: (seedData.metadata as any)?.createdBy || 'system',
-                isActive: seedData.active,
-                version: '1.0'
-              } as any;
-              
-              if (hasTemplateParameters(seedForCompilation)) {
-                answer = compileReflection(seedForCompilation, contextParams);
-                auditLog.push(`🔧 Template compiled with params`);
-              } else {
-                answer = ctx.seed.response || 'Ik begrijp je.';
-              }
-            } else {
-              answer = ctx.seed.response || 'Ik begrijp je.';
-            }
-          } catch (err) {
-            console.error('Failed to load seed for compilation:', err);
-            answer = ctx.seed.response || 'Ik begrijp je.';
-          }
-        } else {
-          answer = ctx.seed.response || 'Ik begrijp je.';
-        }
-        
+        const seedResult = await compileSeedResponse(ctx, auditLog);
+        answer = seedResult.answer;
         processingPath = 'seed';
         label = 'Valideren';
         break;
@@ -359,6 +311,63 @@ function generateSafetyFallbackResponse(): string {
 }
 
 /**
+ * Compile seed response with template parameters
+ */
+async function compileSeedResponse(
+  ctx: OrchestrationContext, 
+  auditLog: string[]
+): Promise<{ answer: string }> {
+  // Extract context parameters from user input
+  const contextParams = extractContextParams(ctx.userInput, ctx.conversationHistory);
+  auditLog.push(`📋 Extracted params: ${JSON.stringify(contextParams)}`);
+  
+  // If seed has template parameters, compile with extracted context
+  if (ctx.seed.templateId) {
+    try {
+      const { data: seedData, error } = await supabase
+        .from('unified_knowledge')
+        .select('*')
+        .eq('id', ctx.seed.templateId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Failed to load seed:', error);
+        return { answer: ctx.seed.response || 'Ik begrijp je.' };
+      }
+      
+      if (seedData) {
+        const seedForCompilation = {
+          id: seedData.id,
+          emotion: seedData.emotion,
+          type: (seedData.metadata as any)?.type || 'validation',
+          label: (seedData.metadata as any)?.label || 'Valideren',
+          triggers: seedData.triggers || [],
+          response: { nl: seedData.response_text || '' },
+          context: (seedData.metadata as any)?.context || { severity: 'medium' },
+          meta: (seedData.metadata as any)?.meta || {},
+          tags: (seedData.metadata as any)?.tags || [],
+          createdAt: new Date(seedData.created_at || Date.now()),
+          updatedAt: new Date(seedData.updated_at || Date.now()),
+          createdBy: (seedData.metadata as any)?.createdBy || 'system',
+          isActive: seedData.active,
+          version: '1.0'
+        } as any;
+        
+        if (hasTemplateParameters(seedForCompilation)) {
+          const compiled = compileReflection(seedForCompilation, contextParams);
+          auditLog.push(`🔧 Template compiled with params`);
+          return { answer: compiled };
+        }
+      }
+    } catch (err) {
+      console.error('Failed to compile seed:', err);
+    }
+  }
+  
+  return { answer: ctx.seed.response || 'Ik begrijp je.' };
+}
+
+/**
  * Log decision to database for audit trail
  */
 async function logDecisionToDatabase(params: {
@@ -381,7 +390,7 @@ async function logDecisionToDatabase(params: {
       p_emotion: params.emotion,
       p_response: params.answer,
       p_confidence: params.confidence,
-      p_label: 'Valideren', // Will be enhanced later
+      p_label: 'Valideren',
       p_sources: [{ 
         id: params.ruleId, 
         emotion: params.emotion,

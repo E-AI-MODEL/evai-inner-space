@@ -27,11 +27,12 @@ export async function scanForOverspecificSeeds(): Promise<CleanupReport> {
   };
 
   try {
-    // Query all active seeds from unified_knowledge
+    // Query active seeds with potential overspecific content (optimized query)
     const { data: seeds, error } = await supabase
       .from('unified_knowledge')
       .select('*')
-      .eq('active', true);
+      .eq('active', true)
+      .or('response_text.ilike.%vannacht%,response_text.ilike.%gisteren%,response_text.ilike.%na een goede nachtrust%,response_text.ilike.%deze ochtend%');
 
     if (error) {
       report.errors.push(`Database query failed: ${error.message}`);
@@ -39,7 +40,7 @@ export async function scanForOverspecificSeeds(): Promise<CleanupReport> {
     }
 
     if (!seeds || seeds.length === 0) {
-      report.errors.push('No seeds found in database');
+      console.log('✅ No potentially overspecific seeds found');
       return report;
     }
 
@@ -122,6 +123,9 @@ async function attemptToFixSeed(seed: any): Promise<{ success: boolean; deactiva
         return { success: false, deactivated: false, error: error.message };
       }
 
+      // Log cleanup action to audit trail
+      await logCleanupAction(seed.id, 'fixed', { before: responseText, after: fixedResponse });
+
       console.log(`✅ Fixed seed ${seed.id}`);
       console.log(`   Before: ${responseText}`);
       console.log(`   After: ${fixedResponse}`);
@@ -139,6 +143,9 @@ async function attemptToFixSeed(seed: any): Promise<{ success: boolean; deactiva
       if (error) {
         return { success: false, deactivated: false, error: error.message };
       }
+
+      // Log cleanup action to audit trail
+      await logCleanupAction(seed.id, 'deactivated', { reason: 'unfixable_overspecific' });
 
       console.log(`⏸️ Deactivated unfixable seed ${seed.id}`);
       return { success: false, deactivated: true };
@@ -182,20 +189,48 @@ export async function deactivateSeed(seedId: string): Promise<{ success: boolean
 }
 
 /**
+ * Log cleanup action to reflection logs for audit trail
+ */
+async function logCleanupAction(
+  seedId: string, 
+  action: 'fixed' | 'deactivated',
+  details: Record<string, any>
+): Promise<void> {
+  try {
+    await supabase.rpc('log_reflection_event', {
+      p_trigger_type: 'seed_cleanup',
+      p_context: {
+        action,
+        seed_id: seedId,
+        details,
+        timestamp: new Date().toISOString()
+      },
+      p_new_seeds_generated: 0,
+      p_learning_impact: action === 'fixed' ? 0.2 : 0.1
+    });
+  } catch (error) {
+    console.error('Failed to log cleanup action:', error);
+  }
+}
+
+/**
  * Get list of potentially overspecific seeds (for review)
  */
 export async function getOverspecificSeedsList(): Promise<any[]> {
   try {
+    // Optimized query with SQL filtering
     const { data: seeds, error } = await supabase
       .from('unified_knowledge')
       .select('*')
-      .eq('active', true);
+      .eq('active', true)
+      .or('response_text.ilike.%vannacht%,response_text.ilike.%gisteren%,response_text.ilike.%na een goede nachtrust%,response_text.ilike.%deze ochtend%');
 
     if (error || !seeds) {
       console.error('Failed to query seeds:', error);
       return [];
     }
 
+    // Additional client-side validation
     const overspecific = seeds.filter(seed => {
       const responseText = seed.response_text || '';
       const triggers = seed.triggers || [];

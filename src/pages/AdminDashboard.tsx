@@ -16,6 +16,7 @@ import { Section } from '@/components/admin/Section';
 import { MetricGrid } from '@/components/admin/MetricGrid';
 import { DecisionLogTable } from '@/components/admin/DecisionLogTable';
 import { SeedCoherencePanel } from '@/components/admin/SeedCoherencePanel';
+import { TemplateParameterDocs } from '@/components/admin/TemplateParameterDocs';
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
 import { useNavigate } from 'react-router-dom';
@@ -307,8 +308,26 @@ const AdminDashboard = () => {
             </TabsContent>
 
             {/* SEEDS TAB */}
-            <TabsContent value="seeds" className="space-y-4">
+            <TabsContent value="seeds" className="space-y-6">
               <AdvancedSeedManager />
+              
+              {/* Template Parameter Documentation */}
+              <Section 
+                title="📖 Template Parameters" 
+                subtitle="Beschikbare parameters voor dynamische seed responses"
+                variant="neural"
+              >
+                <TemplateParameterDocs />
+              </Section>
+              
+              {/* Seed Coherence & Cleanup Section */}
+              <Section 
+                title="🔧 Seed Coherence & Cleanup" 
+                subtitle="Database cleaning en template validation"
+                variant="audit"
+              >
+                <SeedCoherencePanel />
+              </Section>
             </TabsContent>
 
             {/* SETTINGS TAB */}
