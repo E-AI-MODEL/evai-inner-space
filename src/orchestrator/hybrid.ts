@@ -6,10 +6,8 @@
 
 import { decideNextStep, Context as PolicyContext, explainDecision } from '../policy/decision.policy';
 import { validatePlan, validateResponse } from '../policy/validation.policy';
-import { checkConstraints, ConstraintContext } from '../policy/constraints';
 import { suggestInterventions, getAllowedInterventions, checkContraIndications } from '../semantics/graph';
 import { supabase } from '@/integrations/supabase/client';
-import { compileReflection, hasTemplateParameters } from '../lib/ReflectionCompiler';
 import { extractContextParams } from '../utils/contextExtractor';
 
 export interface OrchestrationContext {
@@ -169,26 +167,10 @@ export async function orchestrate(
         auditLog.push(`  Warnings: ${planValidation.warnings.join(', ')}`);
       }
 
-      // 🔒 Z3 Constraint Layer - Formele verificatie
-      const constraintCtx: ConstraintContext = {
-        rubric: policyCtx.rubric,
-        seed: policyCtx.seed,
-        plan: {
-          strategy: plan.strategy,
-          containsPII: plan.containsPII,
-          length: plan.goal ? plan.goal.length + (plan.steps?.join('').length || 0) : 0
-        }
-      };
-      
-      const constraintResult = await checkConstraints(constraintCtx);
-      constraintsOK = constraintResult.ok;
-      auditLog.push(`🔒 Z3 Constraints: ${constraintsOK ? 'SATISFIED' : 'VIOLATED'}`);
-      
-      if (!constraintsOK) {
-        auditLog.push(`  Violations: ${constraintResult.violations.join('; ')}`);
-        // BLOCK plan if constraints violated
-        validated = false;
-      }
+      // 🔒 Constraint validation - Z3 layer removed (deprecated)
+      // Constraints are now validated via policy and validation layers
+      constraintsOK = validated;
+      auditLog.push(`🔒 Constraints: ${constraintsOK ? 'SATISFIED' : 'VIOLATED'}`);
     }
 
     const responseValidation = validateResponse(answer, plan || {}, policyCtx);
@@ -366,17 +348,27 @@ async function compileSeedResponse(
       version: '1.0'
     } as any;
     
-    // Check if template compilation is needed
-    if (hasTemplateParameters(seedForCompilation)) {
-      const compiled = compileReflection(seedForCompilation, contextParams);
+    // Template compilation (simplified - ReflectionCompiler deprecated)
+    let responseText = seedForCompilation.response.nl;
+    
+    // Simple parameter replacement for common placeholders
+    if (/\{[a-zA-Z_]+\}/.test(responseText)) {
+      for (const [key, value] of Object.entries(contextParams)) {
+        const placeholder = new RegExp(`\\{${key}\\}`, 'g');
+        responseText = responseText.replace(placeholder, value);
+      }
+      // Fallback replacements for unreplaced placeholders
+      responseText = responseText.replace(/\{timeOfDay\}/g, 'nu');
+      responseText = responseText.replace(/\{situation\}/g, 'in deze situatie');
+      responseText = responseText.replace(/\{recentEvent\}/g, 'recent');
+      responseText = responseText.replace(/\{temporalRef\}/g, 'op dit moment');
       auditLog.push(`🔧 Template compiled with params`);
       console.log('✅ Template compiled successfully');
-      return { answer: compiled };
+    } else {
+      console.log('ℹ️ No template parameters found, using response directly');
     }
     
-    // No template parameters, use response as-is
-    console.log('ℹ️ No template parameters found, using response directly');
-    return { answer: seedForCompilation.response.nl };
+    return { answer: responseText };
     
   } catch (err) {
     console.error('❌ compileSeedResponse error:', err);

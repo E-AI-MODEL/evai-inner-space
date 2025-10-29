@@ -21,6 +21,18 @@ De applicatie gebruikt een "easter egg" toegangsmechanisme:
  
 Dit mechanisme dient als een interactieve startknop voor de demo.
 
+## 🔒 Single-User Architecture
+
+EvAI Inner Space is ontworpen als een **single-user systeem**. Alle data (seeds, knowledge, decisions, chat history) wordt opgeslagen onder een vast systeem-gebruikers-ID (`00000000-0000-0000-0000-000000000001`).
+
+**Belangrijke kenmerken**:
+- ✅ **Geen authenticatie vereist**: Core functionaliteit werkt zonder login
+- ✅ **Gedeelde kennisbank**: Alle seeds en embeddings zijn systeem-breed beschikbaar
+- ✅ **Unified Memory**: Chat geschiedenis en beslissingen worden centraal opgeslagen
+- ⚠️ **Multi-tenancy**: Niet ondersteund in huidige versie (zie roadmap voor toekomstige ontwikkeling)
+
+**Gebruik in productie**: Deze architectuur is ideaal voor demo's, single-user therapeutische tools, of research prototypes. Voor multi-user deployments moet de architectuur worden aangepast om per-user isolatie te implementeren.
+
 ## 🛠️ Setup Instructies
 
 ### 1. Environment Variabelen
