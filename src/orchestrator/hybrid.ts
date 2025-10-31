@@ -10,6 +10,13 @@ import { suggestInterventions, getAllowedInterventions, checkContraIndications }
 import { supabase } from '@/integrations/supabase/client';
 import { extractContextParams } from '../utils/contextExtractor';
 
+// v20 EAA Framework Imports
+import { evaluateEAA, validateEAAForStrategy } from '../lib/eaaEvaluator';
+import { reflectOnHistory, storeReflectiveMemory } from '../lib/regisseurReflectie';
+import { evaluateTD, estimateAIContribution } from '../lib/tdMatrix';
+import { evaluateEAIRules, executeEAIAction, createEAIContext } from '../policy/eai.rules';
+import type { EAAProfile, TDScore, EAIRuleResult } from '@/types/eaa';
+
 export interface OrchestrationContext {
   userInput: string;
   rubric: {
@@ -30,6 +37,14 @@ export interface OrchestrationContext {
   consent: boolean;
   conversationHistory: any[];
   topEmotion?: string;
+  rubricAssessments?: Array<{
+    rubricId: string;
+    riskScore: number;
+    protectiveScore: number;
+    triggers?: string[];
+    confidenceLevel?: string;
+    reasoning?: string;
+  }>;
 }
 
 export interface OrchestrationResult {
@@ -59,8 +74,37 @@ export async function orchestrate(
   const startTime = Date.now();
   const auditLog: string[] = [];
   
-  auditLog.push(`🚀 EvAI v16 Orchestration started at ${new Date().toISOString()}`);
+  auditLog.push(`🚀 EvAI v20 Orchestration started at ${new Date().toISOString()}`);
   auditLog.push(`📝 Input: "${ctx.userInput.substring(0, 50)}..."`);
+  
+  // ============ LAYER 8: EAA EVALUATION (v20) ============
+  let eaaProfile: EAAProfile = { ownership: 0.5, autonomy: 0.5, agency: 0.5 };
+  try {
+    const rubricContext = ctx.rubricAssessments && ctx.rubricAssessments.length > 0 ? {
+      riskScore: ctx.rubricAssessments[0].riskScore,
+      protectiveScore: ctx.rubricAssessments[0].protectiveScore,
+      dominantPattern: ctx.rubricAssessments[0].rubricId
+    } : undefined;
+    
+    eaaProfile = evaluateEAA(ctx.userInput, rubricContext);
+    auditLog.push(`🧠 EAA Profile: O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
+  } catch (err) {
+    console.error('⚠️ EAA Evaluation failed:', err);
+    auditLog.push('⚠️ EAA Evaluation failed, using defaults');
+  }
+  
+  // ============ REGISSEUR REFLECTIE (v20) ============
+  let regisseurAdvice = { advice: 'geen precedent', reason: 'init', avgAgency: 0.5 };
+  try {
+    regisseurAdvice = await reflectOnHistory(ctx.userInput, supabase, {
+      similarityThreshold: 0.3,
+      maxResults: 5
+    });
+    auditLog.push(`💭 Regisseur: ${regisseurAdvice.advice} (avg_agency=${regisseurAdvice.avgAgency.toFixed(2)})`);
+  } catch (err) {
+    console.error('⚠️ Regisseur Reflection failed:', err);
+    auditLog.push('⚠️ Regisseur Reflection failed');
+  }
   
   try {
     // STAP 1: Analyze input complexity
@@ -103,6 +147,7 @@ export async function orchestrate(
     let emotion = emotionForInterventions;
     let confidence = policyDecision.confidence;
     let label: 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Interventie' | 'Fout' = 'Valideren';
+    let reasoning = policyDecision.reasoning;
     let processingPath: 'seed' | 'template' | 'llm' | 'crisis' | 'fast' = 'seed';
     let plan: any = null;
     let validated = true;
@@ -185,6 +230,76 @@ export async function orchestrate(
     }
 
     // STAP 6: Log decision for audit trail
+    // ============ TD-MATRIX EVALUATION (v20) ============
+    let tdScore: TDScore = { value: 0.5, flag: '🟢 TD_balanced', shouldBlock: false };
+    try {
+      const aiContribution = estimateAIContribution(answer);
+      tdScore = evaluateTD(aiContribution, eaaProfile.agency);
+      auditLog.push(`⚖️ TD-Matrix: ${tdScore.flag} (TD=${tdScore.value.toFixed(2)})`);
+      
+      if (tdScore.shouldBlock) {
+        auditLog.push(`🚨 TD-Matrix BLOCKS output: ${tdScore.reason}`);
+        answer = generateSafetyFallbackResponse();
+        emotion = 'onzekerheid';
+        label = 'Fout';
+        reasoning = `TD-Matrix blocked: ${tdScore.reason}`;
+      }
+    } catch (err) {
+      console.error('⚠️ TD-Matrix evaluation failed:', err);
+      auditLog.push('⚠️ TD-Matrix evaluation failed');
+    }
+    
+    // ============ E_AI RULES ENGINE (v20) ============
+    let eaiResult: EAIRuleResult = { triggered: false };
+    try {
+      const eaiContext = createEAIContext(
+        eaaProfile,
+        tdScore.value,
+        {
+          riskScore: ctx.rubricAssessments?.[0]?.riskScore,
+          protectiveScore: ctx.rubricAssessments?.[0]?.protectiveScore
+        }
+      );
+      
+      eaiResult = evaluateEAIRules(eaiContext);
+      
+      if (eaiResult.triggered && eaiResult.action) {
+        const shouldBlock = executeEAIAction(eaiResult.action, auditLog);
+        
+        if (shouldBlock) {
+          answer = generateSafetyFallbackResponse();
+          emotion = 'onzekerheid';
+          label = 'Fout';
+          reasoning = `E_AI rule ${eaiResult.ruleId} blocked output`;
+        }
+      }
+    } catch (err) {
+      console.error('⚠️ E_AI Rules evaluation failed:', err);
+      auditLog.push('⚠️ E_AI Rules evaluation failed');
+    }
+    
+    // ============ EAA STRATEGY VALIDATION (v20) ============
+    if (label) {
+      const eaaValidation = validateEAAForStrategy(eaaProfile, label);
+      if (!eaaValidation.valid) {
+        auditLog.push(`⚠️ EAA blocks strategy "${label}": ${eaaValidation.reason}`);
+        label = 'Reflectievraag';
+      }
+    }
+    
+    // ============ STORE REFLECTIVE MEMORY (v20) ============
+    try {
+      await storeReflectiveMemory(
+        supabase,
+        ctx.userInput,
+        answer,
+        eaaProfile,
+        label || 'Reflectievraag'
+      );
+    } catch (err) {
+      console.error('⚠️ Failed to store reflective memory:', err);
+    }
+    
     const processingTime = Date.now() - startTime;
     auditLog.push(`⏱️ Total processing time: ${processingTime}ms`);
     

@@ -51,6 +51,59 @@ graph TB
     style H fill:#a29bfe
 ```
 
+## 4. Ethische Laag (v20 EAA Framework)
+
+EVAI v20 introduceert een volledig uitlegbare ethische reflectielaag gebaseerd op het **EAA-framework**:
+
+### Layer 8: EAA & E_AI Integration
+
+```
+User Input
+    ↓
+[EAA Evaluator]         → Ownership, Autonomy, Agency
+    ↓
+[Regisseur Reflectie]   → Historical self-reflection
+    ↓
+[Policy + Semantic]     → Existing neurosymbolic layers
+    ↓
+[TD-Matrix]             → AI dominance monitoring
+    ↓
+[E_AI Rules Engine]     → Symbolic ethical validation
+    ↓
+Response (validated)
+```
+
+### Kernmodules
+
+| Module | Functie | Locatie |
+|--------|---------|---------|
+| **EAAEvaluator** | Meet ownership/autonomy/agency | `src/lib/eaaEvaluator.ts` |
+| **Regisseur** | Historische reflectie via vectorgeheugen | `src/lib/regisseurReflectie.ts` |
+| **TD-Matrix** | Monitort AI vs menselijke agency | `src/lib/tdMatrix.ts` |
+| **E_AI Rules** | Symbolische ethische regelset | `src/policy/eai.rules.ts` |
+
+### Ethische Validatie Flow
+
+1. **EAA Evaluatie**: Analyseert input op ownership/autonomy/agency
+2. **Regisseur Check**: Raadpleegt historische gedragspatronen
+3. **Strategy Validation**: Toetst gekozen strategie aan EAA-profiel
+4. **TD Monitoring**: Meet AI-contributie vs user agency (TD > 0.8 = block)
+5. **E_AI Rules**: Symbolische ethische regels (6 regels voor agency-bescherming)
+
+**Voorbeeld beslissing**:
+```
+Input: "Ik weet het echt niet meer, lukt allemaal niet"
+EAA: { ownership: 0.6, autonomy: 0.3, agency: 0.2 }
+Regisseur: "Lage agency in vergelijkbare gevallen"
+TD: 0.45 (balanced)
+E_AI: Rule_001 triggered (lage agency + potentiële overbelasting)
+→ Beslissing: Alleen reflectie, geen suggesties
+```
+
+Zie `docs/eaa-framework.md` voor details.
+
+## 5. Architectuurlagen
+
 ### Layer 1: Safety Check
 **Doel**: Detectie van harmful content vóór verwerking
 

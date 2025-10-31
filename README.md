@@ -33,6 +33,29 @@ EvAI Inner Space is ontworpen als een **single-user systeem**. Alle data (seeds,
 
 **Gebruik in productie**: Deze architectuur is ideaal voor demo's, single-user therapeutische tools, of research prototypes. Voor multi-user deployments moet de architectuur worden aangepast om per-user isolatie te implementeren.
 
+## 🧠 EAA Framework (v20)
+
+EVAI v20 is uitgebreid met een ethisch reflectiesysteem gebaseerd op het **EAA-framework** (Eigenaarschap, Autonomie, Agency). Dit systeem bewaakt de balans tussen AI-interventie en menselijke handelingsbekwaamheid.
+
+### Kerncomponenten
+
+1. **EAA Evaluator**: Meet ownership, autonomy en agency van gebruikersinput
+2. **Regisseur Reflectie**: Historische zelfreflectie via vector memories
+3. **TD-Matrix**: Monitort AI-dominance (Taakdichtheid > 0.8 = agency loss)
+4. **E_AI Rules Engine**: Symbolische ethische regelset (rules 001-006)
+
+### Gedragsvalidatie
+
+Elke AI-respons wordt geëvalueerd op:
+- ✅ **EAA-profiel**: Is de strategie passend bij gebruikers agency?
+- ⚖️ **TD-score**: Neemt AI niet te veel over?
+- 🔍 **E_AI rules**: Worden ethische principes nageleefd?
+- 💭 **Historische context**: Wat leerde het systeem uit eerdere interacties?
+
+**Voorbeeld**: Bij lage agency (gebruiker voelt "lukt niet") blokkeert het systeem sturende suggesties en kiest het voor reflectieve vragen.
+
+Zie `docs/eaa-framework.md` voor volledige documentatie.
+
 ## 🛠️ Setup Instructies
 
 ### 1. Environment Variabelen
