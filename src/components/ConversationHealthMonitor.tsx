@@ -14,9 +14,9 @@ export function ConversationHealthMonitor() {
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className="border-l-4 border-l-primary">
+      <Card className="border-l-4 border-l-primary bg-card">
         <CollapsibleTrigger asChild>
-          <CardContent className="p-3 cursor-pointer hover:bg-accent/50 transition-colors">
+          <CardContent className="p-3 cursor-pointer hover:bg-accent/50 transition-colors text-card-foreground">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Activity className="h-4 w-4 text-primary" />
@@ -30,7 +30,7 @@ export function ConversationHealthMonitor() {
         </CollapsibleTrigger>
         
         <CollapsibleContent>
-          <CardContent className="pt-0 px-3 pb-3 space-y-2">
+          <CardContent className="pt-0 px-3 pb-3 space-y-2 text-card-foreground">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1.5">
                 Browser ML
