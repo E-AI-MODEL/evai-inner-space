@@ -2,6 +2,7 @@
 import React, { forwardRef } from "react";
 import { Gem, CornerDownRight, ThumbsUp, ThumbsDown } from "lucide-react";
 import AITransparencyTooltip from "./AITransparencyTooltip";
+import { ContextualHelp } from "./ContextualHelp";
 
 interface ChatBubbleProps {
   id: string;

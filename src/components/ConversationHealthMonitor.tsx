@@ -5,6 +5,7 @@ import { ChevronDown, Activity } from 'lucide-react';
 import { useState } from 'react';
 import { useProcessingOrchestrator } from '@/hooks/useProcessingOrchestrator';
 import { useBrowserTransformerEngine } from '@/hooks/useBrowserTransformerEngine';
+import { ContextualHelp } from './ContextualHelp';
 
 export function ConversationHealthMonitor() {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,14 +32,20 @@ export function ConversationHealthMonitor() {
         <CollapsibleContent>
           <CardContent className="pt-0 px-3 pb-3 space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span>Browser ML</span>
+              <span className="flex items-center gap-1.5">
+                Browser ML
+                <ContextualHelp term="self-learning" className="ml-1" />
+              </span>
               <Badge variant={modelLoaded ? 'default' : 'secondary'}>
                 {modelLoaded ? `${device}` : 'Offline'}
               </Badge>
             </div>
             
             <div className="flex items-center justify-between text-xs">
-              <span>Knowledge Base</span>
+              <span className="flex items-center gap-1.5">
+                Knowledge Base
+                <ContextualHelp term="self-learning" className="ml-1" />
+              </span>
               <Badge variant={knowledgeStats.total > 0 ? 'default' : 'secondary'}>
                 {knowledgeStats.total} items
               </Badge>
