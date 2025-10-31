@@ -5,7 +5,7 @@
  */
 
 import { decideNextStep, Context as PolicyContext, explainDecision } from '../policy/decision.policy';
-import { validatePlan, validateResponse } from '../policy/validation.policy';
+import { validatePlan, validateResponse, validateEAACompliance } from '../policy/validation.policy';
 import { suggestInterventions, getAllowedInterventions, checkContraIndications } from '../semantics/graph';
 import { supabase } from '@/integrations/supabase/client';
 import { extractContextParams } from '../utils/contextExtractor';
@@ -541,7 +541,24 @@ async function compileSeedResponse(
       return { answer: generateEAAAwareFallback(eaaProfile, ctx.seed.emotion) };
     }
     
-    auditLog.push(`✅ Seed + LLM fusion complete`);
+    // STEP 3: Post-LLM EAA Compliance Validation
+    const validationResult = validateEAACompliance(
+      data.response,
+      eaaProfile,
+      allowedInterventions
+    );
+    
+    if (!validationResult.ok) {
+      console.warn('⚠️ Post-LLM validation failed:', validationResult.errors);
+      auditLog.push(`⚠️ Post-LLM validation failed: ${validationResult.errors.join(', ')}`);
+      return { answer: generateEAAAwareFallback(eaaProfile, ctx.seed.emotion) };
+    }
+    
+    if (validationResult.warnings.length > 0) {
+      auditLog.push(`⚠️ Post-LLM warnings: ${validationResult.warnings.join(', ')}`);
+    }
+    
+    auditLog.push(`✅ Seed + LLM fusion complete (validated)`);
     return { answer: data.response };
   } catch (err) {
     console.error('❌ Seed compilation error:', err);
