@@ -5,6 +5,7 @@ import { useUnifiedDecisionCore } from './useUnifiedDecisionCore';
 import { useEnhancedSeedGeneration } from './useEnhancedSeedGeneration';
 import { addAdvancedSeed } from '@/lib/advancedSeedStorage';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface SelfLearningOutcome {
   triggered: boolean;
@@ -70,6 +71,11 @@ export function useSelfLearningManager() {
       const newSeed = await generateEnhancedSeed(seedRequest, '');
       if (!newSeed) {
         // Log poging zonder resultaat
+        console.warn('⚠️ Self-learning: seed generation failed');
+        toast.warning('Self-learning seed generation failed', {
+          description: 'Could not generate new seed from this conversation'
+        });
+        
         try {
           await supabase.rpc('log_reflection_event', {
             p_trigger_type: correction ? 'correction' : (lowConfidence ? 'low_confidence' : 'novel_topic'),
@@ -83,7 +89,7 @@ export function useSelfLearningManager() {
             }
           });
         } catch (e) {
-          console.warn('⚠️ Self-learning: log_reflection_event (no seed) failed');
+          console.error('❌ Self-learning: log_reflection_event (no seed) failed:', e);
         }
         return { triggered: false };
       }
@@ -107,8 +113,15 @@ export function useSelfLearningManager() {
           p_new_seeds_generated: 1,
           p_learning_impact: Math.max(0.05, (result.confidence ?? 0.5) * 0.1)
         });
+        
+        toast.success('🌱 Self-learning activated', {
+          description: `New seed generated for ${newSeed.emotion}`
+        });
       } catch (e) {
-        console.warn('⚠️ Self-learning: log_reflection_event failed');
+        console.error('❌ Self-learning: log_reflection_event failed:', e);
+        toast.error('Failed to log self-learning event', {
+          description: 'Seed was created but logging failed'
+        });
       }
 
       console.log('🌱 Self-learning added seed (auto-embedded):', newSeed.id, newSeed.emotion, newSeed.label);

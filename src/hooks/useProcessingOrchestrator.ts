@@ -158,8 +158,6 @@ export function useProcessingOrchestrator() {
 
       // ============ v20 PRE-FILTER: EAA EVALUATION ============
       console.log('🧠 v20 Pre-Filter: EAA Evaluation starting...');
-      const eaaProfile: EAAProfile = evaluateEAA(userInput);
-      console.log(`🧠 EAA Profile: O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
       
       // ============ RUBRICS ASSESSMENT (EvAI 5.6) ============
       console.log('📊 Rubrics Assessment: Analyzing conversation context...');
@@ -170,19 +168,20 @@ export function useProcessingOrchestrator() {
         'balanced'
       );
       
-      // Update EAA with rubric context
-      const enhancedEAA = evaluateEAA(userInput, {
+      // Single EAA evaluation with rubric context (fix: was evaluated twice before)
+      const eaaProfile: EAAProfile = evaluateEAA(userInput, {
         riskScore: rubricResult.overallRisk / 100,
         protectiveScore: rubricResult.overallProtective / 100,
         dominantPattern: rubricResult.dominantPattern
       });
+      
+      console.log(`🧠 EAA Profile: O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
       
       console.log('📊 Rubrics result:', {
         risk: rubricResult.overallRisk,
         protective: rubricResult.overallProtective,
         pattern: rubricResult.dominantPattern
       });
-      console.log(`🧠 Enhanced EAA: O=${enhancedEAA.ownership.toFixed(2)} A=${enhancedEAA.autonomy.toFixed(2)} Ag=${enhancedEAA.agency.toFixed(2)}`);
       
       // 🎯 REGISSEUR BESLISSING 2: Is dit gesprek complex genoeg voor Strategic Briefing?
       const inputComplexity = userInput.trim().length;
@@ -413,12 +412,12 @@ export function useProcessingOrchestrator() {
           
           // Estimate AI contribution for generated seed
           const seedAIContribution = estimateAIContribution(newSeed.response.nl);
-          const seedTD = evaluateTD(seedAIContribution, enhancedEAA.agency);
+          const seedTD = evaluateTD(seedAIContribution, eaaProfile.agency);
           console.log(`⚖️ v20 TD-Matrix (Learning): ${seedTD.flag} (TD=${seedTD.value.toFixed(2)})`);
           
           // Check E_AI rules
           const eaiContext = createEAIContext(
-            enhancedEAA,
+            eaaProfile,
             seedTD.value,
             {
               riskScore: rubricResult.overallRisk / 100,
