@@ -322,6 +322,57 @@ export async function orchestrate(
       console.error('⚠️ Failed to store reflective memory:', err);
     }
     
+    // ============ NGBSE CHECK (v20) ============
+    const { performNGBSECheck } = await import('@/lib/ngbseEngine');
+    const rubricScores = ctx.rubric ? {
+      crisis: ctx.rubric.crisis || 0,
+      distress: ctx.rubric.distress || 0,
+      support: ctx.rubric.support || 0,
+      coping: ctx.rubric.coping || 0,
+    } : undefined;
+    
+    const ngbseResult = await performNGBSECheck({
+      userInput: ctx.userInput,
+      aiResponse: answer,
+      confidence,
+      emotion,
+      seedMatchCount: ctx.seed ? 1 : 0,
+      rubricScores,
+      conversationHistory: ctx.conversationHistory || [],
+      sessionId: 'session-' + Date.now(),
+    });
+    
+    if (ngbseResult.blindspots.length > 0) {
+      auditLog.push(`🔍 NGBSE: ${ngbseResult.blindspots.length} blindspot(s) detected`);
+      confidence = ngbseResult.adjustedConfidence;
+    }
+    
+    // ============ HITL CHECK (v20) ============
+    const { shouldTriggerHITL, triggerHITL } = await import('@/lib/hitlTriggers');
+    const hitlDecision = await shouldTriggerHITL({
+      crisisScore: ctx.rubric?.crisis || 0,
+      tdValue: tdMatrix?.TD || 0,
+      confidence,
+      emotion,
+      rubrics: ctx.rubric,
+      blindspots: ngbseResult.blindspots,
+    });
+    
+    if (hitlDecision.shouldTrigger) {
+      auditLog.push(`🚨 HITL triggered: ${hitlDecision.triggerType} (${hitlDecision.severity})`);
+      await triggerHITL(ctx.userInput, answer, hitlDecision, {
+        sessionId: 'session-' + Date.now(),
+        rubrics: ctx.rubric,
+        ngbseResult,
+      });
+      
+      if (hitlDecision.blockOutput) {
+        answer = "Dit bericht vereist menselijke review. Een specialist bekijkt je bericht zo snel mogelijk.";
+        confidence = 0.2;
+        label = 'Reflectievraag';
+      }
+    }
+    
     const processingTime = Date.now() - startTime;
     auditLog.push(`⏱️ Total processing time: ${processingTime}ms`);
     
@@ -359,6 +410,27 @@ export async function orchestrate(
   } catch (error) {
     console.error('🔴 Orchestration error:', error);
     auditLog.push(`❌ ERROR: ${error instanceof Error ? error.message : String(error)}`);
+    
+    // ============ AUTO-HEALING (v20) ============
+    const { attemptAutoHeal } = await import('./autoHealing');
+    const healingResult = await attemptAutoHeal(
+      {
+        error: error as Error,
+        sessionId: 'session-' + Date.now(),
+        userInput: ctx.userInput,
+        attemptNumber: 1,
+        conversationHistory: ctx.conversationHistory || [],
+      },
+      async () => orchestrate(ctx)
+    );
+    
+    if (healingResult.success) {
+      return healingResult.response;
+    }
+    
+    if (healingResult.escalateToHITL) {
+      auditLog.push('🚨 Auto-healing failed - escalating to HITL');
+    }
     
     return {
       answer: 'Het spijt me, er ging iets mis. Kun je het opnieuw proberen?',

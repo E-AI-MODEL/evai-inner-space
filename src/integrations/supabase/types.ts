@@ -71,6 +71,54 @@ export type Database = {
         }
         Relationships: []
       }
+      blindspot_logs: {
+        Row: {
+          ai_response: string
+          blindspot_type: string
+          confidence: number
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          recommendation: string | null
+          resolved: boolean
+          session_id: string | null
+          severity: string
+          user_id: string
+          user_input: string
+        }
+        Insert: {
+          ai_response: string
+          blindspot_type: string
+          confidence: number
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          recommendation?: string | null
+          resolved?: boolean
+          session_id?: string | null
+          severity: string
+          user_id?: string
+          user_input: string
+        }
+        Update: {
+          ai_response?: string
+          blindspot_type?: string
+          confidence?: number
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          recommendation?: string | null
+          resolved?: boolean
+          session_id?: string | null
+          severity?: string
+          user_id?: string
+          user_input?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           confidence: number | null
@@ -220,6 +268,134 @@ export type Database = {
         }
         Relationships: []
       }
+      healing_attempts: {
+        Row: {
+          attempt_number: number
+          context: Json | null
+          created_at: string
+          error_message: string | null
+          error_type: string
+          id: string
+          processing_time_ms: number | null
+          session_id: string | null
+          strategy: string
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          attempt_number?: number
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          error_type: string
+          id?: string
+          processing_time_ms?: number | null
+          session_id?: string | null
+          strategy: string
+          success: boolean
+          user_id?: string
+        }
+        Update: {
+          attempt_number?: number
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          error_type?: string
+          id?: string
+          processing_time_ms?: number | null
+          session_id?: string | null
+          strategy?: string
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hitl_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          queue_item_id: string | null
+          read: boolean
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          queue_item_id?: string | null
+          read?: boolean
+          severity: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          queue_item_id?: string | null
+          read?: boolean
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hitl_notifications_queue_item_id_fkey"
+            columns: ["queue_item_id"]
+            isOneToOne: false
+            referencedRelation: "hitl_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hitl_queue: {
+        Row: {
+          admin_response: string | null
+          ai_response: string
+          context: Json | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string
+          status: string
+          trigger_type: string
+          user_id: string
+          user_input: string
+        }
+        Insert: {
+          admin_response?: string | null
+          ai_response: string
+          context?: Json | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity: string
+          status?: string
+          trigger_type: string
+          user_id?: string
+          user_input: string
+        }
+        Update: {
+          admin_response?: string | null
+          ai_response?: string
+          context?: Json | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          status?: string
+          trigger_type?: string
+          user_id?: string
+          user_input?: string
+        }
+        Relationships: []
+      }
       learning_queue: {
         Row: {
           confidence: number | null
@@ -273,6 +449,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      processing_flow_events: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          node_name: string
+          processing_time_ms: number | null
+          session_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          node_name: string
+          processing_time_ms?: number | null
+          session_id: string
+          status: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          node_name?: string
+          processing_time_ms?: number | null
+          session_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
