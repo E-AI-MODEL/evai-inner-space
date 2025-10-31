@@ -52,14 +52,14 @@ const InputBar: React.FC<{
       <button
         type="submit"
         disabled={disabled || !value.trim()}
-        className={`rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors disabled:opacity-60 flex-shrink-0 ${
+        className={`rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-60 flex-shrink-0 ${
           isMobile 
             ? 'ml-1 p-2' 
             : 'ml-1 p-2'
         }`}
         aria-label="Verzenden"
       >
-        <Send size={18} className="text-blue-700" />
+        <Send size={18} className="text-primary" />
       </button>
     </form>
   );

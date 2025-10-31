@@ -23,7 +23,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user] = useState<User>(ANONYMOUS_SUPER_USER);
   const [loading, setLoading] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    return sessionStorage.getItem('evai-session-authorized') === 'true';
+  });
   const [isAdminAuthorized, setIsAdminAuthorized] = useState(() => {
     return sessionStorage.getItem('evai-admin-authorized') === 'true';
   });

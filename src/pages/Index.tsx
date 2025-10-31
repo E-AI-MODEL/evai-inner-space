@@ -159,7 +159,7 @@ const Index = () => {
             </div>
 
             {/* Fixed Input Bar */}
-            <div className={`flex-shrink-0 border-t border-zinc-200 bg-white ${isMobile ? 'pb-safe' : ''}`}>
+            <div className={`flex-shrink-0 border-t border-border bg-background ${isMobile ? 'pb-safe' : ''}`}>
               <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full px-2' : 'max-w-2xl px-4'}`}>
                 <InputBar
                   value={input}
