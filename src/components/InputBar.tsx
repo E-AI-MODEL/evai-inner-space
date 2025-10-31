@@ -23,7 +23,7 @@ const InputBar: React.FC<{
 
   return (
     <form
-      className={`flex gap-3 items-end bg-white shadow-card rounded-xl border border-zinc-200 mx-auto w-full ${
+      className={`flex gap-3 items-end bg-background shadow-card rounded-xl border border-border mx-auto w-full ${
         isMobile 
           ? 'px-2 py-2 my-2' 
           : 'px-3 py-2 my-3'

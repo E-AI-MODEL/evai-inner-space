@@ -48,10 +48,10 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
 }, ref) => {
   const bubbleStyles =
     from === "user"
-      ? "bg-white text-zinc-800 border border-zinc-200"
+      ? "bg-background text-foreground border border-border"
       : accentColor
       ? ""
-      : "bg-zinc-100 text-zinc-800";
+      : "bg-muted text-foreground";
 
   // Extract gap analysis from meta if it's an object
   const gapAnalysis = typeof meta === 'object' && meta && 'gapAnalysis' in meta 
@@ -104,11 +104,11 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
             ${from === "ai"
               ? accentColor
                 ? ""
-                : "bg-zinc-100"
-              : "bg-white"
+                : "bg-muted"
+              : "bg-background"
             }
             ${bubbleStyles}
-            ${brilliant ? "ring-2 ring-blue-200 ring-offset-2 shadow-lg" : ""}
+            ${brilliant ? "ring-2 ring-primary/20 ring-offset-2 shadow-lg" : ""}
             ${isFocused ? "ring-2 ring-yellow-400 ring-offset-2" : ""}
             ${from === "ai" && animate ? "animate-pulse-accent" : ""}
           `}
@@ -124,18 +124,18 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
           {/* Feedback Toggle */}
           {from === 'ai' && onFeedback && (
             <div className="absolute -bottom-3 -right-2 flex items-center gap-2">
-              <div className="flex items-center bg-white border border-zinc-200 rounded-full shadow-sm p-0.5">
+              <div className="flex items-center bg-background border border-border rounded-full shadow-sm p-0.5">
                 <button
                   onClick={() => onFeedback('like')}
-                  className={`p-1 rounded-full transition-colors ${feedback === 'like' ? 'bg-green-100 text-green-600' : 'text-zinc-500 hover:bg-green-50'}`}
+                  className={`p-1 rounded-full transition-colors ${feedback === 'like' ? 'bg-green-100 text-green-600' : 'text-muted-foreground hover:bg-accent'}`}
                   aria-label="Antwoord is nuttig"
                 >
                   <ThumbsUp size={14} />
                 </button>
-                <div className="w-px h-4 bg-zinc-200 mx-0.5" />
+                <div className="w-px h-4 bg-border mx-0.5" />
                 <button
                   onClick={() => onFeedback('dislike')}
-                  className={`p-1 rounded-full transition-colors ${feedback === 'dislike' ? 'bg-red-100 text-red-600' : 'text-zinc-500 hover:bg-red-50'}`}
+                  className={`p-1 rounded-full transition-colors ${feedback === 'dislike' ? 'bg-red-100 text-red-600' : 'text-muted-foreground hover:bg-accent'}`}
                   aria-label="Antwoord is niet nuttig"
                 >
                   <ThumbsDown size={14} />
