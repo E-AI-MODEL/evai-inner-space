@@ -27,12 +27,17 @@ import { supabase } from '../integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { ANONYMOUS_SUPER_USER, useAuth } from '../hooks/useAuth';
 import AdminAuth from '@/components/admin/AdminAuth';
+import { HITLQueue } from '@/components/admin/HITLQueue';
+import { NGBSEPanel } from '@/components/admin/NGBSEPanel';
+import { HealingMetrics } from '@/components/admin/HealingMetrics';
+import { LiveFlowDiagram } from '@/components/admin/LiveFlowDiagram';
+import { MasterFlowStatus } from '@/components/admin/MasterFlowStatus';
 import { LogOut, Trash2, Shield, Brain, FileText, Activity } from 'lucide-react';
 import { getAuditStats, getDecisionLogs } from '@/services/AuditService';
 
 const AdminDashboard = () => {
   const { isAdminAuthorized, authorizeAdmin, logoutAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState<'autonomy' | 'seeds' | 'settings'>('autonomy');
+  const [activeTab, setActiveTab] = useState<'autonomy' | 'seeds' | 'settings' | 'hitl' | 'ngbse' | 'healing'>('autonomy');
   const [isConsolidating, setIsConsolidating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -236,8 +241,6 @@ const AdminDashboard = () => {
                   ]}
                 />
               </Section>
-
-              {/* 2. NEURALE SAMENWERKING */}
               <Section 
                 title="🧠 Neurale Samenwerking" 
                 subtitle="LLM wordt alleen ingezet voor creatieve planning binnen constraints"
@@ -356,6 +359,44 @@ const AdminDashboard = () => {
             {/* SETTINGS TAB */}
             <TabsContent value="settings" className="space-y-4">
               <ConfigurationPanel />
+            </TabsContent>
+
+            {/* HITL TAB */}
+            <TabsContent value="hitl" className="space-y-4">
+              <Section 
+                title="🚨 Human-In-The-Loop Queue" 
+                subtitle="Menselijke review voor kritieke situaties"
+                variant="audit"
+              >
+                <HITLQueue />
+              </Section>
+            </TabsContent>
+
+            {/* NGBSE TAB */}
+            <TabsContent value="ngbse" className="space-y-4">
+              <Section 
+                title="🔍 NGBSE - Blind Spot Detection" 
+                subtitle="AI blinde vlekken en aannames detector"
+                variant="neural"
+              >
+                <NGBSEPanel />
+              </Section>
+            </TabsContent>
+
+            {/* HEALING TAB */}
+            <TabsContent value="healing" className="space-y-4">
+              <Section 
+                title="🔧 Auto-Healing Metrics" 
+                subtitle="Automatisch foutenherst el monitoring"
+                variant="audit"
+              >
+                <HealingMetrics />
+              </Section>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <LiveFlowDiagram />
+                <MasterFlowStatus />
+              </div>
             </TabsContent>
           </Tabs>
         </main>

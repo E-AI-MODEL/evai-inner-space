@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, BarChart3, Database, Settings, Zap, Cpu } from 'lucide-react';
+import { User, BarChart3, Database, Settings, Zap, Cpu, AlertOctagon, Eye, Wrench } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -11,17 +11,22 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
 
+type ActiveTab = 'autonomy' | 'seeds' | 'settings' | 'hitl' | 'ngbse' | 'healing';
+
 interface AdminSidebarProps {
-  active: 'autonomy' | 'seeds' | 'settings';
-  onChange: (value: AdminSidebarProps['active']) => void;
+  active: ActiveTab;
+  onChange: (value: ActiveTab) => void;
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ active, onChange }) => {
-  const items = [
+  const items: { key: ActiveTab; label: string; icon: typeof Zap }[] = [
     { key: 'autonomy', label: 'Autonomous', icon: Zap },
     { key: 'seeds', label: 'Knowledge', icon: Database },
+    { key: 'hitl', label: 'HITL Queue', icon: AlertOctagon },
+    { key: 'ngbse', label: 'Blindspots', icon: Eye },
+    { key: 'healing', label: 'Auto-Heal', icon: Wrench },
     { key: 'settings', label: 'Settings', icon: Settings },
-  ] as const;
+  ];
 
   return (
     <Sidebar collapsible="icon">
@@ -33,11 +38,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ active, onChange }) => {
               {items.map((item) => (
                 <SidebarMenuItem key={item.key}>
                   <SidebarMenuButton
-                    isActive={active === item.key}
                     onClick={() => onChange(item.key)}
-                    tooltip={item.label}
+                    isActive={active === item.key}
                   >
-                    <item.icon />
+                    <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

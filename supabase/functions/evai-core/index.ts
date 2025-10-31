@@ -1,6 +1,6 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { handleBiasCheck } from "./llm-generator.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -95,8 +95,13 @@ serve(async (req) => {
       return await handleGenerateResponse(body);
     }
 
+    // OPERATION: bias-check (NGBSE)
+    if (operation === "bias-check") {
+      return await handleBiasCheck(body, OPENAI_PRIMARY!, corsHeaders);
+    }
+
     return new Response(
-      JSON.stringify({ ok: false, error: "Unknown operation. Use: chat, embedding, batch-embed, safety, or generate-response" }),
+      JSON.stringify({ ok: false, error: "Unknown operation. Use: chat, embedding, batch-embed, safety, generate-response, or bias-check" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

@@ -351,7 +351,7 @@ export async function orchestrate(
     const { shouldTriggerHITL, triggerHITL } = await import('@/lib/hitlTriggers');
     const hitlDecision = await shouldTriggerHITL({
       crisisScore: ctx.rubric?.crisis || 0,
-      tdValue: tdMatrix?.TD || 0,
+      tdValue: tdScore?.value || 0,
       confidence,
       emotion,
       rubrics: ctx.rubric,
