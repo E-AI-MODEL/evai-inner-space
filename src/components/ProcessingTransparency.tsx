@@ -48,8 +48,9 @@ export const ProcessingTransparency: React.FC<ProcessingTransparencyProps> = ({
       )}
       
       {explainText && (
-        <div className="text-xs border-l-2 border-muted pl-2 py-1">
-          {explainText}
+        <div className="text-xs border-l-2 border-primary/30 pl-3 py-2 bg-muted/30 rounded-r animate-fade-in" style={{ animationDelay: '0.5s', animationFillMode: 'backwards' }}>
+          <span className="font-medium text-foreground">Redenering:</span>
+          <p className="mt-1 text-muted-foreground leading-relaxed">{explainText}</p>
         </div>
       )}
     </div>

@@ -60,7 +60,7 @@ const AITransparencyTooltip: React.FC<AITransparencyTooltipProps> = ({
         </button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-80 p-4 bg-popover text-popover-foreground border border-border shadow-lg z-50" 
+        className="w-80 p-4 bg-card text-card-foreground border border-border shadow-lg z-50" 
         side="top" 
         align="start"
         sideOffset={8}

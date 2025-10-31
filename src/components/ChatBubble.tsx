@@ -23,10 +23,10 @@ interface ChatBubbleProps {
 }
 
 const LABEL_CLASSES = {
-  Valideren: "bg-blue-100 text-blue-900",
-  Reflectievraag: "bg-green-100 text-green-900",
-  Suggestie: "bg-purple-100 text-purple-800",
-  Fout: "bg-red-100 text-red-900",
+  Valideren: "bg-blue-500/10 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",
+  Reflectievraag: "bg-green-500/10 text-green-700 dark:bg-green-500/20 dark:text-green-400",
+  Suggestie: "bg-purple-500/10 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400",
+  Fout: "bg-destructive/10 text-destructive dark:bg-destructive/20",
 };
 
 const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({ 
@@ -69,7 +69,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
       {from === "ai" && label && (
         <div className="mb-0.5 ml-2 flex items-center">
           <span
-            className={`px-2 py-0.5 rounded-full text-xs font-medium tracking-wide opacity-80 ${LABEL_CLASSES[label] ?? "bg-zinc-100 text-zinc-600"}`}
+            className={`px-2 py-0.5 rounded-full text-xs font-medium tracking-wide opacity-80 ${LABEL_CLASSES[label] ?? "bg-muted text-muted-foreground"}`}
           >
             {label}
           </span>
@@ -85,13 +85,13 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
         {/* Brilliant/diamond sparkle */}
         {brilliant && (
           <span className="absolute -left-6 -top-2 z-10 animate-fade-in pointer-events-none">
-            <Gem size={22} className="text-blue-400 drop-shadow-brilliant" />
+            <Gem size={22} className="text-primary drop-shadow-brilliant" />
           </span>
         )}
         
         {/* Quoted reply */}
         {from === 'ai' && repliedToContent && (
-          <div className="flex items-center gap-2 text-xs italic opacity-70 text-zinc-600 mb-1.5 ml-2">
+          <div className="flex items-center gap-2 text-xs italic opacity-70 text-muted-foreground mb-1.5 ml-2">
             <CornerDownRight size={14} className="flex-shrink-0" />
             <p className="truncate">
               {repliedToContent}
@@ -127,7 +127,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
               <div className="flex items-center bg-background border border-border rounded-full shadow-sm p-0.5">
                 <button
                   onClick={() => onFeedback('like')}
-                  className={`p-1 rounded-full transition-colors ${feedback === 'like' ? 'bg-green-100 text-green-600' : 'text-muted-foreground hover:bg-accent'}`}
+                  className={`p-1 rounded-full transition-colors ${feedback === 'like' ? 'bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400' : 'text-muted-foreground hover:bg-accent'}`}
                   aria-label="Antwoord is nuttig"
                 >
                   <ThumbsUp size={14} />
@@ -135,7 +135,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
                 <div className="w-px h-4 bg-border mx-0.5" />
                 <button
                   onClick={() => onFeedback('dislike')}
-                  className={`p-1 rounded-full transition-colors ${feedback === 'dislike' ? 'bg-red-100 text-red-600' : 'text-muted-foreground hover:bg-accent'}`}
+                  className={`p-1 rounded-full transition-colors ${feedback === 'dislike' ? 'bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400' : 'text-muted-foreground hover:bg-accent'}`}
                   aria-label="Antwoord is niet nuttig"
                 >
                   <ThumbsDown size={14} />
