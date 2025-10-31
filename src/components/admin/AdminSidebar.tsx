@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, BarChart3, Database, Settings, Zap, Cpu, AlertOctagon, Eye, Wrench } from 'lucide-react';
+import { Database, Settings, Activity, AlertOctagon } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
 
-type ActiveTab = 'autonomy' | 'seeds' | 'settings' | 'hitl' | 'ngbse' | 'healing';
+type ActiveTab = 'masterflow' | 'knowledge' | 'hitl' | 'settings';
 
 interface AdminSidebarProps {
   active: ActiveTab;
@@ -19,12 +19,10 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ active, onChange }) => {
-  const items: { key: ActiveTab; label: string; icon: typeof Zap }[] = [
-    { key: 'autonomy', label: 'Autonomous', icon: Zap },
-    { key: 'seeds', label: 'Knowledge', icon: Database },
-    { key: 'hitl', label: 'HITL Queue', icon: AlertOctagon },
-    { key: 'ngbse', label: 'Blindspots', icon: Eye },
-    { key: 'healing', label: 'Auto-Heal', icon: Wrench },
+  const items: { key: ActiveTab; label: string; icon: typeof Activity }[] = [
+    { key: 'masterflow', label: 'MasterFlow', icon: Activity },
+    { key: 'knowledge', label: 'Knowledge', icon: Database },
+    { key: 'hitl', label: 'HITL', icon: AlertOctagon },
     { key: 'settings', label: 'Settings', icon: Settings },
   ];
 
