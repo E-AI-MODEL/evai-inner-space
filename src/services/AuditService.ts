@@ -60,11 +60,11 @@ export async function getAuditStats(userId: string, limit = 100): Promise<AuditS
 
     // Extract v16 metadata from hybrid_decision
     const decisionsWithMeta = decisions?.map(d => {
-      const hybridDecision = d.hybrid_decision as any;
+      const hybridDecision = d.hybrid_decision as Record<string, unknown> | null;
       return {
         ...d,
-        processingPath: hybridDecision?.metadata?.processingPath || 'unknown',
-        outcome: hybridDecision?.outcome || 'OK',
+        processingPath: (hybridDecision as { metadata?: { processingPath?: string } })?.metadata?.processingPath || 'unknown',
+        outcome: (hybridDecision as { outcome?: string })?.outcome || 'OK',
       };
     }) || [];
 
@@ -133,18 +133,18 @@ export async function getDecisionLogs(userId: string, limit = 50): Promise<Decis
     if (error) throw error;
 
     return (decisions || []).map(d => {
-      const hybridDecision = d.hybrid_decision as any;
-      const metadata = hybridDecision?.metadata || {};
+      const hybridDecision = d.hybrid_decision as Record<string, unknown> | null;
+      const metadata = (hybridDecision as { metadata?: Record<string, unknown> })?.metadata || {};
       
       return {
         id: d.id,
         userInput: d.user_input || '',
         finalResponse: d.final_response || '',
         outcome: (metadata.outcome || 'OK') as 'OK' | 'BLOCKED',
-        processingPath: metadata.processingPath || 'unknown',
+        processingPath: String(metadata.processingPath || 'unknown'),
         processingTime: d.processing_time_ms || 0,
-        validated: metadata.validated,
-        constraintsOK: metadata.constraintsOK,
+        validated: Boolean(metadata.validated),
+        constraintsOK: Boolean(metadata.constraintsOK),
         createdAt: d.created_at,
         auditLog: metadata.auditLog ? (Array.isArray(metadata.auditLog) ? metadata.auditLog : []) : []
       };

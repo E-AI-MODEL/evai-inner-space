@@ -1,6 +1,7 @@
 
 import { useCallback, useState } from 'react';
 import { UnifiedResponse, ChatHistoryItem } from '../types';
+import { SeedGenerationRequest } from '../types/openAISeedGenerator';
 import { useUnifiedDecisionCore } from './useUnifiedDecisionCore';
 import { useEnhancedSeedGeneration } from './useEnhancedSeedGeneration';
 import { addAdvancedSeed } from '@/lib/advancedSeedStorage';
@@ -61,12 +62,12 @@ export function useSelfLearningManager() {
 
       // 3) Genereer verbeterde/nieuwe seed (diversificatie)
       const conversationHistory = (history || []).slice(-6).map(h => h.content);
-      const seedRequest = {
+      const seedRequest: SeedGenerationRequest = {
         emotion: result.emotion || 'neutral',
         context: userInput.slice(0, 240),
         severity,
         conversationHistory
-      } as any; // Gebruik het exacte type uit useEnhancedSeedGeneration
+      };
 
       const newSeed = await generateEnhancedSeed(seedRequest, '');
       if (!newSeed) {

@@ -32,12 +32,12 @@ export const useHealthCheck = () => {
           body: { operation: 'test-openai-key', apiKey: 'server-key-test' }
         });
         if (error) throw error;
-        const ok = (data as any)?.ok === true;
+        const ok = (data as { ok?: boolean })?.ok === true;
         tests.push({
           component: 'OpenAI API 1',
           status: ok ? 'success' : 'error',
           message: ok ? 'Key actief (server)' : 'Key ontbreekt of ongeldig',
-          details: ok ? `Model: ${(data as any)?.model || 'gpt-4o-mini'}` : undefined
+          details: ok ? `Model: ${(data as { model?: string })?.model || 'gpt-4o-mini'}` : undefined
         });
       } catch (error) {
         tests.push({

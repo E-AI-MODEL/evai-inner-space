@@ -126,7 +126,10 @@ const AdminDashboard = () => {
 
       result += '🌐 NETWORK:\n';
       result += `• Online: ${navigator.onLine ? '✅' : '❌'}\n`;
-      result += `• Connection: ${(navigator as any).connection?.effectiveType || 'unknown'}\n\n`;
+      
+      // TypeScript doesn't know about navigator.connection
+      const nav = navigator as Navigator & { connection?: { effectiveType?: string } };
+      result += `• Connection: ${nav.connection?.effectiveType || 'unknown'}\n\n`;
       result += '✅ Diagnostics completed!';
 
     } catch (error) {
@@ -188,7 +191,7 @@ const AdminDashboard = () => {
           </div>
 
           {/* Main Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="autonomy">Intelligence Overview</TabsTrigger>
               <TabsTrigger value="seeds">Seed Management</TabsTrigger>

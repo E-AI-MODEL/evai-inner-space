@@ -11,15 +11,25 @@ import { useState, useCallback, useRef } from 'react';
 import { pipeline, env } from '@huggingface/transformers';
 import { normalizeEmotion, isValidEmotion, type ValidEmotion } from '@/utils/seedValidator';
 
+// Extend Navigator interface for deviceMemory
+declare global {
+  interface Navigator {
+    deviceMemory?: number;
+  }
+}
+
 // Configure transformers.js
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
 const MODEL_NAME = 'Xenova/bert-base-multilingual-uncased-sentiment';
 
+type DeviceType = 'webgpu' | 'wasm';
+
 // ============ MODULE-LEVEL STATE (Persistent across component mounts) ============
-const pipelineRef = { current: null as any };
-let globalDevice: 'webgpu' | 'wasm' | null = localStorage.getItem('browserML-device') as any || null;
+// Note: Using `any` for pipeline type due to transformers.js type complexity (TS2590)
+const pipelineRef: { current: any } = { current: null };
+let globalDevice: DeviceType | null = (localStorage.getItem('browserML-device') as DeviceType | null) || null;
 let globalModelLoaded = localStorage.getItem('browserML-loaded') === 'true';
 let isInitializing = false;
 
@@ -63,8 +73,9 @@ export function useBrowserTransformerEngine() {
 
   /**
    * Initialize the ML pipeline (lazy loading)
+   * Returns the pipeline instance or null if initialization fails
    */
-  const initPipeline = useCallback(async (): Promise<any> => {
+  const initPipeline = useCallback(async () => {
     if (pipelineRef.current) return pipelineRef.current;
     if (isInitializing) {
       // Wait for ongoing initialization
@@ -81,7 +92,7 @@ export function useBrowserTransformerEngine() {
       console.log('📊 Browser info:', {
         userAgent: navigator.userAgent,
         hardwareConcurrency: navigator.hardwareConcurrency,
-        deviceMemory: (navigator as any).deviceMemory || 'unknown',
+        deviceMemory: navigator.deviceMemory || 'unknown',
         webGPU: 'gpu' in navigator ? 'available' : 'not available'
       });
       
@@ -90,9 +101,9 @@ export function useBrowserTransformerEngine() {
         console.log('🔄 Attempting WebGPU initialization...');
         setLoadingProgress(10);
         
-        const webgpuPipe: any = await pipeline('text-classification', MODEL_NAME, {
+        const webgpuPipe = await pipeline('text-classification', MODEL_NAME, {
           device: 'webgpu',
-          progress_callback: (progress: any) => {
+          progress_callback: (progress: { progress?: number; status?: string }) => {
             const now = Date.now();
             if (progress.progress && now - lastProgressUpdate.current > 500) {
               console.log('📥 Model download progress:', progress);
@@ -218,7 +229,8 @@ export function useBrowserTransformerEngine() {
 
       console.log(`🔍 Browser Transformer: Analyzing "${text.substring(0, 50)}..."`);
       
-      const results = await pipe(text, { top_k: 5 }) as any;
+      type PipelineResult = Array<{ label: string; score: number }>;
+      const results = await pipe(text, { top_k: 5 }) as PipelineResult;
       const inferenceTime = performance.now() - startTime;
 
       if (!results || results.length === 0) {

@@ -120,7 +120,7 @@ Focus op Nederlandse therapeutische context met empathie en begrip.`;
         throw new Error(error.message || 'OpenAI chat via edge function failed');
       }
 
-      const content = (data as any)?.content as string | undefined;
+      const content = (data as { content?: string })?.content;
       if (!content) {
         console.error('❌ No content received from edge function', data);
         throw new Error('No content received from OpenAI (edge)');

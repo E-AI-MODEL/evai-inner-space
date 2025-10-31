@@ -56,7 +56,7 @@ export function useEnhancedSeedGeneration() {
     if (context) {
       const contextLower = context.toLowerCase();
       for (const [hint, type] of Object.entries(contextHints)) {
-        if (contextLower.includes(hint) && preferredTypes.includes(type as any)) {
+        if (contextLower.includes(hint) && preferredTypes.includes(type as AdvancedSeed['type'])) {
           selectedType = type as AdvancedSeed['type'];
           break;
         }

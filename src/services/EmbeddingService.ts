@@ -159,7 +159,12 @@ export class EmbeddingService {
           continue;
         }
 
-        const payload = data as any;
+        const payload = data as { 
+          ok?: boolean; 
+          error?: string;
+          results?: Array<{ id: string; embedding: number[] }>;
+          errors?: Array<unknown>;
+        };
         if (!payload?.ok) {
           console.error(`❌ Batch ${currentBatch} returned not-ok:`, payload?.error);
           failCount += batch.length;

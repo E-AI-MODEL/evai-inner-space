@@ -43,7 +43,7 @@ export function useSystemConnectivity() {
       if (error) {
         openai1 = 'missing';
       } else {
-        const ok = (data as any)?.ok === true;
+        const ok = (data as { ok?: boolean })?.ok === true;
         openai1 = ok ? 'configured' : 'missing';
       }
     } catch {
@@ -63,7 +63,7 @@ export function useSystemConnectivity() {
       if (error) {
         vector = 'missing';
       } else {
-        vector = (data as any)?.embedding ? 'configured' : 'missing';
+        vector = (data as { embedding?: unknown })?.embedding ? 'configured' : 'missing';
       }
     } catch {
       vector = 'missing';

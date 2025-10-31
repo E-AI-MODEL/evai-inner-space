@@ -1,4 +1,4 @@
-import { Message } from '../types';
+import { Message, MessageMeta } from '../types';
 import { supabase } from '@/integrations/supabase/client';
 
 const CURRENT_SESSION_KEY = 'evai-current-session-id';
@@ -25,18 +25,18 @@ export const loadChatHistory = async (): Promise<Message[]> => {
 
     if (error) throw error;
 
-    return (data ?? []).map(msg => ({
+    return (data ?? []).map((msg) => ({
       id: msg.message_id,
       from: msg.from_role as 'user' | 'ai',
-      label: msg.label as any,
+      label: msg.label as Message['label'],
       content: msg.content,
       emotionSeed: msg.emotion_seed_id || null,
       animate: msg.from_role === 'ai',
       timestamp: new Date(msg.created_at),
-      feedback: msg.feedback as any,
+      feedback: (typeof msg.feedback === 'string' ? msg.feedback : null) as Message['feedback'],
       confidence: msg.confidence ?? undefined,
-      explainText: (msg.meta as any)?.explainText,
-      meta: (msg.meta as any)?.meta
+      explainText: (msg.meta as MessageMeta | null)?.explainText,
+      meta: msg.meta as MessageMeta | undefined
     }));
   } catch (error) {
     console.error('Failed to load chat history from database:', error);
@@ -55,12 +55,12 @@ export const saveChatMessage = async (message: Message): Promise<void> => {
       content: message.content,
       emotion_seed_id: message.emotionSeed || null,
       label: message.label,
-      feedback: message.feedback as any,
+      feedback: message.feedback,
       confidence: message.confidence ?? null,
-      meta: {
+      meta: message.meta ? {
         explainText: message.explainText,
-        meta: message.meta
-      }
+        ...message.meta
+      } : null
     });
 
     if (error) throw error;
@@ -80,18 +80,18 @@ export const loadRecentMessages = async (limit: number = 100): Promise<Message[]
 
     if (error) throw error;
 
-    return (data ?? []).map(msg => ({
+    return (data ?? []).map((msg) => ({
       id: msg.message_id,
       from: msg.from_role as 'user' | 'ai',
-      label: msg.label as any,
+      label: msg.label as Message['label'],
       content: msg.content,
       emotionSeed: msg.emotion_seed_id || null,
       animate: false,
       timestamp: new Date(msg.created_at),
-      feedback: msg.feedback as any,
+      feedback: (typeof msg.feedback === 'string' ? msg.feedback : null) as Message['feedback'],
       confidence: msg.confidence ?? undefined,
-      explainText: (msg.meta as any)?.explainText,
-      meta: (msg.meta as any)?.meta
+      explainText: (msg.meta as MessageMeta | null)?.explainText,
+      meta: msg.meta as MessageMeta | undefined
     }));
   } catch (error) {
     console.error('Failed to load recent messages:', error);

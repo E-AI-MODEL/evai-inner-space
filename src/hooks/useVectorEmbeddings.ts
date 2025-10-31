@@ -45,7 +45,7 @@ export function useVectorEmbeddings() {
         return [];
       }
 
-      const queryEmbedding = (data as any)?.embedding;
+      const queryEmbedding = (data as { embedding?: number[] })?.embedding;
       if (!queryEmbedding) {
         console.error('❌ No embedding returned from edge function');
         toast.error('Vector embedding generatie gefaald', {
@@ -56,7 +56,7 @@ export function useVectorEmbeddings() {
 
       // Search similar embeddings using Supabase function
       const { data: results, error: rpcError } = await supabase.rpc('find_similar_embeddings', {
-        query_embedding: `[${(queryEmbedding as number[]).join(',')}]`,
+        query_embedding: `[${queryEmbedding.join(',')}]`,
         similarity_threshold: threshold,
         max_results: maxResults
       });
@@ -108,7 +108,7 @@ export function useVectorEmbeddings() {
             continue;
           }
 
-          const embedding = (data as any)?.embedding;
+          const embedding = (data as { embedding?: number[] })?.embedding;
           if (!embedding) {
             console.error('❌ No embedding returned for seed:', seed.id);
             toast.error('Geen embedding ontvangen voor seed', {

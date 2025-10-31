@@ -25,10 +25,17 @@ export async function checkPromptSafety(input: string): Promise<SafetyResult> {
       return { ok: false, decision: 'allow', score: 0, flags: [], error: error.message };
     }
 
-    const result = data as any;
+    const result = data as { 
+      ok?: boolean; 
+      decision?: SafetyDecision; 
+      score?: number; 
+      flags?: string[]; 
+      reasons?: string[];
+      error?: string;
+    };
     return {
       ok: !!result?.ok,
-      decision: (result?.decision as SafetyDecision) || 'allow',
+      decision: result?.decision || 'allow',
       score: typeof result?.score === 'number' ? result.score : 0,
       flags: Array.isArray(result?.flags) ? result.flags : [],
       reasons: Array.isArray(result?.reasons) ? result.reasons : []

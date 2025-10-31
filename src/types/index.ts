@@ -2,6 +2,15 @@
 export interface ChatHistoryItem {
   role: 'user' | 'assistant';
   content: string;
+  timestamp?: Date;
+}
+
+export interface MessageMeta {
+  explainText?: string;
+  processingPath?: string;
+  totalProcessingTime?: number;
+  componentsUsed?: string[];
+  [key: string]: unknown;
 }
 
 export interface Message {
@@ -21,7 +30,7 @@ export interface Message {
   explainText?: string;
   feedback?: 'like' | 'dislike' | null;
   animate?: boolean;
-  meta?: any;
+  meta?: MessageMeta;
   symbolicInferences?: string[];
   secondaryInsights?: string[];
 }

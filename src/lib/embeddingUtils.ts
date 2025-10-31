@@ -17,7 +17,7 @@ export async function generateEmbedding(text: string, apiKey: string): Promise<n
       throw new Error(`Embedding edge error: ${error.message}`);
     }
 
-    const embedding = (data as any)?.embedding as number[] | undefined;
+    const embedding = (data as { embedding?: number[] })?.embedding;
     if (!embedding) {
       throw new Error('No embedding returned from edge function');
     }

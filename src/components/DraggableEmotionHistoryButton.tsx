@@ -21,8 +21,8 @@ const DraggableEmotionHistoryButton = React.forwardRef<HTMLButtonElement, Dragga
     internalRef.current = node as HTMLButtonElement | null;
     if (typeof ref === 'function') {
       ref(node);
-    } else if (ref && 'current' in (ref as any)) {
-      (ref as any).current = node;
+    } else if (ref && 'current' in ref) {
+      (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node;
     }
   }, [ref]);
 

@@ -294,7 +294,7 @@ export function useProcessingOrchestrator() {
               content: hybridResult.answer,
               emotion: hybridResult.emotion,
               confidence: hybridResult.confidence,
-              label: hybridResult.label as any,
+              label: hybridResult.label as UnifiedResponse['label'],
               reasoning: hybridResult.reasoning,
               symbolicInferences: [
                 `🧠 EvAI v16 NEUROSYMBOLISCH`,
