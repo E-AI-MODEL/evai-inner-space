@@ -192,9 +192,31 @@ export async function orchestrate(
 
       case 'LLM_PLANNING':
         auditLog.push(`🧠 Executing: LLM_PLANNING`);
-        // Hier zou de LLM-call komen met de allowed interventions als constraints
-        // Voor nu: fallback naar template
-        answer = generateTemplateResponse(emotion, allowedInterventions);
+        // v20: LLM generation with v20 validation
+        try {
+          // Call edge function for LLM generation
+          const { data: llmData, error: llmError } = await supabase.functions.invoke('evai-core', {
+            body: {
+              operation: 'generate-response',
+              input: ctx.userInput,
+              emotion,
+              allowedInterventions,
+              eaaProfile,
+              conversationHistory: ctx.conversationHistory?.slice(-6) || []
+            }
+          });
+          
+          if (llmError || !llmData?.response) {
+            console.warn('⚠️ LLM generation failed, using template fallback');
+            answer = generateTemplateResponse(emotion, allowedInterventions);
+          } else {
+            answer = llmData.response;
+            auditLog.push(`✅ LLM generated response (${llmData.model || 'unknown'})`);
+          }
+        } catch (err) {
+          console.error('❌ LLM_PLANNING error:', err);
+          answer = generateTemplateResponse(emotion, allowedInterventions);
+        }
         processingPath = 'llm';
         label = 'Reflectievraag';
         break;

@@ -12,6 +12,11 @@ import { toast } from 'sonner';
 import { orchestrate, OrchestrationContext } from '@/orchestrator/hybrid';
 import { getGraphStats } from '@/semantics/graph';
 import { useEnhancedSeedGeneration } from './useEnhancedSeedGeneration';
+// v20 EAA Framework
+import { evaluateEAA, validateEAAForStrategy } from '@/lib/eaaEvaluator';
+import { evaluateTD, estimateAIContribution } from '@/lib/tdMatrix';
+import { evaluateEAIRules, createEAIContext, executeEAIAction } from '@/policy/eai.rules';
+import type { EAAProfile } from '@/types/eaa';
 
 interface ProcessingStats {
   totalRequests: number;
@@ -151,7 +156,12 @@ export function useProcessingOrchestrator() {
         };
       }
 
-      // 📊 RUBRICS ASSESSMENT (EvAI 5.6) - Alleen voor niet-greetings
+      // ============ v20 PRE-FILTER: EAA EVALUATION ============
+      console.log('🧠 v20 Pre-Filter: EAA Evaluation starting...');
+      const eaaProfile: EAAProfile = evaluateEAA(userInput);
+      console.log(`🧠 EAA Profile: O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
+      
+      // ============ RUBRICS ASSESSMENT (EvAI 5.6) ============
       console.log('📊 Rubrics Assessment: Analyzing conversation context...');
       const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unknown';
       const rubricResult = await performEnhancedAssessment(
@@ -160,11 +170,19 @@ export function useProcessingOrchestrator() {
         'balanced'
       );
       
+      // Update EAA with rubric context
+      const enhancedEAA = evaluateEAA(userInput, {
+        riskScore: rubricResult.overallRisk / 100,
+        protectiveScore: rubricResult.overallProtective / 100,
+        dominantPattern: rubricResult.dominantPattern
+      });
+      
       console.log('📊 Rubrics result:', {
         risk: rubricResult.overallRisk,
         protective: rubricResult.overallProtective,
         pattern: rubricResult.dominantPattern
       });
+      console.log(`🧠 Enhanced EAA: O=${enhancedEAA.ownership.toFixed(2)} A=${enhancedEAA.autonomy.toFixed(2)} Ag=${enhancedEAA.agency.toFixed(2)}`);
       
       // 🎯 REGISSEUR BESLISSING 2: Is dit gesprek complex genoeg voor Strategic Briefing?
       const inputComplexity = userInput.trim().length;
@@ -251,7 +269,8 @@ export function useProcessingOrchestrator() {
             },
             consent: true,
             conversationHistory,
-            topEmotion: decisionResult.emotion
+            topEmotion: decisionResult.emotion,
+            rubricAssessments: rubricResult.assessments
           };
 
           console.log('🎼 Calling orchestrate with seed:', {
@@ -388,6 +407,43 @@ export function useProcessingOrchestrator() {
             type: newSeed.type,
             triggers: newSeed.triggers?.slice(0, 3)
           });
+          
+          // ============ v20 VALIDATION: TD-Matrix + E_AI Rules ============
+          console.log('🧠 v20 Learning Mode Validation: Checking generated seed...');
+          
+          // Estimate AI contribution for generated seed
+          const seedAIContribution = estimateAIContribution(newSeed.response.nl);
+          const seedTD = evaluateTD(seedAIContribution, enhancedEAA.agency);
+          console.log(`⚖️ v20 TD-Matrix (Learning): ${seedTD.flag} (TD=${seedTD.value.toFixed(2)})`);
+          
+          // Check E_AI rules
+          const eaiContext = createEAIContext(
+            enhancedEAA,
+            seedTD.value,
+            {
+              riskScore: rubricResult.overallRisk / 100,
+              protectiveScore: rubricResult.overallProtective / 100
+            }
+          );
+          
+          const eaiResult = evaluateEAIRules(eaiContext);
+          const auditLog: string[] = [];
+          
+          if (eaiResult.triggered && eaiResult.action) {
+            const shouldBlock = executeEAIAction(eaiResult.action, auditLog);
+            if (shouldBlock) {
+              console.warn(`🚨 v20 E_AI Rule ${eaiResult.ruleId} BLOCKED learning mode seed generation`);
+              throw new Error(`Learning mode blocked by E_AI rule: ${eaiResult.reason}`);
+            }
+          }
+          
+          // Check TD-Matrix block
+          if (seedTD.shouldBlock) {
+            console.warn(`🚨 v20 TD-Matrix BLOCKED learning mode seed: ${seedTD.reason}`);
+            throw new Error(`Learning mode blocked by TD-Matrix: ${seedTD.reason}`);
+          }
+          
+          console.log('✅ v20 Validation passed for learning mode seed');
           
           // Sla seed op in database (met embedding via server)
           await addAdvancedSeed(newSeed);

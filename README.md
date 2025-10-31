@@ -33,28 +33,57 @@ EvAI Inner Space is ontworpen als een **single-user systeem**. Alle data (seeds,
 
 **Gebruik in productie**: Deze architectuur is ideaal voor demo's, single-user therapeutische tools, of research prototypes. Voor multi-user deployments moet de architectuur worden aangepast om per-user isolatie te implementeren.
 
-## 🧠 EAA Framework (v20)
+## 🧠 EAA Framework (v20) - Volledige Integratie
 
-EVAI v20 is uitgebreid met een ethisch reflectiesysteem gebaseerd op het **EAA-framework** (Eigenaarschap, Autonomie, Agency). Dit systeem bewaakt de balans tussen AI-interventie en menselijke handelingsbekwaamheid.
+EVAI v20 is **volledig geïntegreerd** met een ethisch reflectiesysteem gebaseerd op het **EAA-framework**. Dit systeem bewaakt de balans tussen AI-interventie en menselijke handelingsbekwaamheid **in alle verwerkingspaden**.
 
 ### Kerncomponenten
 
-1. **EAA Evaluator**: Meet ownership, autonomy en agency van gebruikersinput
+1. **EAA Evaluator (Pre-Filter)**: Meet ownership, autonomy en agency VOOR knowledge search
 2. **Regisseur Reflectie**: Historische zelfreflectie via vector memories
 3. **TD-Matrix**: Monitort AI-dominance (Taakdichtheid > 0.8 = agency loss)
 4. **E_AI Rules Engine**: Symbolische ethische regelset (rules 001-006)
+5. **LLM Generator met EAA Constraints**: Dynamische system prompts gebaseerd op gebruikers EAA-profiel
 
-### Gedragsvalidatie
+### Gedragsvalidatie in ALLE Paden
 
-Elke AI-respons wordt geëvalueerd op:
-- ✅ **EAA-profiel**: Is de strategie passend bij gebruikers agency?
-- ⚖️ **TD-score**: Neemt AI niet te veel over?
-- 🔍 **E_AI rules**: Worden ethische principes nageleefd?
-- 💭 **Historische context**: Wat leerde het systeem uit eerdere interacties?
+#### High Confidence Path (Seed-Based)
+```
+User Input → EAA Pre-Filter → Rubrics → Knowledge Search (>0.70 confidence)
+    ↓
+Seed Response → hybrid.ts Orchestrator
+    ↓
+TD-Matrix Check → E_AI Rules → EAA Strategy Validation → Final Response
+```
 
-**Voorbeeld**: Bij lage agency (gebruiker voelt "lukt niet") blokkeert het systeem sturende suggesties en kiest het voor reflectieve vragen.
+#### Low Confidence Path (Learning Mode)
+```
+User Input → EAA Pre-Filter → Rubrics → Knowledge Search (<0.70 confidence)
+    ↓
+Generate New Seed (LLM) → TD-Matrix Check → E_AI Rules Check
+    ↓
+IF validated: Save Seed → Return Response
+ELSE: Block + Error
+```
 
-Zie `docs/eaa-framework.md` voor volledige documentatie.
+#### LLM_PLANNING Path
+```
+Policy Decision: LLM_PLANNING → Generate Response with EAA Constraints (edge function)
+    ↓
+Response → TD-Matrix Check → E_AI Rules → Final Validation
+```
+
+### Ethische Checkpoints
+
+✅ **Pre-Filter (Layer 0)**: EAA evaluatie vóór alle processing
+⚖️ **TD-Matrix**: Check AI dominance vs user agency
+🔍 **E_AI Rules**: 6 symbolische regels voor agency-bescherming
+🛡️ **Strategy Validation**: Blokkeer ongepaste strategieën op basis van EAA
+📝 **Learning Mode Validation**: Valideer LLM-generated seeds voor opslag
+
+**Voorbeeld blokkade**: Bij lage agency (gebruiker voelt "lukt niet") blokkeert het systeem sturende suggesties en kiest het voor reflectieve vragen - zowel in seed-based responses als LLM-generated content.
+
+Zie `docs/v20-architecture.md` en `docs/eaa-framework.md` voor volledige documentatie.
 
 ## 🛠️ Setup Instructies
 
