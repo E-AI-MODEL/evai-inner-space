@@ -3,6 +3,8 @@ import React from 'react';
 import ChatBubble from "./ChatBubble";
 import { Message } from '../types';
 import { ConversationHealthMonitor } from './ConversationHealthMonitor';
+import { LoadingStateIndicator } from './LoadingStateIndicator';
+import { ErrorState } from './ErrorState';
 
 interface ChatViewProps {
     messages: Message[];
@@ -10,6 +12,8 @@ interface ChatViewProps {
     messageRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
     focusedMessageId: string | null;
     onFeedback?: (messageId: string, feedback: 'like' | 'dislike') => void;
+    lastError?: string | null;
+    onRetry?: () => void;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({ 
@@ -18,6 +22,8 @@ const ChatView: React.FC<ChatViewProps> = ({
     messageRefs, 
     focusedMessageId, 
     onFeedback,
+    lastError,
+    onRetry
 }) => {
     // Convert label to match ChatBubble's expected type
     const convertLabel = (label?: 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Interventie' | 'Fout' | null) => {
@@ -34,6 +40,15 @@ const ChatView: React.FC<ChatViewProps> = ({
                 <div className="mb-3">
                     <ConversationHealthMonitor />
                 </div>
+            )}
+
+            {/* Prominent Error Display */}
+            {lastError && onRetry && (
+                <ErrorState 
+                    error={lastError} 
+                    onRetry={onRetry}
+                    className="mb-4"
+                />
             )}
             
             {messages && messages.length > 0 && (
@@ -65,18 +80,7 @@ const ChatView: React.FC<ChatViewProps> = ({
             )}
             
             {isProcessing && (
-                <div className="flex justify-start mb-4">
-                  <div className="bg-blue-100 px-3 md:px-4 py-3 rounded-xl">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <span className="text-sm md:text-base text-blue-700 ml-2">
-                        AI denkt na...
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                <LoadingStateIndicator className="mb-4" />
             )}
         </div>
     );

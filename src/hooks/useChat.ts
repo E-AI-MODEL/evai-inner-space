@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [lastUserMessage, setLastUserMessage] = useState<string>('');
   
   console.log('🔄 useChat hook initialized - Production mode');
   const { orchestrateProcessing, isProcessing, stats } = useProcessingOrchestrator();
@@ -33,6 +35,8 @@ export function useChat() {
     
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setLastError(null); // Clear any previous errors
+    setLastUserMessage(message); // Store for retry
 
     // 💾 Long-Term Memory: Save user message to database
     await saveChatMessage(userMessage);
@@ -91,10 +95,13 @@ export function useChat() {
     } catch (error) {
       console.error('Chat processing error:', error);
       
+      const errorMsg = error instanceof Error ? error.message : 'Er ging iets mis. Controleer je API configuratie.';
+      setLastError(errorMsg);
+      
       const errorMessage: Message = {
         id: uuidv4(),
         from: 'ai',
-        content: error instanceof Error ? error.message : 'Er ging iets mis. Controleer je API configuratie.',
+        content: errorMsg,
         timestamp: new Date(),
         emotionSeed: 'error',
         confidence: 0,
@@ -103,6 +110,7 @@ export function useChat() {
       };
       
       setMessages(prev => [...prev, errorMessage]);
+      toast.error('Verwerking mislukt', { description: errorMsg });
     }
   }, [messages, isProcessing, orchestrateProcessing]);
 
@@ -115,10 +123,18 @@ export function useChat() {
   const clearHistory = useCallback(async () => {
     setMessages([]);
     setInput('');
+    setLastError(null);
+    setLastUserMessage('');
     // Clear database as well
     const { clearChatHistory } = await import('@/lib/chatHistoryStorage');
     await clearChatHistory();
   }, []);
+
+  const retryLastMessage = useCallback(() => {
+    if (lastUserMessage) {
+      void onSend(lastUserMessage);
+    }
+  }, [lastUserMessage, onSend]);
 
   const getChatStats = useCallback(() => {
     return {
@@ -136,6 +152,8 @@ export function useChat() {
     onSend,
     setFeedback,
     clearHistory,
-    getChatStats
+    getChatStats,
+    lastError,
+    retryLastMessage
   };
 }

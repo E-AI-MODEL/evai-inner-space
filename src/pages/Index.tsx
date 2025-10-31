@@ -13,6 +13,7 @@ import TopBar from "../components/TopBar";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import SettingsSheet from "../components/SettingsSheet";
 import { useAuth } from "../hooks/useAuth";
+import { EmptyState } from "../components/EmptyState";
 
 const Index = () => {
   const { isAuthorized, authorizeChat, loading } = useAuth();
@@ -39,7 +40,9 @@ const Index = () => {
     isProcessing, 
     onSend, 
     setFeedback,
-    clearHistory
+    clearHistory,
+    lastError,
+    retryLastMessage
   } = useChat();
 
   // Auto-scroll to bottom when new messages are added
@@ -139,13 +142,8 @@ const Index = () => {
             {/* Scrollable Messages Area */}
             <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-2 py-2' : 'px-4 py-4'}`}>
               <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'}`}>
-                {/* Welcome content when no messages */}
-                {(!messages || messages.length === 0) && (
-                  <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-                    <div className="text-6xl mb-4">💙</div>
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-6">Welkom bij EvAI</h2>
-                  </div>
-                )}
+                {/* Enhanced Empty State */}
+                {(!messages || messages.length === 0) && <EmptyState />}
                 
                 <ChatView
                   messages={messages || []}
@@ -153,6 +151,8 @@ const Index = () => {
                   messageRefs={messageRefs}
                   focusedMessageId={focusedMessageId}
                   onFeedback={setFeedback}
+                  lastError={lastError}
+                  onRetry={retryLastMessage}
                 />
                 <div ref={messagesEndRef} />
               </div>
