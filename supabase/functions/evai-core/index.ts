@@ -90,8 +90,13 @@ serve(async (req) => {
       return await handleSafety(body);
     }
 
+    // OPERATION: generate-response (NEW - Seed + LLM Fusion)
+    if (operation === "generate-response") {
+      return await handleGenerateResponse(body);
+    }
+
     return new Response(
-      JSON.stringify({ ok: false, error: "Unknown operation. Use: chat, embedding, batch-embed, or safety" }),
+      JSON.stringify({ ok: false, error: "Unknown operation. Use: chat, embedding, batch-embed, safety, or generate-response" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
@@ -405,4 +410,186 @@ async function handleBatchEmbed(body: any) {
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
+}
+
+async function handleGenerateResponse(body: any) {
+  if (!OPENAI_PRIMARY) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "OPENAI_API_KEY not configured" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  const {
+    seedGuidance,
+    userInput,
+    conversationHistory = [],
+    emotion,
+    eaaProfile,
+    allowedInterventions = []
+  } = body || {};
+
+  if (!seedGuidance || !userInput || !emotion || !eaaProfile) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "Missing required fields for generate-response" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  console.log('🤖 LLM Generation:', {
+    emotion,
+    agency: eaaProfile.agency.toFixed(2),
+    interventions: allowedInterventions.length,
+    historyLength: conversationHistory.length
+  });
+
+  // Build EAA-aware system prompt
+  const systemPrompt = buildSystemPrompt(emotion, allowedInterventions, eaaProfile, seedGuidance);
+
+  // Build conversation messages
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory.slice(-6).map((h: any) => ({
+      role: h.role,
+      content: h.content
+    })),
+    { role: 'user', content: userInput }
+  ];
+
+  try {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_PRIMARY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages,
+        temperature: 0.7,
+        max_tokens: 200
+      })
+    });
+
+    if (!resp.ok) {
+      const errorText = await resp.text();
+      console.error('🔴 OpenAI API error:', resp.status, errorText);
+      return new Response(
+        JSON.stringify({ ok: false, error: `OpenAI API error: ${resp.status}` }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const data = await resp.json();
+    const generatedText = data.choices[0]?.message?.content || '';
+
+    if (!generatedText) {
+      return new Response(
+        JSON.stringify({ ok: false, error: 'Empty response from OpenAI' }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        response: generatedText,
+        model: 'gpt-4o-mini',
+        reasoning: `Generated with agency=${eaaProfile.agency.toFixed(2)}, interventions=${allowedInterventions.join(',')}`
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error) {
+    console.error('🔴 Generate response error:', error);
+    return new Response(
+      JSON.stringify({ ok: false, error: (error as Error).message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+}
+
+function buildSystemPrompt(
+  emotion: string,
+  allowedInterventions: string[],
+  eaaProfile: { ownership: number; autonomy: number; agency: number },
+  seedGuidance?: string
+): string {
+  const { ownership, autonomy, agency } = eaaProfile;
+
+  let prompt = `Je bent een empathische AI-coach die helpt bij emotionele ondersteuning.
+
+EMOTIONELE CONTEXT: ${emotion}
+
+GEBRUIKER EAA-PROFIEL:
+- Eigenaarschap (ownership): ${(ownership * 100).toFixed(0)}% - ${ownership > 0.6 ? 'Hoog: gebruiker voelt sterke verbinding' : ownership > 0.4 ? 'Gemiddeld: enige verbinding' : 'Laag: weinig persoonlijke betrokkenheid'}
+- Autonomie: ${(autonomy * 100).toFixed(0)}% - ${autonomy > 0.5 ? 'Hoog: voelt keuzevrijheid' : autonomy > 0.3 ? 'Gemiddeld: enige autonomie' : 'Laag: weinig keuzevrijheid ervaren'}
+- Agency: ${(agency * 100).toFixed(0)}% - ${agency > 0.6 ? 'Hoog: voelt handelingsbekwaamheid' : agency > 0.4 ? 'Gemiddeld: kan iets doen' : 'Laag: voelt machteloos'}
+
+TOEGESTANE INTERVENTIES: ${allowedInterventions.join(', ')}
+`;
+
+  if (seedGuidance) {
+    prompt += `
+THERAPEUTISCHE ANKER (SEED):
+${seedGuidance}
+
+JOUW TAAK:
+- Gebruik de seed als therapeutische basis (WAT gezegd MOET worden)
+- Vertaal naar deze specifieke conversatie
+- Voeg persoonlijke aansluiting toe
+- Behoud therapeutische intentie
+`;
+  }
+
+  prompt += `
+GEDRAGSRICHTLIJNEN:`;
+
+  // Low agency constraints
+  if (agency < 0.4) {
+    prompt += `
+- ⚠️ LAGE AGENCY: Gebruiker voelt machteloosheid
+- ALLEEN reflectieve vragen stellen
+- GEEN suggesties of concrete acties voorstellen
+- Focus op begrijpen en erkennen
+- Voorbeeld: "Wat maakt het nu zo moeilijk?"`;
+  } else if (agency < 0.6) {
+    prompt += `
+- GEMIDDELDE AGENCY: Voorzichtige begeleiding
+- Kleine, haalbare stappen voorstellen
+- Vragen stellen die perspectief bieden
+- Voorbeeld: "Zou het helpen om..."`;
+  } else {
+    prompt += `
+- HOGE AGENCY: Gebruiker kan actie ondernemen
+- Concrete suggesties toegestaan
+- Voorbeeld: "Je zou kunnen proberen om..."`;
+  }
+
+  // Low autonomy constraints
+  if (autonomy < 0.3) {
+    prompt += `
+- ⚠️ LAGE AUTONOMIE: Gebruiker voelt druk
+- GEEN sturende taal gebruiken
+- Keuzes open houden
+- Vermijd "moet", "zou moeten"`;
+  }
+
+  // Low ownership constraints
+  if (ownership < 0.4) {
+    prompt += `
+- ⚠️ LAGE OWNERSHIP: Weinig persoonlijke betrokkenheid
+- Focus op validatie en erkenning
+- Geen diepgaande persoonlijke vragen`;
+  }
+
+  prompt += `
+
+ANTWOORDSTIJL:
+- Maximum 2-3 zinnen
+- Empathisch en warm
+- Nederlands
+- Direct en concreet
+`;
+
+  return prompt;
 }

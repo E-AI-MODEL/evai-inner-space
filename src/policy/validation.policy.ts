@@ -248,6 +248,82 @@ function calculateValidationConfidence(errors: string[], warnings: string[]): nu
 }
 
 /**
+ * Validate EAA compliance of LLM response (POST-LLM layer)
+ */
+export function validateEAACompliance(
+  response: string,
+  eaaProfile: { ownership: number; autonomy: number; agency: number },
+  allowedInterventions: string[]
+): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  // Low agency checks
+  if (eaaProfile.agency < 0.4) {
+    // Should NOT contain suggestions or directives
+    const suggestivePatterns = [
+      /je (zou|kan|kunt) (proberen|doen|overwegen)/i,
+      /het is belangrijk (dat|om)/i,
+      /je (moet|hoort|dient)/i,
+    ];
+    
+    for (const pattern of suggestivePatterns) {
+      if (pattern.test(response)) {
+        errors.push(`Response contains suggestions/directives with low agency (${(eaaProfile.agency * 100).toFixed(0)}%)`);
+        break;
+      }
+    }
+  }
+  
+  // Low autonomy checks
+  if (eaaProfile.autonomy < 0.3) {
+    // Should NOT contain prescriptive language
+    const prescriptivePatterns = [
+      /(moet|moeten|hoort|horen|dient|dienen)/i,
+      /het is nodig dat/i,
+    ];
+    
+    for (const pattern of prescriptivePatterns) {
+      if (pattern.test(response)) {
+        warnings.push(`Response contains prescriptive language with low autonomy (${(eaaProfile.autonomy * 100).toFixed(0)}%)`);
+        break;
+      }
+    }
+  }
+  
+  // Check if response aligns with allowed interventions
+  const hasValidatie = /\b(begrijp|snap|hoor|zie)\b/i.test(response);
+  const hasReflectie = /\?/.test(response);
+  const hasSuggestie = /(zou|kan|kunt|proberen|overwegen)/i.test(response);
+  const hasInterventie = /(actie|stap|plan|doen)/i.test(response);
+  
+  if (hasSuggestie && !allowedInterventions.includes('suggestie')) {
+    errors.push('Response contains suggestions not allowed by rubric context');
+  }
+  
+  if (hasInterventie && !allowedInterventions.includes('interventie')) {
+    errors.push('Response contains interventions not allowed by rubric context');
+  }
+  
+  // Empty response check
+  if (!response || response.trim().length < 5) {
+    errors.push('Response is empty or too short');
+  }
+  
+  // Over-long response check
+  if (response.length > 500) {
+    warnings.push('Response is very long (>500 chars), may lose focus');
+  }
+  
+  return {
+    ok: errors.length === 0,
+    errors,
+    warnings,
+    confidence: calculateValidationConfidence(errors, warnings)
+  };
+}
+
+/**
  * 🧪 Test validation rules (voor testing)
  */
 export function testValidation(

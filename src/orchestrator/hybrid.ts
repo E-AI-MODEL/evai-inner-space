@@ -156,7 +156,7 @@ export async function orchestrate(
     switch (policyDecision.action) {
       case 'USE_SEED':
         auditLog.push(`🎯 Executing: USE_SEED`);
-        const seedResult = await compileSeedResponse(ctx, auditLog);
+        const seedResult = await compileSeedResponse(ctx, auditLog, eaaProfile);
         answer = seedResult.answer;
         processingPath = 'seed';
         label = 'Valideren';
@@ -246,7 +246,7 @@ export async function orchestrate(
     if (!constraintsOK) {
       auditLog.push(`  Errors: ${responseValidation.errors.join(', ')}`);
       // BLOCK response if validation failed
-      answer = generateSafetyFallbackResponse();
+      answer = generateEAAAwareFallback(eaaProfile, emotion);
       label = 'Fout';
       confidence = 0.3;
     }
@@ -261,7 +261,7 @@ export async function orchestrate(
       
       if (tdScore.shouldBlock) {
         auditLog.push(`🚨 TD-Matrix BLOCKS output: ${tdScore.reason}`);
-        answer = generateSafetyFallbackResponse();
+        answer = generateEAAAwareFallback(eaaProfile, emotion);
         emotion = 'onzekerheid';
         label = 'Fout';
         reasoning = `TD-Matrix blocked: ${tdScore.reason}`;
@@ -289,7 +289,7 @@ export async function orchestrate(
         const shouldBlock = executeEAIAction(eaiResult.action, auditLog);
         
         if (shouldBlock) {
-          answer = generateSafetyFallbackResponse();
+          answer = generateEAAAwareFallback(eaaProfile, emotion);
           emotion = 'onzekerheid';
           label = 'Fout';
           reasoning = `E_AI rule ${eaiResult.ruleId} blocked output`;
@@ -423,96 +423,148 @@ function generateCrisisResponse(ctx: OrchestrationContext): string {
 }
 
 /**
- * Generate safety fallback response
+ * Generate EAA-aware fallback response (replaces generic fallback)
  */
-function generateSafetyFallbackResponse(): string {
-  return 'Het spijt me, ik kan hier niet goed op reageren. Laten we het over iets anders hebben, of zoek hulp bij een volwassene als het dringend is.';
+function generateEAAAwareFallback(eaaProfile: { ownership: number; autonomy: number; agency: number }, emotion: string): string {
+  if (eaaProfile.agency < 0.4) {
+    return `Wat maakt het nu zo moeilijk voor je?`; // Reflectie bij lage agency
+  } else if (eaaProfile.agency < 0.6) {
+    return `Ik hoor dat je ${emotion} voelt. Wil je vertellen wat er speelt?`;
+  } else {
+    return `Het klinkt alsof je ${emotion} ervaart. Hoe kan ik je ondersteunen?`;
+  }
 }
 
 /**
- * Compile seed response with template parameters
+ * Detect prompt injection attempts
+ */
+function detectPromptInjection(text: string): { safe: boolean; reason?: string } {
+  const suspiciousPatterns = [
+    /ignore (previous|all) (instructions?|prompts?)/i,
+    /you are now/i,
+    /new (role|instruction|prompt):/i,
+    /system:\s*\{/i,
+    /\[SYSTEM\]/i,
+    /<\|im_start\|>/i,
+  ];
+  
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(text)) {
+      return { safe: false, reason: 'Potential prompt injection detected' };
+    }
+  }
+  
+  return { safe: true };
+}
+
+/**
+ * Inject seed template with therapeutic constraints (PRE-LLM layer)
+ */
+function injectSeedTemplate(
+  seedGuidance: string,
+  userInput: string,
+  emotion: string,
+  eaaProfile: { ownership: number; autonomy: number; agency: number },
+  conversationHistory: Array<{ role: string; content: string }>
+): string {
+  // Check for prompt injection in user input
+  const injectionCheck = detectPromptInjection(userInput);
+  if (!injectionCheck.safe) {
+    console.warn('⚠️ Prompt injection attempt detected');
+    return seedGuidance; // Return seed as-is without user context
+  }
+  
+  // Replace template parameters
+  const conversationSummary = conversationHistory.slice(-3).map(h => h.content).join(' → ');
+  let enrichedSeed = seedGuidance
+    .replace(/\{\{emotie\}\}/g, emotion)
+    .replace(/\{\{agency\}\}/g, `${(eaaProfile.agency * 100).toFixed(0)}%`)
+    .replace(/\{\{autonomie\}\}/g, `${(eaaProfile.autonomy * 100).toFixed(0)}%`)
+    .replace(/\{\{eigenaarschap\}\}/g, `${(eaaProfile.ownership * 100).toFixed(0)}%`);
+  
+  // Add therapeutic constraints
+  enrichedSeed += `\n\nCONTEXT: Gebruiker zei: "${userInput}"`;
+  if (conversationHistory.length > 0) {
+    enrichedSeed += `\nGESPREKSVERLOOP: ${conversationSummary}`;
+  }
+  
+  enrichedSeed += `\n\nTHERAPEUTISCHE OPDRACHT:
+- Gebruik bovenstaande seed als therapeutische basis (WAT gezegd moet worden)
+- Vertaal naar deze specifieke conversatie (HOE het aanvoelt voor deze gebruiker)
+- Voeg persoonlijke aansluiting toe zonder de therapeutische intentie te verliezen`;
+  
+  return enrichedSeed;
+}
+
+/**
+ * Compile seed response with LLM fusion (SEED + LLM + CONVERSATION)
  */
 async function compileSeedResponse(
-  ctx: OrchestrationContext, 
-  auditLog: string[]
+  ctx: OrchestrationContext,
+  auditLog: string[],
+  eaaProfile: { ownership: number; autonomy: number; agency: number }
 ): Promise<{ answer: string }> {
   try {
-    // Extract context parameters from user input
-    const contextParams = extractContextParams(ctx.userInput, ctx.conversationHistory);
-    auditLog.push(`📋 Extracted params: ${JSON.stringify(contextParams)}`);
+    const seedGuidance = ctx.seed.response || 'Ik begrijp je.';
     
-    // Use seed response directly if no templateId
-    if (!ctx.seed.templateId) {
-      console.log('ℹ️ No templateId, using direct response');
-      return { answer: ctx.seed.response || 'Ik begrijp je.' };
-    }
+    // STEP 1: Pre-LLM Template Injection (oor fluisteren)
+    const enrichedSeed = injectSeedTemplate(
+      seedGuidance,
+      ctx.userInput,
+      ctx.seed.emotion,
+      eaaProfile,
+      ctx.conversationHistory
+    );
     
-    // Try to load seed for template compilation
-    console.log(`🔍 Loading seed ${ctx.seed.templateId} for template compilation...`);
-    const { data: seedData, error } = await supabase
-      .from('unified_knowledge')
-      .select('*')
-      .eq('id', ctx.seed.templateId)
-      .maybeSingle();
+    auditLog.push(`🎯 Seed enriched with conversation context`);
     
-    if (error) {
-      console.error('⚠️ Failed to load seed:', error);
-      auditLog.push(`⚠️ Seed load error: ${error.message}`);
-      return { answer: ctx.seed.response || 'Ik begrijp je.' };
-    }
+    // Get allowed interventions
+    const allowedInterventions = getEAAAllowedInterventions(ctx.seed.emotion, ctx.rubric);
     
-    if (!seedData) {
-      console.warn('⚠️ Seed not found in database, using fallback');
-      auditLog.push('⚠️ Seed not found, using fallback response');
-      return { answer: ctx.seed.response || 'Ik begrijp je.' };
-    }
-    
-    // Build seed object for compilation
-    const seedForCompilation = {
-      id: seedData.id,
-      emotion: seedData.emotion,
-      type: (seedData.metadata as any)?.type || 'validation',
-      label: (seedData.metadata as any)?.label || 'Valideren',
-      triggers: seedData.triggers || [],
-      response: { nl: seedData.response_text || ctx.seed.response || 'Ik begrijp je.' },
-      context: (seedData.metadata as any)?.context || { severity: 'medium' },
-      meta: (seedData.metadata as any)?.meta || {},
-      tags: (seedData.metadata as any)?.tags || [],
-      createdAt: new Date(seedData.created_at || Date.now()),
-      updatedAt: new Date(seedData.updated_at || Date.now()),
-      createdBy: (seedData.metadata as any)?.createdBy || 'system',
-      isActive: seedData.active,
-      version: '1.0'
-    } as any;
-    
-    // Template compilation (simplified - ReflectionCompiler deprecated)
-    let responseText = seedForCompilation.response.nl;
-    
-    // Simple parameter replacement for common placeholders
-    if (/\{[a-zA-Z_]+\}/.test(responseText)) {
-      for (const [key, value] of Object.entries(contextParams)) {
-        const placeholder = new RegExp(`\\{${key}\\}`, 'g');
-        responseText = responseText.replace(placeholder, value);
+    // STEP 2: LLM Generation with seed as therapeutic anchor
+    console.log('🤖 Calling LLM Generator with seed guidance...');
+    const { data, error } = await supabase.functions.invoke('evai-core', {
+      body: {
+        operation: 'generate-response',
+        seedGuidance: enrichedSeed,
+        userInput: ctx.userInput,
+        conversationHistory: ctx.conversationHistory.slice(-6),
+        emotion: ctx.seed.emotion,
+        eaaProfile,
+        allowedInterventions
       }
-      // Fallback replacements for unreplaced placeholders
-      responseText = responseText.replace(/\{timeOfDay\}/g, 'nu');
-      responseText = responseText.replace(/\{situation\}/g, 'in deze situatie');
-      responseText = responseText.replace(/\{recentEvent\}/g, 'recent');
-      responseText = responseText.replace(/\{temporalRef\}/g, 'op dit moment');
-      auditLog.push(`🔧 Template compiled with params`);
-      console.log('✅ Template compiled successfully');
-    } else {
-      console.log('ℹ️ No template parameters found, using response directly');
+    });
+    
+    if (error || !data?.response) {
+      console.warn('⚠️ LLM generation failed, using EAA-aware fallback:', error);
+      auditLog.push(`⚠️ LLM fallback: ${error?.message || 'No response'}`);
+      return { answer: generateEAAAwareFallback(eaaProfile, ctx.seed.emotion) };
     }
     
-    return { answer: responseText };
-    
+    auditLog.push(`✅ Seed + LLM fusion complete`);
+    return { answer: data.response };
   } catch (err) {
-    console.error('❌ compileSeedResponse error:', err);
+    console.error('❌ Seed compilation error:', err);
     auditLog.push(`❌ Compilation error: ${err instanceof Error ? err.message : String(err)}`);
-    // Always return a safe fallback
-    return { answer: ctx.seed.response || 'Ik begrijp je. Kun je me meer vertellen?' };
+    return { answer: generateEAAAwareFallback(eaaProfile, ctx.seed.emotion) };
   }
+}
+
+/**
+ * Get allowed interventions based on emotion and rubric (EAA-aware)
+ */
+function getEAAAllowedInterventions(emotion: string, rubric: any): string[] {
+  const interventions = ['validatie', 'reflectie'];
+  
+  if (rubric?.protectiveScore > 0.5) {
+    interventions.push('suggestie');
+  }
+  
+  if (rubric?.protectiveScore > 0.7 && rubric?.riskScore < 0.3) {
+    interventions.push('interventie');
+  }
+  
+  return interventions;
 }
 
 /**
