@@ -20,6 +20,7 @@ import { TemplateParameterDocs } from '@/components/admin/TemplateParameterDocs'
 import AdvancedSeedManager from '@/components/admin/AdvancedSeedManager';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
 import { EmbeddingHealthPanel } from '@/components/admin/EmbeddingHealthPanel';
+import { BulkEmbeddingGenerator } from '@/components/admin/BulkEmbeddingGenerator';
 import { useNavigate } from 'react-router-dom';
 import { useSystemConnectivity } from '@/hooks/useSystemConnectivity';
 import { supabase } from '../integrations/supabase/client';
@@ -319,6 +320,15 @@ const AdminDashboard = () => {
                 variant="neural"
               >
                 <EmbeddingHealthPanel />
+              </Section>
+              
+              {/* Bulk Embedding Generator */}
+              <Section 
+                title="🚀 Bulk Embedding Generator" 
+                subtitle="Generate embeddings for all seeds missing vector embeddings"
+                variant="neural"
+              >
+                <BulkEmbeddingGenerator />
               </Section>
               
               {/* Template Parameter Documentation */}
