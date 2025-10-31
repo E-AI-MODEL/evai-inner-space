@@ -323,6 +323,12 @@ export async function orchestrate(
     }
     
     // ============ NGBSE CHECK (v20) ============
+    const { getOrCreateSessionId } = await import('@/lib/sessionManager');
+    const { logFlowEvent } = await import('@/lib/flowEventLogger');
+    const sessionId = getOrCreateSessionId();
+    
+    await logFlowEvent(sessionId, 'NGBSE_CHECK', 'processing');
+    
     const { performNGBSECheck } = await import('@/lib/ngbseEngine');
     const rubricScores = ctx.rubric ? {
       crisis: ctx.rubric.crisis || 0,
@@ -331,6 +337,7 @@ export async function orchestrate(
       coping: ctx.rubric.coping || 0,
     } : undefined;
     
+    const ngbseStartTime = Date.now();
     const ngbseResult = await performNGBSECheck({
       userInput: ctx.userInput,
       aiResponse: answer,
@@ -339,7 +346,12 @@ export async function orchestrate(
       seedMatchCount: ctx.seed ? 1 : 0,
       rubricScores,
       conversationHistory: ctx.conversationHistory || [],
-      sessionId: 'session-' + Date.now(),
+      sessionId,
+    });
+    
+    await logFlowEvent(sessionId, 'NGBSE_CHECK', 'completed', Date.now() - ngbseStartTime, {
+      blindspots: ngbseResult.blindspots.length,
+      adjustedConfidence: ngbseResult.adjustedConfidence
     });
     
     if (ngbseResult.blindspots.length > 0) {
@@ -348,6 +360,8 @@ export async function orchestrate(
     }
     
     // ============ HITL CHECK (v20) ============
+    await logFlowEvent(sessionId, 'HITL_CHECK', 'processing');
+    
     const { shouldTriggerHITL, triggerHITL } = await import('@/lib/hitlTriggers');
     const hitlDecision = await shouldTriggerHITL({
       crisisScore: ctx.rubric?.crisis || 0,
@@ -361,9 +375,15 @@ export async function orchestrate(
     if (hitlDecision.shouldTrigger) {
       auditLog.push(`🚨 HITL triggered: ${hitlDecision.triggerType} (${hitlDecision.severity})`);
       await triggerHITL(ctx.userInput, answer, hitlDecision, {
-        sessionId: 'session-' + Date.now(),
+        sessionId,
         rubrics: ctx.rubric,
         ngbseResult,
+      });
+      
+      await logFlowEvent(sessionId, 'HITL_CHECK', 'completed', 0, {
+        triggered: true,
+        type: hitlDecision.triggerType,
+        severity: hitlDecision.severity
       });
       
       if (hitlDecision.blockOutput) {
@@ -371,6 +391,8 @@ export async function orchestrate(
         confidence = 0.2;
         label = 'Reflectievraag';
       }
+    } else {
+      await logFlowEvent(sessionId, 'HITL_CHECK', 'completed', 0, { triggered: false });
     }
     
     const processingTime = Date.now() - startTime;
@@ -412,11 +434,17 @@ export async function orchestrate(
     auditLog.push(`❌ ERROR: ${error instanceof Error ? error.message : String(error)}`);
     
     // ============ AUTO-HEALING (v20) ============
+    const { getOrCreateSessionId } = await import('@/lib/sessionManager');
+    const { logFlowEvent } = await import('@/lib/flowEventLogger');
+    const sessionId = getOrCreateSessionId();
+    
+    await logFlowEvent(sessionId, 'AUTO_HEALING', 'processing');
+    
     const { attemptAutoHeal } = await import('./autoHealing');
     const healingResult = await attemptAutoHeal(
       {
         error: error as Error,
-        sessionId: 'session-' + Date.now(),
+        sessionId,
         userInput: ctx.userInput,
         attemptNumber: 1,
         conversationHistory: ctx.conversationHistory || [],
@@ -424,7 +452,12 @@ export async function orchestrate(
       async () => orchestrate(ctx)
     );
     
-    if (healingResult.success) {
+    await logFlowEvent(sessionId, 'AUTO_HEALING', healingResult.success ? 'completed' : 'failed', 0, {
+      strategy: healingResult.strategy,
+      escalated: healingResult.escalateToHITL || false
+    });
+    
+    if (healingResult.success && healingResult.response) {
       return healingResult.response;
     }
     

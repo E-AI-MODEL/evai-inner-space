@@ -133,6 +133,22 @@ export async function attemptAutoHeal(
   }
 
   // Strategy 3: Escalate to HITL (for unknown or persistent errors)
+  const hitlFallbackResponse = {
+    content: "Er is een probleem opgetreden bij het verwerken van je bericht. Een specialist bekijkt dit zo snel mogelijk. Je hoeft niets te doen - we nemen contact op zodra we meer weten.",
+    emotion: "onzekerheid",
+    confidence: 0.30,
+    label: "Reflectievraag" as const,
+    reasoning: "Auto-healing escalated to HITL - safe fallback response",
+    symbolicInferences: ["auto_healing_hitl_escalation"],
+    metadata: {
+      processingPath: "error" as const,
+      totalProcessingTime: Date.now() - startTime,
+      componentsUsed: ["auto_healing", "hitl_escalation"],
+      hitlBlocked: true,
+      fallback: true,
+    },
+  };
+
   await logHealingAttempt({
     sessionId: context.sessionId,
     errorType,
@@ -143,11 +159,12 @@ export async function attemptAutoHeal(
     errorMessage: context.error.message,
   });
   
-  console.log('⚠️ Auto-healing escalating to HITL');
+  console.log('⚠️ Auto-healing escalating to HITL with fallback response');
   return {
-    success: false,
+    success: true, // Changed from false - we do provide a response
     strategy: 'escalate_hitl',
     escalateToHITL: true,
+    response: hitlFallbackResponse,
     error: context.error.message,
   };
 }

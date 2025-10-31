@@ -142,6 +142,15 @@ export async function performNGBSECheck(context: NGBSEContext): Promise<NGBSERes
     };
   } catch (error) {
     console.error('❌ NGBSE check failed:', error);
+    
+    // Notify about NGBSE failure (silent failure is dangerous)
+    if (typeof window !== 'undefined') {
+      const { toast } = await import('sonner');
+      toast.warning('Blind spot detectie uitgevallen', {
+        description: 'Systeem gebruikt standaard confidence levels'
+      });
+    }
+    
     return {
       blindspots: [],
       adjustedConfidence: context.confidence,

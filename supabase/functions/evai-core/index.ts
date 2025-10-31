@@ -97,7 +97,12 @@ serve(async (req) => {
 
     // OPERATION: bias-check (NGBSE)
     if (operation === "bias-check") {
-      return await handleBiasCheck(body, OPENAI_PRIMARY!, corsHeaders);
+      const { userInput, aiResponse } = body;
+      const result = await handleBiasCheck(userInput, aiResponse);
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(

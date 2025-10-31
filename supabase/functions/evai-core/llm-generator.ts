@@ -165,25 +165,22 @@ ANTWOORDSTIJL:
   return prompt;
 }
 
-// NGBSE Bias Checker
-export async function handleBiasCheck(body: any, openAIKey: string, corsHeaders: any) {
-  if (!openAIKey) {
-    return new Response(
-      JSON.stringify({ ok: false, error: "OPENAI_API_KEY not configured" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+export async function handleBiasCheck(userInput: string, aiResponse: string): Promise<any> {
+  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+  
+  if (!openAIApiKey) {
+    console.error('❌ OPENAI_API_KEY not configured for bias check');
+    return {
+      biasReport: {
+        detected: false,
+        types: [],
+        severity: 'low' as const,
+        description: 'Bias check unavailable - API key missing',
+        confidence: 0.0,
+      },
+      fallbackUsed: true,
+    };
   }
-
-  const { text, context } = body || {};
-
-  if (!text || typeof text !== 'string') {
-    return new Response(
-      JSON.stringify({ ok: false, error: "Invalid text for bias check" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-
-  console.log('🔍 Bias check:', { textLength: text.length });
 
   const systemPrompt = `Je bent een expert in het detecteren van bias in AI-gegenereerde teksten.
 Analyseer de gegeven AI-response op de volgende types bias:
@@ -201,77 +198,55 @@ Retourneer ALLEEN een JSON object met dit exacte formaat:
   "confidence": number (0.0-1.0)
 }`;
 
-  const userPrompt = `AI Response: "${text}"
-
-${context ? `User Context: "${context}"` : ''}
+  const userPrompt = `User Input: "${userInput}"
+AI Response: "${aiResponse}"
 
 Analyseer deze response op bias. Wees kritisch maar realistisch.`;
 
   try {
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIKey}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: 'user', content: userPrompt },
         ],
         temperature: 0.3,
         max_tokens: 200,
-        response_format: { type: 'json_object' }
-      })
+        response_format: { type: 'json_object' },
+      }),
     });
 
-    if (!resp.ok) {
-      const errorText = await resp.text();
-      console.error('🔴 Bias check API error:', resp.status, errorText);
-      return new Response(
-        JSON.stringify({
-          detected: false,
-          types: [],
-          severity: 'low',
-          description: 'Bias check kon niet worden uitgevoerd',
-          confidence: 0
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('🔴 OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
-    const data = await resp.json();
+    const data = await response.json();
     const content = data.choices[0]?.message?.content || '{}';
-    
-    let biasResult;
+
+    let biasReport;
     try {
-      biasResult = JSON.parse(content);
+      biasReport = JSON.parse(content);
     } catch {
-      biasResult = {
+      biasReport = {
         detected: false,
         types: [],
         severity: 'low',
         description: 'Parse error',
-        confidence: 0
+        confidence: 0,
       };
     }
 
-    return new Response(
-      JSON.stringify(biasResult),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return { biasReport, fallbackUsed: false };
   } catch (error) {
     console.error('🔴 Bias check error:', error);
-    return new Response(
-      JSON.stringify({
-        detected: false,
-        types: [],
-        severity: 'low',
-        description: 'Error tijdens bias check',
-        confidence: 0
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    throw error; // Re-throw to trigger heuristic fallback
   }
 }

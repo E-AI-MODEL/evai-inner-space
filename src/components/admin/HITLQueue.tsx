@@ -20,16 +20,32 @@ export function HITLQueue() {
   useEffect(() => {
     loadItems();
 
-    // Subscribe to real-time updates
-    const channel = supabase
+    // Subscribe to real-time updates for both hitl_queue and hitl_notifications
+    const queueChannel = supabase
       .channel('hitl_queue_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hitl_queue' }, () => {
         loadItems();
       })
       .subscribe();
+    
+    const notificationsChannel = supabase
+      .channel('hitl_notifications_changes')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'hitl_notifications' 
+      }, (payload) => {
+        console.log('🔔 New HITL notification:', payload);
+        toast.warning('HITL Notificatie', {
+          description: payload.new.message || 'Nieuwe review aanvraag',
+        });
+        loadItems(); // Refresh queue
+      })
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(queueChannel);
+      supabase.removeChannel(notificationsChannel);
     };
   }, []);
 

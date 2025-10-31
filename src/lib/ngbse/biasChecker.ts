@@ -12,32 +12,26 @@ export async function checkForBias(
     const { data, error } = await supabase.functions.invoke('evai-core', {
       body: {
         operation: 'bias-check',
-        text: aiResponse,
-        context: userInput,
+        userInput,
+        aiResponse,
       },
     });
 
     if (error) {
-      console.error('❌ Bias check failed:', error);
-      return {
-        detected: false,
-        types: [],
-        severity: 'low',
-        description: 'Bias check kon niet worden uitgevoerd',
-        confidence: 0,
-      };
+      console.error('❌ Edge Function error:', error);
+      throw error;
     }
-
-    return data as BiasReport;
+    
+    // Check if Edge Function returned a fallback response
+    if (data.fallbackUsed) {
+      console.warn('⚠️ Bias check used fallback due to missing API key');
+      throw new Error('API key not configured - using heuristic fallback');
+    }
+    
+    return data.biasReport;
   } catch (error) {
-    console.error('❌ Bias checker error:', error);
-    return {
-      detected: false,
-      types: [],
-      severity: 'low',
-      description: 'Error tijdens bias check',
-      confidence: 0,
-    };
+    console.error('❌ LLM bias check failed:', error);
+    throw error; // Re-throw to trigger heuristic fallback in ngbseEngine
   }
 }
 
