@@ -18,6 +18,12 @@ interface DecisionLog {
   constraintsOK?: boolean;
   createdAt: string;
   auditLog?: string[];
+  fusionMetadata?: {
+    strategy?: 'neural_enhanced' | 'weighted_blend' | 'symbolic_fallback';
+    symbolicWeight?: number;
+    neuralWeight?: number;
+    preservationScore?: number;
+  };
 }
 
 interface DecisionLogTableProps {
@@ -70,6 +76,7 @@ export const DecisionLogTable: React.FC<DecisionLogTableProps> = ({ logs, isLoad
               <TableHead className="w-[50px]"></TableHead>
               <TableHead>Input</TableHead>
               <TableHead>Path</TableHead>
+              <TableHead>Fusion</TableHead>
               <TableHead>Outcome</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Date</TableHead>
@@ -87,6 +94,24 @@ export const DecisionLogTable: React.FC<DecisionLogTableProps> = ({ logs, isLoad
                     <TableCell className="max-w-xs truncate">{log.userInput}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{log.processingPath || 'unknown'}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {log.fusionMetadata ? (
+                        <div className="flex flex-col gap-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {log.fusionMetadata.strategy === 'neural_enhanced' ? '🧬 Neural+' : 
+                             log.fusionMetadata.strategy === 'weighted_blend' ? '⚖️ Blend' : 
+                             '🧠 Symbolic'}
+                          </Badge>
+                          {log.fusionMetadata.symbolicWeight && (
+                            <span className="text-xs text-muted-foreground">
+                              {Math.round(log.fusionMetadata.symbolicWeight * 100)}/{Math.round((log.fusionMetadata.neuralWeight || 0) * 100)}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">N/A</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={log.outcome === 'OK' ? 'default' : 'destructive'}>

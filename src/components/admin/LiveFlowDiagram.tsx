@@ -19,6 +19,7 @@ const NODE_ORDER = [
   'Regisseur Briefing',
   'Policy Decision',
   'Semantic Graph',
+  'NeSy Fusion',
   'TD-Matrix',
   'E_AI Rules',
   'NGBSE Check',

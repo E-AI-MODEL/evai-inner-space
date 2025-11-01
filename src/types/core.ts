@@ -21,6 +21,12 @@ export interface UnifiedResponse {
     totalProcessingTime: number;
     componentsUsed: string[];
     fallback?: boolean;
+    fusionMetadata?: {
+      symbolicWeight: number;
+      neuralWeight: number;
+      preservationScore: number;
+      strategy: 'neural_enhanced' | 'weighted_blend' | 'symbolic_fallback';
+    };
     apiCollaboration?: {
       api1Used: boolean;
       api2Used: boolean;

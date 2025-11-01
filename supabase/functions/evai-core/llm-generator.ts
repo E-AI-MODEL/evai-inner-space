@@ -101,14 +101,24 @@ TOEGESTANE INTERVENTIES: ${allowedInterventions.join(', ')}
 
   if (seedGuidance) {
     prompt += `
-THERAPEUTISCHE ANKER (SEED):
+🧬 NEUROSYMBOLISCHE FUSION MODE:
+
+THERAPEUTISCHE KERN (SEED) - MOET 70% VAN JE RESPONSE ZIJN:
 ${seedGuidance}
 
-JOUW TAAK:
-- Gebruik de seed als therapeutische basis (WAT gezegd MOET worden)
-- Vertaal naar deze specifieke conversatie
-- Voeg persoonlijke aansluiting toe
-- Behoud therapeutische intentie
+⚠️ KRITISCHE FUSIE-REGELS:
+1. De SEED is de therapeutische KERN - behoud deze EXACT (70%)
+2. Jouw rol is NIET nieuw antwoord bedenken, maar:
+   - Seed bewaren als fundament
+   - Persoonlijke aansluiting toevoegen (30%)
+   - Conversatie flow verbeteren
+   - Natuurlijke taal inbouwen
+3. THERAPEUTISCHE INTENTIE van seed MAG NIET veranderen
+
+VALIDEER INTERN NA JE RESPONSE:
+✅ Is de seed kern herkenbaar?
+✅ Heb ik alleen context toegevoegd?
+✅ Is therapeutische intentie behouden?
 `;
   }
 

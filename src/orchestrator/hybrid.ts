@@ -160,6 +160,11 @@ export async function orchestrate(
         answer = seedResult.answer;
         processingPath = 'seed';
         label = 'Valideren';
+        
+        // Store fusion metadata if available
+        if (seedResult.fusionMetadata) {
+          auditLog.push(`🧬 Fusion applied: ${seedResult.fusionMetadata.strategy} (${Math.round(seedResult.fusionMetadata.preservationScore * 100)}% preservation)`);
+        }
         break;
 
       case 'FAST_PATH':
@@ -603,16 +608,27 @@ function injectSeedTemplate(
 
 /**
  * Compile seed response with LLM fusion (SEED + LLM + CONVERSATION)
+ * v20 NeSy Fusion: Echte fusion in plaats van "beste antwoord" selectie
  */
 async function compileSeedResponse(
   ctx: OrchestrationContext,
   auditLog: string[],
   eaaProfile: { ownership: number; autonomy: number; agency: number }
-): Promise<{ answer: string }> {
+): Promise<{ answer: string; fusionMetadata?: any }> {
   try {
     const seedGuidance = ctx.seed.response || 'Ik begrijp je.';
     
-    // STEP 1: Pre-LLM Template Injection (oor fluisteren)
+    // STEP 1: Pre-LLM seed protection - bewaar originele seed core
+    const { extractTherapeuticIntent } = await import('./fusionHelpers');
+    const seedCore = {
+      therapeuticIntent: extractTherapeuticIntent(seedGuidance),
+      emotionalTone: ctx.seed.emotion,
+      originalResponse: seedGuidance
+    };
+    
+    auditLog.push(`🧬 Seed core extracted: ${JSON.stringify(seedCore.therapeuticIntent)}`);
+    
+    // STEP 2: Pre-LLM Template Injection met fusion constraints
     const enrichedSeed = injectSeedTemplate(
       seedGuidance,
       ctx.userInput,
@@ -626,12 +642,15 @@ async function compileSeedResponse(
     // Get allowed interventions
     const allowedInterventions = getEAAAllowedInterventions(ctx.seed.emotion, ctx.rubric);
     
-    // STEP 2: LLM Generation with seed as therapeutic anchor
-    console.log('🤖 Calling LLM Generator with seed guidance...');
+    // STEP 3: LLM Generation met fusion mode enabled
+    console.log('🤖 Calling LLM Generator with NeSy fusion mode...');
     const { data, error } = await supabase.functions.invoke('evai-core', {
       body: {
         operation: 'generate-response',
         seedGuidance: enrichedSeed,
+        fusionMode: true, // ← NIEUW: Signal fusion mode
+        preserveCore: true, // ← NIEUW: Instruction to preserve seed
+        seedCore: seedCore, // ← NIEUW: Voor validation
         userInput: ctx.userInput,
         conversationHistory: ctx.conversationHistory.slice(-6),
         emotion: ctx.seed.emotion,
@@ -646,7 +665,43 @@ async function compileSeedResponse(
       return { answer: generateEAAAwareFallback(eaaProfile, ctx.seed.emotion) };
     }
     
-    // STEP 3: Post-LLM EAA Compliance Validation
+    // STEP 4: Post-LLM Fusion Validation
+    const { validateSeedPreservation, blendSeedWithLLM } = await import('./fusionHelpers');
+    const fusionCheck = validateSeedPreservation(
+      data.response,
+      seedCore,
+      seedGuidance
+    );
+    
+    if (!fusionCheck.preserved) {
+      console.warn('🚨 Fusion validation: Seed core not preserved');
+      console.warn(`   Similarity: ${(fusionCheck.similarity * 100).toFixed(0)}%`);
+      console.warn(`   Deviations: ${fusionCheck.deviation.join(', ')}`);
+      
+      auditLog.push(`⚠️ LLM deviated from seed core (similarity: ${(fusionCheck.similarity * 100).toFixed(0)}%)`);
+      auditLog.push(`   Deviations: ${fusionCheck.deviation.join(', ')}`);
+      
+      // Fallback: Weighted blend (70% seed / 30% LLM)
+      const blendedAnswer = blendSeedWithLLM(
+        seedGuidance,
+        data.response,
+        fusionCheck
+      );
+      
+      auditLog.push(`🧬 Applied weighted blend: 70% seed / 30% LLM context`);
+      
+      return { 
+        answer: blendedAnswer,
+        fusionMetadata: {
+          strategy: 'weighted_blend',
+          preservationScore: fusionCheck.similarity,
+          symbolicWeight: 0.7,
+          neuralWeight: 0.3
+        }
+      };
+    }
+    
+    // STEP 5: EAA Compliance Validation (existing)
     const validationResult = validateEAACompliance(
       data.response,
       eaaProfile,
@@ -654,8 +709,8 @@ async function compileSeedResponse(
     );
     
     if (!validationResult.ok) {
-      console.warn('⚠️ Post-LLM validation failed:', validationResult.errors);
-      auditLog.push(`⚠️ Post-LLM validation failed: ${validationResult.errors.join(', ')}`);
+      console.warn('⚠️ Post-LLM EAA validation failed:', validationResult.errors);
+      auditLog.push(`⚠️ Post-LLM EAA validation failed: ${validationResult.errors.join(', ')}`);
       return { answer: generateEAAAwareFallback(eaaProfile, ctx.seed.emotion) };
     }
     
@@ -663,8 +718,16 @@ async function compileSeedResponse(
       auditLog.push(`⚠️ Post-LLM warnings: ${validationResult.warnings.join(', ')}`);
     }
     
-    auditLog.push(`✅ Seed + LLM fusion complete (validated)`);
-    return { answer: data.response };
+    auditLog.push(`✅ NeSy Fusion complete: seed preserved (${(fusionCheck.similarity * 100).toFixed(0)}%)`);
+    return { 
+      answer: data.response,
+      fusionMetadata: {
+        strategy: 'neural_enhanced',
+        preservationScore: fusionCheck.similarity,
+        symbolicWeight: 0.7,
+        neuralWeight: 0.3
+      }
+    };
   } catch (err) {
     console.error('❌ Seed compilation error:', err);
     auditLog.push(`❌ Compilation error: ${err instanceof Error ? err.message : String(err)}`);

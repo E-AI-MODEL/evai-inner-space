@@ -286,53 +286,78 @@ export function useProcessingOrchestrator() {
             hasAnswer: !!hybridResult.answer
           });
           
-          // Only use hybrid result if validation passed
-          if (hybridResult.metadata.validated && hybridResult.metadata.constraintsOK) {
-            console.log('✅ Hybrid orchestration VALIDATED and PASSED constraints');
-            
-            finalResult = {
-              content: hybridResult.answer,
-              emotion: hybridResult.emotion,
+          // 🧬 NEUROSYMBOLISCHE FUSION v20 - Assembleer Ying & Yang
+          console.log('🧬 NeSy Fusion Assembly: Combining symbolic + neural responses...');
+          
+          const { assembleFusion } = await import('@/orchestrator/fusionHelpers');
+          
+          const fusionResult = await assembleFusion({
+            symbolic: {
+              response: decisionResult.response,
+              emotion: decisionResult.emotion,
+              confidence: decisionResult.confidence,
+              sources: decisionResult.sources
+            },
+            neural: {
+              response: hybridResult.answer,
               confidence: hybridResult.confidence,
-              label: hybridResult.label as UnifiedResponse['label'],
-              reasoning: hybridResult.reasoning,
-              symbolicInferences: [
-                `🧠 EvAI v16 NEUROSYMBOLISCH`,
-                `📋 Policy: ${hybridResult.metadata.policyDecision}`,
-                `🎯 Rule: ${hybridResult.metadata.ruleId}`,
-                `💡 Semantic Interventions: ${hybridResult.metadata.semanticInterventions.join(', ')}`,
-                `✅ Validation: PASSED`,
-                `🛡️ Constraints: OK`,
-                ...decisionResult.symbolicInferences.slice(0, 3)
+              processingPath: hybridResult.metadata.processingPath
+            },
+            validation: {
+              validated: hybridResult.metadata.validated,
+              constraintsOK: hybridResult.metadata.constraintsOK,
+              tdScore: 0.5 // TODO: Extract from metadata if available
+            }
+          });
+          
+          console.log(`🧬 Fusion strategy: ${fusionResult.strategy}`);
+          console.log(`   Balance: ${Math.round(fusionResult.symbolicWeight * 100)}% symbolic / ${Math.round(fusionResult.neuralWeight * 100)}% neural`);
+          console.log(`   Preservation score: ${Math.round(fusionResult.preservationScore * 100)}%`);
+          
+          finalResult = {
+            content: fusionResult.fusedResponse, // ← FUSION, niet selection
+            emotion: decisionResult.emotion, // Symbolic leidt emotie
+            confidence: fusionResult.fusedConfidence, // Weighted average
+            label: hybridResult.label as UnifiedResponse['label'],
+            reasoning: `🧬 NeSy Fusion: Symbolic core (${Math.round(fusionResult.symbolicWeight*100)}%) + Neural context (${Math.round(fusionResult.neuralWeight*100)}%)`,
+            symbolicInferences: [
+              `🧬 NEUROSYMBOLISCHE FUSION v20`,
+              `🧠 Symbolic: ${decisionResult.emotion} (confidence: ${decisionResult.confidence.toFixed(2)})`,
+              `🤖 Neural: Enhanced with context (validation: ${hybridResult.metadata.validated ? '✅' : '❌'})`,
+              `⚖️ Balance: ${Math.round(fusionResult.symbolicWeight*100)}% seed / ${Math.round(fusionResult.neuralWeight*100)}% LLM`,
+              `📊 Strategy: ${fusionResult.strategy}`,
+              `🔍 Preservation: ${Math.round(fusionResult.preservationScore*100)}%`,
+              ...decisionResult.symbolicInferences.slice(0, 2)
+            ],
+            secondaryInsights: hybridResult.metadata.auditLog.slice(0, 5),
+            metadata: {
+              processingPath: 'hybrid', // Always hybrid nu
+              totalProcessingTime: Date.now() - startTime,
+              componentsUsed: [
+                '🧬 NeSy Fusion Engine v20',
+                '🎯 Policy Engine v16',
+                '💡 Semantic Graph',
+                '🛡️ Validation Layer',
+                `Knowledge Base (${knowledgeStats.total} items)`,
+                ...(briefing ? ['Strategic Briefing'] : [])
               ],
-              secondaryInsights: hybridResult.metadata.auditLog.slice(0, 5),
-              metadata: {
-                processingPath: 'hybrid',
-                totalProcessingTime: Date.now() - startTime,
-                componentsUsed: [
-                  '🎯 Policy Engine v16',
-                  '💡 Semantic Graph',
-                  '🛡️ Validation Layer',
-                  `Knowledge Base (${knowledgeStats.total} items)`,
-                  ...(briefing ? ['Strategic Briefing'] : [])
-                ],
-                fallback: false,
-                apiCollaboration: {
-                  api1Used: true,
-                  api2Used: !!briefing,
-                  vectorApiUsed: !!vectorApiKey,
-                  googleApiUsed: false,
-                  seedGenerated: false,
-                  secondaryAnalysis: !!briefing
-                }
+              fallback: false,
+              fusionMetadata: {
+                symbolicWeight: fusionResult.symbolicWeight,
+                neuralWeight: fusionResult.neuralWeight,
+                preservationScore: fusionResult.preservationScore,
+                strategy: fusionResult.strategy
+              },
+              apiCollaboration: {
+                api1Used: true,
+                api2Used: !!briefing,
+                vectorApiUsed: !!vectorApiKey,
+                googleApiUsed: false,
+                seedGenerated: false,
+                secondaryAnalysis: !!briefing
               }
-            };
-          } else {
-            console.warn('⚠️ Hybrid orchestration validation FAILED, falling back to unified decision');
-            console.warn('  Validated:', hybridResult.metadata.validated);
-            console.warn('  Constraints OK:', hybridResult.metadata.constraintsOK);
-            console.warn('  Audit log:', hybridResult.metadata.auditLog.slice(-3));
-          }
+            }
+          };
         } catch (hybridError) {
           console.error('❌ HYBRID ORCHESTRATION ERROR - falling back to unified decision');
           console.error('  Error type:', hybridError instanceof Error ? 'Error' : typeof hybridError);

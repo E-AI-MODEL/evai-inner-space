@@ -27,6 +27,12 @@ export interface DecisionResult {
   label: "Valideren" | "Reflectievraag" | "Suggestie";
   symbolicInferences: string[];
   meta: string;
+  fusionReady?: boolean;
+  seedCore?: {
+    therapeuticIntent: string;
+    preserveStructure: boolean;
+    originalSeed?: string;
+  };
 }
 
 export function useUnifiedDecisionCore() {
@@ -361,7 +367,13 @@ export function useUnifiedDecisionCore() {
       sources,
       label,
       symbolicInferences,
-      meta: `🧠 Neurosymbolisch v3.0: ${sources.length} bronnen${browserEmotion ? ` + Browser ML(${browserEmotion})` : ''}`
+      meta: `🧠 Neurosymbolisch v3.0: ${sources.length} bronnen${browserEmotion ? ` + Browser ML(${browserEmotion})` : ''}`,
+      fusionReady: true, // Signal dat dit seed klaar is voor fusion
+      seedCore: {
+        therapeuticIntent: bestSource.metadata?.therapeuticIntent || responseType,
+        preserveStructure: true,
+        originalSeed: bestSource.response_text
+      }
     };
   };
 
