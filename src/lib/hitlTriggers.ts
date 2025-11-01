@@ -169,5 +169,34 @@ export async function resolveHITL(
     return false;
   }
 
+  console.log('✅ HITL item resolved:', itemId, status);
+  
+  // ✅ NEW: Trigger Meta-Learner (async, non-blocking)
+  void (async () => {
+    try {
+      const { data: item } = await supabase
+        .from('hitl_queue')
+        .select('*')
+        .eq('id', itemId)
+        .single();
+      
+      if (!item) return;
+      
+      const { FusionWeightCalibrator } = await import('@/lib/fusionWeightCalibrator');
+      const calibrator = new FusionWeightCalibrator();
+      
+      // Parse context JSONB safely
+      const ctx = (item.context as any) || {};
+      
+      await calibrator.learnFromHITL(itemId, status, {
+        contextType: item.trigger_type,
+        confidence: typeof ctx.confidence === 'number' ? ctx.confidence : 0.5,
+        tdScore: typeof ctx.tdScore === 'number' ? ctx.tdScore : 0.5
+      });
+    } catch (e) {
+      console.error('❌ Meta-Learner HITL integration failed:', e);
+    }
+  })();
+  
   return true;
 }

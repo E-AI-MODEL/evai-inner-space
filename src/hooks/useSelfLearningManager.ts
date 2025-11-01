@@ -100,6 +100,8 @@ export function useSelfLearningManager() {
 
       // Log succesvolle zelfleer-actie
       try {
+        const learningImpact = Math.max(0.05, (result.confidence ?? 0.5) * 0.1);
+        
         await supabase.rpc('log_reflection_event', {
           p_trigger_type: correction ? 'correction' : (lowConfidence ? 'low_confidence' : 'novel_topic'),
           p_context: {
@@ -112,8 +114,23 @@ export function useSelfLearningManager() {
             newSeed: { id: newSeed.id, emotion: newSeed.emotion, label: newSeed.label }
           },
           p_new_seeds_generated: 1,
-          p_learning_impact: Math.max(0.05, (result.confidence ?? 0.5) * 0.1)
+          p_learning_impact: learningImpact
         });
+        
+        // ✅ NEW: Trigger Meta-Learner (async, non-blocking)
+        void (async () => {
+          try {
+            const { FusionWeightCalibrator } = await import('@/lib/fusionWeightCalibrator');
+            const calibrator = new FusionWeightCalibrator();
+            await calibrator.learnFromReflection({
+              trigger_type: correction ? 'correction' : (lowConfidence ? 'low_confidence' : 'novel_topic'),
+              new_seeds_generated: 1,
+              learning_impact: learningImpact
+            });
+          } catch (e) {
+            console.error('❌ Meta-Learner reflection integration failed:', e);
+          }
+        })();
         
         toast.success('🌱 Self-learning activated', {
           description: `New seed generated for ${newSeed.emotion}`

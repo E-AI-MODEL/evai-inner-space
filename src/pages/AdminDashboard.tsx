@@ -30,6 +30,7 @@ import { NGBSEPanel } from '@/components/admin/NGBSEPanel';
 import { HealingMetrics } from '@/components/admin/HealingMetrics';
 import { LiveFlowDiagram } from '@/components/admin/LiveFlowDiagram';
 import { MasterFlowStatus } from '@/components/admin/MasterFlowStatus';
+import { FusionWeightMonitor } from '@/components/admin/FusionWeightMonitor';
 import { LogOut, Trash2 } from 'lucide-react';
 import { getAuditStats, getDecisionLogs } from '@/services/AuditService';
 
@@ -148,6 +149,8 @@ const AdminDashboard = () => {
                 <LiveFlowDiagram />
                 <MasterFlowStatus />
               </div>
+
+              <FusionWeightMonitor />
 
               <Card>
                 <CardHeader>

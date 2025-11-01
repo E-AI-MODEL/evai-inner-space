@@ -268,6 +268,48 @@ export type Database = {
         }
         Relationships: []
       }
+      fusion_weight_profiles: {
+        Row: {
+          context_type: string
+          created_at: string | null
+          id: string
+          is_candidate: boolean | null
+          last_updated: string | null
+          metadata: Json | null
+          neural_weight: number
+          sample_count: number | null
+          success_rate: number | null
+          symbolic_weight: number
+          user_id: string
+        }
+        Insert: {
+          context_type: string
+          created_at?: string | null
+          id?: string
+          is_candidate?: boolean | null
+          last_updated?: string | null
+          metadata?: Json | null
+          neural_weight?: number
+          sample_count?: number | null
+          success_rate?: number | null
+          symbolic_weight?: number
+          user_id?: string
+        }
+        Update: {
+          context_type?: string
+          created_at?: string | null
+          id?: string
+          is_candidate?: boolean | null
+          last_updated?: string | null
+          metadata?: Json | null
+          neural_weight?: number
+          sample_count?: number | null
+          success_rate?: number | null
+          symbolic_weight?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       healing_attempts: {
         Row: {
           attempt_number: number

@@ -158,22 +158,28 @@ function calculatePreservation(symbolic: string, neural: string): number {
 export async function assembleFusion(ctx: FusionContext): Promise<FusionResult> {
   console.log('🧬 NeSy Fusion Assembly starting...');
   
-  // Determine weights based on validation
-  let symbolicWeight = 0.7; // Default: 70% symbolic (seed)
-  let neuralWeight = 0.3;   // Default: 30% neural (LLM context)
+  // ✅ NEW: Get learned weights from cache (non-blocking!)
+  const { FusionWeightCache } = await import('@/lib/fusionWeightCache');
+  const cache = FusionWeightCache.getInstance();
+  const contextType = determineContextType(ctx);
+  const learnedWeights = await cache.getWeights(contextType);
   
-  // Als neural validation faalt, meer symbolic
+  console.log(`📊 Using learned weights for ${contextType}:`, learnedWeights);
+  
+  // Start with learned weights (not defaults!)
+  let symbolicWeight = learnedWeights.symbolicWeight;
+  let neuralWeight = learnedWeights.neuralWeight;
+  
+  // Apply validation-based adjustments (override learned weights bij crisis!)
   if (!ctx.validation.validated || !ctx.validation.constraintsOK) {
-    console.log('⚠️ Neural validation failed, increasing symbolic weight to 90%');
+    console.log('⚠️ Neural validation failed, boosting symbolic to 90% (safety override)');
     symbolicWeight = 0.9;
     neuralWeight = 0.1;
-  }
-  
-  // Als symbolic confidence laag, meer neural allowed
-  if (ctx.symbolic.confidence < 0.6) {
-    console.log('⚠️ Low symbolic confidence, increasing neural weight to 40%');
-    symbolicWeight = 0.6;
-    neuralWeight = 0.4;
+  } else if (ctx.symbolic.confidence < 0.6) {
+    // Only adjust if no crisis (learned weights blijven basis)
+    console.log('⚠️ Low symbolic confidence, adjusting weights slightly');
+    symbolicWeight = Math.max(0.5, symbolicWeight - 0.1);
+    neuralWeight = 1.0 - symbolicWeight;
   }
   
   // Preservation check: hoe goed heeft LLM de seed behouden?
@@ -243,4 +249,24 @@ function weightedBlend(symbolic: string, neural: string, weight: number): string
   
   const blended = [...coreSentences, ...contextSentences.slice(0, 2)].join('. ').trim();
   return blended.endsWith('.') ? blended : blended + '.';
+}
+
+/**
+ * Determine context type for fusion weight learning
+ */
+function determineContextType(ctx: FusionContext): string {
+  // Map validation/confidence to context types
+  if (!ctx.validation.validated || !ctx.validation.constraintsOK) {
+    return 'crisis';
+  }
+  if (ctx.symbolic.confidence < 0.6) {
+    return 'low_confidence';
+  }
+  if (ctx.symbolic.confidence >= 0.8) {
+    return 'high_confidence';
+  }
+  if (ctx.validation.tdScore && ctx.validation.tdScore < 0.4) {
+    return 'user_agency_high';
+  }
+  return 'normal';
 }
