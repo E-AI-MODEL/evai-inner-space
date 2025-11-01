@@ -30,7 +30,9 @@ describe('safetyGuard', () => {
           ok: true,
           decision: 'allow' as SafetyDecision,
           score: 0.95,
-          flags: []
+          severity: 'low',
+          flags: [],
+          details: 'Geen problemen'
         },
         error: null
       });
@@ -52,7 +54,9 @@ describe('safetyGuard', () => {
           decision: 'block' as SafetyDecision,
           score: 0.1,
           flags: ['violence', 'self-harm'],
-          reasons: ['Content contains harmful intent']
+          reasons: ['Content contains harmful intent'],
+          severity: 'high',
+          details: 'Harmful intent detected'
         },
         error: null
       });
@@ -63,18 +67,22 @@ describe('safetyGuard', () => {
       expect(result.decision).toBe('block');
       expect(result.flags.length).toBeGreaterThan(0);
       expect(result.reasons).toBeDefined();
+      expect(result.severity).toBe('high');
+      expect(result.details).toBe('Harmful intent detected');
     });
 
     it('should review borderline content', async () => {
       const { supabase } = await import('@/integrations/supabase/client');
-      
+
       vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
         data: {
           ok: true,
           decision: 'review' as SafetyDecision,
           score: 0.6,
           flags: ['sensitive'],
-          reasons: ['Content may need review']
+          reasons: ['Content may need review'],
+          severity: 'medium',
+          details: 'Borderline sensitive content'
         },
         error: null
       });
@@ -84,6 +92,8 @@ describe('safetyGuard', () => {
       expect(result.decision).toBe('review');
       expect(result.score).toBeGreaterThan(0);
       expect(result.score).toBeLessThan(1);
+      expect(result.severity).toBe('medium');
+      expect(result.details).toBe('Borderline sensitive content');
     });
 
     it('should handle API errors gracefully', async () => {
@@ -120,7 +130,7 @@ describe('safetyGuard', () => {
       const { incrementApiUsage } = await import('@/utils/apiUsageTracker');
       
       vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
-        data: { ok: true, decision: 'allow', score: 1, flags: [] },
+        data: { ok: true, decision: 'allow', score: 1, flags: [], severity: 'low' },
         error: null
       });
 

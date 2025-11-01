@@ -10,6 +10,8 @@ export interface SafetyResult {
   score: number;
   flags: string[];
   reasons?: string[];
+  severity: 'low' | 'medium' | 'high';
+  details?: string;
   error?: string;
 }
 
@@ -22,26 +24,50 @@ export async function checkPromptSafety(input: string): Promise<SafetyResult> {
 
     if (error) {
       console.error('❌ Safety edge error:', error);
-      return { ok: false, decision: 'allow', score: 0, flags: [], error: error.message };
+      return {
+        ok: false,
+        decision: 'allow',
+        score: 0,
+        flags: [],
+        reasons: [],
+        severity: 'low',
+        error: error.message
+      };
     }
 
-    const result = data as { 
-      ok?: boolean; 
-      decision?: SafetyDecision; 
-      score?: number; 
-      flags?: string[]; 
+    const result = data as {
+      ok?: boolean;
+      decision?: SafetyDecision;
+      score?: number;
+      flags?: string[];
       reasons?: string[];
+      severity?: string;
+      details?: string;
       error?: string;
     };
+    const severity = ['low', 'medium', 'high'].includes(String(result?.severity))
+      ? (result?.severity as 'low' | 'medium' | 'high')
+      : 'low';
     return {
       ok: !!result?.ok,
       decision: result?.decision || 'allow',
-      score: typeof result?.score === 'number' ? result.score : 0,
+      score: typeof result?.score === 'number' ? Math.min(Math.max(result.score, 0), 1) : 0,
       flags: Array.isArray(result?.flags) ? result.flags : [],
-      reasons: Array.isArray(result?.reasons) ? result.reasons : []
+      reasons: Array.isArray(result?.reasons) ? result.reasons : [],
+      severity,
+      details: typeof result?.details === 'string' ? result.details : undefined,
+      error: result?.error
     };
   } catch (e) {
     console.error('🔴 Safety check failed:', e);
-    return { ok: false, decision: 'allow', score: 0, flags: [], error: e instanceof Error ? e.message : String(e) };
+    return {
+      ok: false,
+      decision: 'allow',
+      score: 0,
+      flags: [],
+      reasons: [],
+      severity: 'low',
+      error: e instanceof Error ? e.message : String(e)
+    };
   }
 }
