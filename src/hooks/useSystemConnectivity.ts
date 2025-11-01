@@ -38,12 +38,12 @@ export function useSystemConnectivity() {
     let openai1: ApiConfigStatus = 'checking';
     try {
       const { data, error } = await supabase.functions.invoke('evai-admin', {
-        body: { operation: 'test-openai-key', apiKey: 'server-key-test' }
+        body: { operation: 'test-openai-key' }
       });
       if (error) {
         openai1 = 'missing';
       } else {
-        const ok = (data as { ok?: boolean })?.ok === true;
+        const ok = (data as { isValid?: boolean })?.isValid === true;
         openai1 = ok ? 'configured' : 'missing';
       }
     } catch {
