@@ -73,19 +73,19 @@ export function useProcessingOrchestrator() {
       // 🛡️ VEILIGHEIDSLAG: Pre-response harm detection (altijd doen)
       console.log('🛡️ Safety check: Analyzing user input...');
       const safetyResult = await checkPromptSafety(userInput);
-      
+
       if (safetyResult.decision === 'block') {
-        console.warn('🚫 Safety check BLOCKED input:', safetyResult.flags);
+        console.warn('🚫 Safety check BLOCKED input:', safetyResult.flags, 'severity:', safetyResult.severity, 'details:', safetyResult.details);
         toast.error('Input geblokkeerd om veiligheidsredenen', {
-          description: 'Je bericht bevat mogelijk schadelijke inhoud. Probeer het anders te formuleren.'
+          description: safetyResult.details || 'Je bericht bevat mogelijk schadelijke inhoud. Probeer het anders te formuleren.'
         });
         throw new Error('Input geblokkeerd vanwege veiligheidsredenen');
       }
-      
+
       if (safetyResult.decision === 'review') {
-        console.warn('⚠️ Safety check flagged for REVIEW:', safetyResult.flags);
+        console.warn('⚠️ Safety check flagged for REVIEW:', safetyResult.flags, 'severity:', safetyResult.severity, 'details:', safetyResult.details);
         toast.warning('Let op: gevoelige inhoud gedetecteerd', {
-          description: 'We verwerken je bericht, maar houd rekening met gevoeligheid.'
+          description: safetyResult.details || 'We verwerken je bericht, maar houd rekening met gevoeligheid.'
         });
       } else {
         console.log('✅ Safety check PASSED');

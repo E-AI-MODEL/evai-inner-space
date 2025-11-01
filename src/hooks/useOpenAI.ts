@@ -59,10 +59,21 @@ export function useOpenAI() {
 
       // 1) Safety check via dedicated backend channel
       const safety = await checkPromptSafety(sanitizedInput);
-      console.log('🛡️ Safety decision:', safety.decision, 'score:', safety.score, 'flags:', safety.flags);
+      console.log(
+        '🛡️ Safety decision:',
+        safety.decision,
+        'score:',
+        safety.score,
+        'severity:',
+        safety.severity,
+        'flags:',
+        safety.flags,
+        'details:',
+        safety.details
+      );
 
       if (safety.decision === 'block') {
-        throw new Error('Input is blocked by safety checker');
+        throw new Error(safety.details || 'Input is blocked by safety checker');
       }
 
       // 2) Build prompt and call chat via Edge Function
@@ -140,7 +151,7 @@ Focus op Nederlandse therapeutische context met empathie en begrip.`;
             reasoning: parsed.reasoning || 'Neural processing',
             label: parsed.label || 'Valideren',
             triggers: Array.isArray(parsed.triggers) ? parsed.triggers : [parsed.emotion || 'neutral'],
-            meta: `Edge Chat ${OPENAI_MODEL} (${requestTime}ms) | safety=${safety.decision}(${Math.round(safety.score * 100)}%)`,
+            meta: `Edge Chat ${OPENAI_MODEL} (${requestTime}ms) | safety=${safety.decision}/${safety.severity}(${Math.round(safety.score * 100)}%)`,
             symbolicInferences: [`🧠 Neural: ${parsed.emotion}`, `📊 Confidence: ${Math.round((parsed.confidence || 0.7) * 100)}%`]
           };
 
@@ -155,7 +166,7 @@ Focus op Nederlandse therapeutische context met empathie en begrip.`;
             reasoning: 'Fallback processing (JSON parse failed)',
             label: 'Valideren',
             triggers: ['neutral'],
-            meta: `Edge Chat ${OPENAI_MODEL} (fallback, ${requestTime}ms) | safety=${safety.decision}(${Math.round(safety.score * 100)}%)`,
+            meta: `Edge Chat ${OPENAI_MODEL} (fallback, ${requestTime}ms) | safety=${safety.decision}/${safety.severity}(${Math.round(safety.score * 100)}%)`,
             symbolicInferences: ['🧠 Neural processing (fallback)']
           };
         }
@@ -168,7 +179,7 @@ Focus op Nederlandse therapeutische context met empathie en begrip.`;
           reasoning: 'Fallback processing (JSON parse error)',
           label: 'Valideren',
           triggers: ['neutral'],
-          meta: `Edge Chat ${OPENAI_MODEL} (fallback, ${requestTime}ms) | safety=${safety.decision}(${Math.round(safety.score * 100)}%)`,
+          meta: `Edge Chat ${OPENAI_MODEL} (fallback, ${requestTime}ms) | safety=${safety.decision}/${safety.severity}(${Math.round(safety.score * 100)}%)`,
           symbolicInferences: ['🧠 Neural processing (fallback)']
         };
       }

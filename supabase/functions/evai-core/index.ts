@@ -270,9 +270,13 @@ async function handleSafety(body: any) {
   const messages = [
     {
       role: "system",
-      content: "You are a content safety analyzer. Respond with JSON only: {safe: boolean, reason: string, severity: 'low'|'medium'|'high'}",
+      content:
+        "You are a content safety analyzer. Respond ONLY with compact JSON using this schema: {decision:'allow'|'review'|'block', score:number (0-1), severity:'low'|'medium'|'high', flags:string[], reasons:string[], details:string}. Never include additional keys or text. Pick decision='block' for unsafe/harmful content, 'review' for borderline or policy-sensitive content, otherwise 'allow'. Ensure score reflects likelihood of being safe (0=unsafe, 1=clearly safe).",
     },
-    { role: "user", content: `Analyze this text for safety concerns: "${text}"` },
+    {
+      role: "user",
+      content: `Analyze this text for safety concerns and follow the schema strictly. Text:"${text}"`,
+    },
   ];
 
   const resp = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -303,19 +307,66 @@ async function handleSafety(body: any) {
   }
 
   const content = data?.choices?.[0]?.message?.content ?? "{}";
-  let safetyResult;
+  let safetyResult: Record<string, unknown>;
   try {
     safetyResult = JSON.parse(content);
   } catch {
-    safetyResult = { safe: true, reason: "Parse error", severity: "low" };
+    safetyResult = { decision: "review", score: 0.5, severity: "medium", flags: ["parse_error"], reasons: ["Unable to parse model response"], details: "Model response parse failure" };
   }
+
+  const normalizeDecision = (value: unknown, severity: string, safe?: boolean): "allow" | "review" | "block" => {
+    if (value === "allow" || value === "review" || value === "block") {
+      return value;
+    }
+    if (typeof safe === "boolean") {
+      return safe ? "allow" : "block";
+    }
+    switch (severity) {
+      case "high":
+        return "block";
+      case "medium":
+        return "review";
+      default:
+        return "allow";
+    }
+  };
+
+  const rawSeverity = typeof safetyResult?.severity === "string" ? safetyResult.severity.toLowerCase() : undefined;
+  const severity = rawSeverity === "medium" || rawSeverity === "high" ? rawSeverity : "low";
+  const decision = normalizeDecision(safetyResult?.decision, severity, safetyResult?.safe as boolean | undefined);
+  const numericScore = typeof safetyResult?.score === "number" ? safetyResult.score : undefined;
+  const derivedScore = typeof numericScore === "number" && Number.isFinite(numericScore)
+    ? Math.min(Math.max(numericScore, 0), 1)
+    : decision === "block"
+      ? 0
+      : decision === "review"
+        ? 0.5
+        : 0.95;
+  const flags = Array.isArray(safetyResult?.flags)
+    ? safetyResult.flags.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const reasons = Array.isArray(safetyResult?.reasons)
+    ? safetyResult.reasons.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const details = typeof safetyResult?.details === "string" && safetyResult.details.trim().length > 0
+    ? safetyResult.details.trim()
+    : typeof safetyResult?.reason === "string"
+      ? String(safetyResult.reason)
+      : decision === "block"
+        ? "Content rejected by safety policy"
+        : decision === "review"
+          ? "Content requires additional review"
+          : "No safety concerns detected";
 
   return new Response(
     JSON.stringify({
-      ok: true,
-      safe: safetyResult.safe !== false,
-      reason: safetyResult.reason || "No concerns detected",
-      severity: safetyResult.severity || "low",
+      ok: decision !== "block",
+      decision,
+      score: derivedScore,
+      severity,
+      flags,
+      reasons,
+      details,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
