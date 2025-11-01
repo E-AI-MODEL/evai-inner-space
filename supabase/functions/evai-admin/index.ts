@@ -114,16 +114,18 @@ function handleAuth(body: any) {
 }
 
 async function handleTestOpenAIKey(body: any) {
-  const { apiKey } = body || {};
+  const incomingKey = typeof body?.apiKey === "string" ? body.apiKey : undefined;
+  const apiKey = !incomingKey || incomingKey === "server-key-test" ? OPENAI_API_KEY : incomingKey;
 
-  if (!apiKey || typeof apiKey !== "string") {
+  if (!apiKey) {
     return new Response(
-      JSON.stringify({ ok: false, error: "No API key provided" }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ ok: true, isValid: false, error: "Server OpenAI API key not configured" }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
-  console.log(`🧪 Testing OpenAI key: ${apiKey.substring(0, 10)}...`);
+  const maskedKey = `${apiKey.substring(0, 4)}...`;
+  console.log(`🧪 Testing OpenAI key: ${maskedKey}`);
 
   try {
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
