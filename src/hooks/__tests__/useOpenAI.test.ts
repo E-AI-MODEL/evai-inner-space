@@ -84,8 +84,10 @@ describe('useOpenAI', () => {
 
     expect(supabase.functions.invoke).toHaveBeenCalledTimes(1);
     const [, invokeArgs] = vi.mocked(supabase.functions.invoke).mock.calls[0];
-    expect(invokeArgs?.body?.messages.filter((msg: any) => msg.role === 'system')).toHaveLength(3);
-    expect(invokeArgs?.body?.messages[2].content).toContain('Aanvullend veiligheidsbeleid');
+    const body = invokeArgs?.body as { messages?: Array<any> } | undefined;
+    const messages = body?.messages || [];
+    expect(messages.filter((msg: any) => msg.role === 'system')).toHaveLength(3);
+    expect(messages[2].content).toContain('Aanvullend veiligheidsbeleid');
 
     expect(detection.emotion).toBe('blij');
     expect(detection.meta).toContain('review/medium');
