@@ -1,18 +1,20 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type FlowNodeName = 
-  | 'Safety Check'
-  | 'Rubrics Assessment'
-  | 'EAA Evaluation'
-  | 'Regisseur Briefing'
-  | 'Policy Decision'
-  | 'Semantic Graph'
-  | 'TD-Matrix'
-  | 'E_AI Rules'
-  | 'NGBSE Check'
-  | 'HITL Check'
-  | 'Response Generation'
-  | 'Validation'
+export type FlowNodeName =
+  | 'SAFETY_CHECK'
+  | 'RUBRICS_EAA'
+  | 'STRATEGIC_BRIEFING'
+  | 'POLICY_DECISION'
+  | 'SEMANTIC_GRAPH'
+  | 'GENERATION'
+  | 'VALIDATION_FUSION'
+  | 'TD_MATRIX'
+  | 'EAI_RULES'
+  | 'NGBSE_CHECK'
+  | 'HITL_CHECK'
+  | 'AUTO_HEALING'
+  | 'RESPONSE_GENERATION'
+  | 'VALIDATION'
   | 'FUSION_ASSEMBLY'
   | 'FUSION_VALIDATION'
   | 'SEED_PRESERVATION_CHECK';

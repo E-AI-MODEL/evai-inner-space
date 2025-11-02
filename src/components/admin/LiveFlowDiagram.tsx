@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Activity, CheckCircle, XCircle, Clock, Zap } from 'lucide-react';
+import type { FlowNodeName } from '@/lib/flowEventLogger';
 
 interface FlowNode {
   id: string;
@@ -12,20 +13,17 @@ interface FlowNode {
   timestamp: string;
 }
 
-const NODE_ORDER = [
-  'Safety Check',
-  'Rubrics Assessment',
-  'EAA Evaluation',
-  'Regisseur Briefing',
-  'Policy Decision',
-  'Semantic Graph',
-  'NeSy Fusion',
-  'TD-Matrix',
-  'E_AI Rules',
-  'NGBSE Check',
-  'HITL Check',
-  'Response Generation',
-  'Validation',
+const NODE_ORDER: Array<{ id: FlowNodeName | string; label: string }> = [
+  { id: 'SAFETY_CHECK', label: 'Safety Check' },
+  { id: 'RUBRICS_EAA', label: 'Rubrics & EAA' },
+  { id: 'STRATEGIC_BRIEFING', label: 'Strategic Briefing' },
+  { id: 'POLICY_DECISION', label: 'Policy Decision' },
+  { id: 'SEMANTIC_GRAPH', label: 'Semantic Graph' },
+  { id: 'GENERATION', label: 'Seed/LLM Generation' },
+  { id: 'VALIDATION_FUSION', label: 'Validation & Fusion' },
+  { id: 'NGBSE_CHECK', label: 'NGBSE Check' },
+  { id: 'HITL_CHECK', label: 'HITL Check' },
+  { id: 'AUTO_HEALING', label: 'Auto-Healing' },
 ];
 
 export function LiveFlowDiagram() {
@@ -105,12 +103,12 @@ export function LiveFlowDiagram() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {NODE_ORDER.map((nodeName, index) => {
-            const node = nodes.get(nodeName);
+          {NODE_ORDER.map(({ id, label }, index) => {
+            const node = nodes.get(id);
             const status = node?.status || 'pending';
-            
+
             return (
-              <div key={nodeName} className="flex items-center gap-3">
+              <div key={id} className="flex items-center gap-3">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold">
                   {index + 1}
                 </div>
@@ -123,9 +121,9 @@ export function LiveFlowDiagram() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {getNodeIcon(status)}
-                      <span className="font-medium text-sm">{nodeName}</span>
+                      <span className="font-medium text-sm">{label}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       {node?.processingTime && (
                         <Badge variant="outline" className="text-xs">

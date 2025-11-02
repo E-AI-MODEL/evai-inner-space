@@ -6,16 +6,16 @@
 
 import { decideNextStep, Context as PolicyContext, explainDecision } from '../policy/decision.policy';
 import { validatePlan, validateResponse, validateEAACompliance } from '../policy/validation.policy';
-import { suggestInterventions, getAllowedInterventions, checkContraIndications } from '../semantics/graph';
+import { suggestInterventions, getAllowedInterventions } from '../semantics/graph';
 import { supabase } from '@/integrations/supabase/client';
-import { extractContextParams } from '../utils/contextExtractor';
 
 // v20 EAA Framework Imports
 import { evaluateEAA, validateEAAForStrategy } from '../lib/eaaEvaluator';
 import { reflectOnHistory, storeReflectiveMemory } from '../lib/regisseurReflectie';
 import { evaluateTD, estimateAIContribution } from '../lib/tdMatrix';
 import { evaluateEAIRules, executeEAIAction, createEAIContext } from '../policy/eai.rules';
-import type { EAAProfile, TDScore, EAIRuleResult } from '@/types/eaa';
+import type { EAAProfile, TDScore } from '@/types/eaa';
+import type { FlowNodeName } from '@/lib/flowEventLogger';
 
 export interface OrchestrationContext {
   userInput: string;
@@ -73,266 +73,345 @@ export async function orchestrate(
 ): Promise<OrchestrationResult> {
   const startTime = Date.now();
   const auditLog: string[] = [];
-  
+
   auditLog.push(`🚀 EvAI v20 Orchestration started at ${new Date().toISOString()}`);
   auditLog.push(`📝 Input: "${ctx.userInput.substring(0, 50)}..."`);
-  
-  // ============ LAYER 8: EAA EVALUATION (v20) ============
-  let eaaProfile: EAAProfile = { ownership: 0.5, autonomy: 0.5, agency: 0.5 };
-  try {
-    const rubricContext = ctx.rubricAssessments && ctx.rubricAssessments.length > 0 ? {
-      riskScore: ctx.rubricAssessments[0].riskScore,
-      protectiveScore: ctx.rubricAssessments[0].protectiveScore,
-      dominantPattern: ctx.rubricAssessments[0].rubricId
-    } : undefined;
-    
-    eaaProfile = evaluateEAA(ctx.userInput, rubricContext);
-    auditLog.push(`🧠 EAA Profile: O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
-  } catch (err) {
-    console.error('⚠️ EAA Evaluation failed:', err);
-    auditLog.push('⚠️ EAA Evaluation failed, using defaults');
-  }
-  
-  // ============ REGISSEUR REFLECTIE (v20) ============
-  let regisseurAdvice = { advice: 'geen precedent', reason: 'init', avgAgency: 0.5 };
-  try {
-    regisseurAdvice = await reflectOnHistory(ctx.userInput, supabase, {
-      similarityThreshold: 0.3,
-      maxResults: 5
-    });
-    auditLog.push(`💭 Regisseur: ${regisseurAdvice.advice} (avg_agency=${regisseurAdvice.avgAgency.toFixed(2)})`);
-  } catch (err) {
-    console.error('⚠️ Regisseur Reflection failed:', err);
-    auditLog.push('⚠️ Regisseur Reflection failed');
-  }
-  
-  try {
-    // STAP 1: Analyze input complexity
-    const inputComplexity = analyzeInputComplexity(ctx.userInput);
-    auditLog.push(`📊 Input complexity: ${JSON.stringify(inputComplexity)}`);
 
-    // STAP 2: Policy Engine - decide next step
-    const policyCtx: PolicyContext = {
-      rubric: {
+  const { getOrCreateSessionId } = await import('@/lib/sessionManager');
+  const { logFlowEvent } = await import('@/lib/flowEventLogger');
+  const sessionId = getOrCreateSessionId();
+
+  const runStage = async <T>(
+    nodeName: FlowNodeName | string,
+    stageFn: () => Promise<T>,
+    metadataResolver?: (result: T) => Record<string, any> | undefined
+  ): Promise<T> => {
+    const stageStart = Date.now();
+    await logFlowEvent(sessionId, nodeName, 'processing');
+    try {
+      const result = await stageFn();
+      const metadata = metadataResolver ? metadataResolver(result) : undefined;
+      await logFlowEvent(sessionId, nodeName, 'completed', Date.now() - stageStart, metadata);
+      return result;
+    } catch (error) {
+      await logFlowEvent(sessionId, nodeName, 'failed', Date.now() - stageStart, {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+  };
+
+  await runStage('SAFETY_CHECK', async () => {
+    auditLog.push(`🛡️ Safety baseline: consent ${ctx.consent ? 'granted' : 'missing'}`);
+    if (!ctx.consent) {
+      auditLog.push('⚠️ Missing consent flag in orchestration context');
+    }
+    return { consent: ctx.consent };
+  }, result => ({ consent: result.consent ? 'granted' : 'missing' }));
+  
+  const defaultEAAProfile: EAAProfile = { ownership: 0.5, autonomy: 0.5, agency: 0.5 };
+  let eaaProfile: EAAProfile = defaultEAAProfile;
+
+  eaaProfile = await runStage('RUBRICS_EAA', async () => {
+    let profile = defaultEAAProfile;
+    try {
+      const rubricContext = ctx.rubricAssessments && ctx.rubricAssessments.length > 0 ? {
+        riskScore: ctx.rubricAssessments[0].riskScore,
+        protectiveScore: ctx.rubricAssessments[0].protectiveScore,
+        dominantPattern: ctx.rubricAssessments[0].rubricId
+      } : undefined;
+
+      profile = evaluateEAA(ctx.userInput, rubricContext);
+      auditLog.push(`🧠 EAA Profile: O=${profile.ownership.toFixed(2)} A=${profile.autonomy.toFixed(2)} Ag=${profile.agency.toFixed(2)}`);
+    } catch (err) {
+      console.error('⚠️ EAA Evaluation failed:', err);
+      auditLog.push('⚠️ EAA Evaluation failed, using defaults');
+    }
+    return profile;
+  }, profile => ({
+    ownership: Number(profile.ownership.toFixed(2)),
+    autonomy: Number(profile.autonomy.toFixed(2)),
+    agency: Number(profile.agency.toFixed(2))
+  }));
+
+  await runStage('STRATEGIC_BRIEFING', async () => {
+    let advice = { advice: 'geen precedent', reason: 'init', avgAgency: 0.5 };
+    try {
+      advice = await reflectOnHistory(ctx.userInput, supabase, {
+        similarityThreshold: 0.3,
+        maxResults: 5
+      });
+      auditLog.push(`💭 Regisseur: ${advice.advice} (avg_agency=${advice.avgAgency.toFixed(2)})`);
+    } catch (err) {
+      console.error('⚠️ Regisseur Reflection failed:', err);
+      auditLog.push('⚠️ Regisseur Reflection failed');
+    }
+    return advice;
+  }, advice => ({
+    avgAgency: Number(advice.avgAgency.toFixed(2)),
+    reason: advice.reason
+  }));
+  
+  try {
+    const { policyCtx, policyDecision } = await runStage('POLICY_DECISION', async () => {
+      const inputComplexity = analyzeInputComplexity(ctx.userInput);
+      auditLog.push(`📊 Input complexity: ${JSON.stringify(inputComplexity)}`);
+
+      const policyContext: PolicyContext = {
+        rubric: {
+          crisis: ctx.rubric.crisis,
+          distress: ctx.rubric.distress,
+          support: ctx.rubric.support,
+          coping: ctx.rubric.coping
+        },
+        seed: ctx.seed,
+        consent: ctx.consent,
+        inputComplexity
+      };
+
+      const decision = await decideNextStep(policyContext);
+      const explanation = explainDecision(decision, policyContext);
+      auditLog.push(...explanation);
+
+      return { policyCtx: policyContext, policyDecision: decision };
+    }, result => ({
+      action: result.policyDecision.action,
+      confidence: Number(result.policyDecision.confidence.toFixed(2))
+    }));
+
+    const semanticStage = await runStage('SEMANTIC_GRAPH', async () => {
+      const emotionForInterventions = ctx.topEmotion || ctx.seed.emotion || 'neutraal';
+      const allowedInterventions = getAllowedInterventions(emotionForInterventions, {
         crisis: ctx.rubric.crisis,
-        distress: ctx.rubric.distress,
-        support: ctx.rubric.support,
-        coping: ctx.rubric.coping
-      },
-      seed: ctx.seed,
-      consent: ctx.consent,
-      inputComplexity
-    };
+        coping: ctx.rubric.coping,
+        distress: ctx.rubric.distress
+      });
 
-    const policyDecision = await decideNextStep(policyCtx);
-    const explanation = explainDecision(policyDecision, policyCtx);
-    auditLog.push(...explanation);
+      const suggestedInterventions = suggestInterventions(emotionForInterventions);
+      auditLog.push(`💡 Semantic Layer:`);
+      auditLog.push(`  • Emotion: ${emotionForInterventions}`);
+      auditLog.push(`  • Suggested interventions: ${suggestedInterventions.map(i => i.intervention).join(', ')}`);
+      auditLog.push(`  • Allowed interventions: ${allowedInterventions.join(', ')}`);
 
-    // STAP 3: Semantic Layer - determine allowed interventions
-    const emotionForInterventions = ctx.topEmotion || ctx.seed.emotion || 'neutraal';
-    const allowedInterventions = getAllowedInterventions(emotionForInterventions, {
-      crisis: ctx.rubric.crisis,
-      coping: ctx.rubric.coping,
-      distress: ctx.rubric.distress
-    });
-    
-    const suggestedInterventions = suggestInterventions(emotionForInterventions);
-    auditLog.push(`💡 Semantic Layer:`);
-    auditLog.push(`  • Emotion: ${emotionForInterventions}`);
-    auditLog.push(`  • Suggested interventions: ${suggestedInterventions.map(i => i.intervention).join(', ')}`);
-    auditLog.push(`  • Allowed interventions: ${allowedInterventions.join(', ')}`);
+      return { emotionForInterventions, allowedInterventions, suggestedInterventions };
+    }, result => ({
+      emotion: result.emotionForInterventions,
+      allowed: result.allowedInterventions.length,
+      suggested: result.suggestedInterventions.length
+    }));
 
-    // STAP 4: Execute decision
-    let answer = '';
-    let emotion = emotionForInterventions;
-    let confidence = policyDecision.confidence;
-    let label: 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Interventie' | 'Fout' = 'Valideren';
-    let reasoning = policyDecision.reasoning;
-    let processingPath: 'seed' | 'template' | 'llm' | 'crisis' | 'fast' = 'seed';
-    let plan: any = null;
-    let validated = true;
-    let constraintsOK = true;
+    const generationResult = await runStage('GENERATION', async () => {
+      let answer = '';
+      let emotion = semanticStage.emotionForInterventions;
+      let confidence = policyDecision.confidence;
+      let label: 'Valideren' | 'Reflectievraag' | 'Suggestie' | 'Interventie' | 'Fout' = 'Valideren';
+      let reasoning = policyDecision.reasoning;
+      let processingPath: 'seed' | 'template' | 'llm' | 'crisis' | 'fast' = 'seed';
+      let plan: any = null;
 
-    switch (policyDecision.action) {
-      case 'USE_SEED':
-        auditLog.push(`🎯 Executing: USE_SEED`);
-        const seedResult = await compileSeedResponse(ctx, auditLog, eaaProfile);
-        answer = seedResult.answer;
-        processingPath = 'seed';
-        label = 'Valideren';
-        
-        // Store fusion metadata if available
-        if (seedResult.fusionMetadata) {
-          auditLog.push(`🧬 Fusion applied: ${seedResult.fusionMetadata.strategy} (${Math.round(seedResult.fusionMetadata.preservationScore * 100)}% preservation)`);
-        }
-        break;
+      switch (policyDecision.action) {
+        case 'USE_SEED':
+          auditLog.push(`🎯 Executing: USE_SEED`);
+          const seedResult = await compileSeedResponse(ctx, auditLog, eaaProfile);
+          answer = seedResult.answer;
+          processingPath = 'seed';
+          label = 'Valideren';
 
-      case 'FAST_PATH':
-        auditLog.push(`⚡ Executing: FAST_PATH`);
-        answer = generateFastPathResponse(ctx.userInput);
-        processingPath = 'fast';
-        label = 'Valideren';
-        break;
-
-      case 'TEMPLATE_ONLY':
-        auditLog.push(`📋 Executing: TEMPLATE_ONLY`);
-        answer = generateTemplateResponse(emotion, allowedInterventions);
-        processingPath = 'template';
-        label = 'Valideren';
-        break;
-
-      case 'ESCALATE_INTERVENTION':
-        auditLog.push(`🚨 Executing: ESCALATE_INTERVENTION`);
-        plan = {
-          goal: 'safety',
-          strategy: 'refer',
-          steps: ['veiligheid garanderen', 'contact opnemen met volwassene'],
-          interventions: ['verwijzing', 'veiligheid']
-        };
-        answer = generateCrisisResponse(ctx);
-        processingPath = 'crisis';
-        label = 'Interventie';
-        confidence = 0.95;
-        break;
-
-      case 'LLM_PLANNING':
-        auditLog.push(`🧠 Executing: LLM_PLANNING`);
-        // v20: LLM generation with v20 validation
-        try {
-          // Call edge function for LLM generation
-          const { data: llmData, error: llmError } = await supabase.functions.invoke('evai-core', {
-            body: {
-              operation: 'generate-response',
-              input: ctx.userInput,
-              emotion,
-              allowedInterventions,
-              eaaProfile,
-              conversationHistory: ctx.conversationHistory?.slice(-6) || []
-            }
-          });
-          
-          if (llmError || !llmData?.response) {
-            console.warn('⚠️ LLM generation failed, using template fallback');
-            answer = generateTemplateResponse(emotion, allowedInterventions);
-          } else {
-            answer = llmData.response;
-            auditLog.push(`✅ LLM generated response (${llmData.model || 'unknown'})`);
+          if (seedResult.fusionMetadata) {
+            auditLog.push(`🧬 Fusion applied: ${seedResult.fusionMetadata.strategy} (${Math.round(seedResult.fusionMetadata.preservationScore * 100)}% preservation)`);
           }
-        } catch (err) {
-          console.error('❌ LLM_PLANNING error:', err);
-          answer = generateTemplateResponse(emotion, allowedInterventions);
+          break;
+
+        case 'FAST_PATH':
+          auditLog.push(`⚡ Executing: FAST_PATH`);
+          answer = generateFastPathResponse(ctx.userInput);
+          processingPath = 'fast';
+          label = 'Valideren';
+          break;
+
+        case 'TEMPLATE_ONLY':
+          auditLog.push(`📋 Executing: TEMPLATE_ONLY`);
+          answer = generateTemplateResponse(emotion, semanticStage.allowedInterventions);
+          processingPath = 'template';
+          label = 'Valideren';
+          break;
+
+        case 'ESCALATE_INTERVENTION':
+          auditLog.push(`🚨 Executing: ESCALATE_INTERVENTION`);
+          plan = {
+            goal: 'safety',
+            strategy: 'refer',
+            steps: ['veiligheid garanderen', 'contact opnemen met volwassene'],
+            interventions: ['verwijzing', 'veiligheid']
+          };
+          answer = generateCrisisResponse(ctx);
+          processingPath = 'crisis';
+          label = 'Interventie';
+          confidence = 0.95;
+          break;
+
+        case 'LLM_PLANNING':
+          auditLog.push(`🧠 Executing: LLM_PLANNING`);
+          try {
+            const { data: llmData, error: llmError } = await supabase.functions.invoke('evai-core', {
+              body: {
+                operation: 'generate-response',
+                input: ctx.userInput,
+                emotion,
+                allowedInterventions: semanticStage.allowedInterventions,
+                eaaProfile,
+                conversationHistory: ctx.conversationHistory?.slice(-6) || []
+              }
+            });
+
+            if (llmError || !llmData?.response) {
+              console.warn('⚠️ LLM generation failed, using template fallback');
+              answer = generateTemplateResponse(emotion, semanticStage.allowedInterventions);
+            } else {
+              answer = llmData.response;
+              auditLog.push(`✅ LLM generated response (${llmData.model || 'unknown'})`);
+            }
+          } catch (err) {
+            console.error('❌ LLM_PLANNING error:', err);
+            answer = generateTemplateResponse(emotion, semanticStage.allowedInterventions);
+          }
+          processingPath = 'llm';
+          label = 'Reflectievraag';
+          break;
+      }
+
+      return { answer, emotion, confidence, label, reasoning, processingPath, plan };
+    }, result => ({
+      processingPath: result.processingPath,
+      label: result.label,
+      confidence: Number(result.confidence.toFixed(2))
+    }));
+
+    let { answer, emotion, confidence, label, reasoning, processingPath, plan } = generationResult;
+
+    const validationResult = await runStage('VALIDATION_FUSION', async () => {
+      let stageAnswer = answer;
+      let stageEmotion = emotion;
+      let stageConfidence = confidence;
+      let stageLabel = label;
+      let stageReasoning = reasoning;
+      let stageValidated = true;
+      let stageConstraintsOK = true;
+      let stagePlan = plan;
+      let stageTDScore: TDScore = { value: 0.5, flag: '🟢 TD_balanced', shouldBlock: false };
+
+      if (stagePlan) {
+        const planValidation = validatePlan(stagePlan, policyCtx);
+        stageValidated = planValidation.ok;
+        auditLog.push(`🛡️ Plan validation: ${stageValidated ? 'PASSED' : 'FAILED'}`);
+        if (!stageValidated) {
+          auditLog.push(`  Errors: ${planValidation.errors.join(', ')}`);
         }
-        processingPath = 'llm';
-        label = 'Reflectievraag';
-        break;
-    }
-
-    // STAP 5: Validate plan (traditional validation + Z3 constraints)
-    if (plan) {
-      const planValidation = validatePlan(plan, policyCtx);
-      validated = planValidation.ok;
-      auditLog.push(`🛡️ Plan validation: ${validated ? 'PASSED' : 'FAILED'}`);
-      if (!validated) {
-        auditLog.push(`  Errors: ${planValidation.errors.join(', ')}`);
-      }
-      if (planValidation.warnings.length > 0) {
-        auditLog.push(`  Warnings: ${planValidation.warnings.join(', ')}`);
-      }
-
-      // 🔒 Constraint validation - Z3 layer removed (deprecated)
-      // Constraints are now validated via policy and validation layers
-      constraintsOK = validated;
-      auditLog.push(`🔒 Constraints: ${constraintsOK ? 'SATISFIED' : 'VIOLATED'}`);
-    }
-
-    const responseValidation = validateResponse(answer, plan || {}, policyCtx);
-    constraintsOK = responseValidation.ok;
-    auditLog.push(`🛡️ Response validation: ${constraintsOK ? 'PASSED' : 'FAILED'}`);
-    if (!constraintsOK) {
-      auditLog.push(`  Errors: ${responseValidation.errors.join(', ')}`);
-      // BLOCK response if validation failed
-      answer = generateEAAAwareFallback(eaaProfile, emotion);
-      label = 'Fout';
-      confidence = 0.3;
-    }
-
-    // STAP 6: Log decision for audit trail
-    // ============ TD-MATRIX EVALUATION (v20) ============
-    let tdScore: TDScore = { value: 0.5, flag: '🟢 TD_balanced', shouldBlock: false };
-    try {
-      const aiContribution = estimateAIContribution(answer);
-      tdScore = evaluateTD(aiContribution, eaaProfile.agency);
-      auditLog.push(`⚖️ TD-Matrix: ${tdScore.flag} (TD=${tdScore.value.toFixed(2)})`);
-      
-      if (tdScore.shouldBlock) {
-        auditLog.push(`🚨 TD-Matrix BLOCKS output: ${tdScore.reason}`);
-        answer = generateEAAAwareFallback(eaaProfile, emotion);
-        emotion = 'onzekerheid';
-        label = 'Fout';
-        reasoning = `TD-Matrix blocked: ${tdScore.reason}`;
-      }
-    } catch (err) {
-      console.error('⚠️ TD-Matrix evaluation failed:', err);
-      auditLog.push('⚠️ TD-Matrix evaluation failed');
-    }
-    
-    // ============ E_AI RULES ENGINE (v20) ============
-    let eaiResult: EAIRuleResult = { triggered: false };
-    try {
-      const eaiContext = createEAIContext(
-        eaaProfile,
-        tdScore.value,
-        {
-          riskScore: ctx.rubricAssessments?.[0]?.riskScore,
-          protectiveScore: ctx.rubricAssessments?.[0]?.protectiveScore
+        if (planValidation.warnings.length > 0) {
+          auditLog.push(`  Warnings: ${planValidation.warnings.join(', ')}`);
         }
-      );
-      
-      eaiResult = evaluateEAIRules(eaiContext);
-      
-      if (eaiResult.triggered && eaiResult.action) {
-        const shouldBlock = executeEAIAction(eaiResult.action, auditLog);
-        
-        if (shouldBlock) {
-          answer = generateEAAAwareFallback(eaaProfile, emotion);
-          emotion = 'onzekerheid';
-          label = 'Fout';
-          reasoning = `E_AI rule ${eaiResult.ruleId} blocked output`;
+
+        stageConstraintsOK = stageValidated;
+        auditLog.push(`🔒 Constraints: ${stageConstraintsOK ? 'SATISFIED' : 'VIOLATED'}`);
+      }
+
+      const responseValidation = validateResponse(stageAnswer, stagePlan || {}, policyCtx);
+      stageConstraintsOK = responseValidation.ok;
+      auditLog.push(`🛡️ Response validation: ${stageConstraintsOK ? 'PASSED' : 'FAILED'}`);
+      if (!stageConstraintsOK) {
+        auditLog.push(`  Errors: ${responseValidation.errors.join(', ')}`);
+        stageAnswer = generateEAAAwareFallback(eaaProfile, stageEmotion);
+        stageLabel = 'Fout';
+        stageConfidence = 0.3;
+      }
+
+      try {
+        const aiContribution = estimateAIContribution(stageAnswer);
+        stageTDScore = evaluateTD(aiContribution, eaaProfile.agency);
+        auditLog.push(`⚖️ TD-Matrix: ${stageTDScore.flag} (TD=${stageTDScore.value.toFixed(2)})`);
+
+        if (stageTDScore.shouldBlock) {
+          auditLog.push(`🚨 TD-Matrix BLOCKS output: ${stageTDScore.reason}`);
+          stageAnswer = generateEAAAwareFallback(eaaProfile, stageEmotion);
+          stageEmotion = 'onzekerheid';
+          stageLabel = 'Fout';
+          stageReasoning = `TD-Matrix blocked: ${stageTDScore.reason}`;
+        }
+      } catch (err) {
+        console.error('⚠️ TD-Matrix evaluation failed:', err);
+        auditLog.push('⚠️ TD-Matrix evaluation failed');
+      }
+
+      try {
+        const eaiContext = createEAIContext(
+          eaaProfile,
+          stageTDScore.value,
+          {
+            riskScore: ctx.rubricAssessments?.[0]?.riskScore,
+            protectiveScore: ctx.rubricAssessments?.[0]?.protectiveScore
+          }
+        );
+
+        const eaiResult = evaluateEAIRules(eaiContext);
+
+        if (eaiResult.triggered && eaiResult.action) {
+          const shouldBlock = executeEAIAction(eaiResult.action, auditLog);
+
+          if (shouldBlock) {
+            stageAnswer = generateEAAAwareFallback(eaaProfile, stageEmotion);
+            stageEmotion = 'onzekerheid';
+            stageLabel = 'Fout';
+            stageReasoning = `E_AI rule ${eaiResult.ruleId} blocked output`;
+          }
+        }
+      } catch (err) {
+        console.error('⚠️ E_AI Rules evaluation failed:', err);
+        auditLog.push('⚠️ E_AI Rules evaluation failed');
+      }
+
+      if (stageLabel) {
+        const eaaValidation = validateEAAForStrategy(eaaProfile, stageLabel);
+        if (!eaaValidation.valid) {
+          auditLog.push(`⚠️ EAA blocks strategy "${stageLabel}": ${eaaValidation.reason}`);
+          stageLabel = 'Reflectievraag';
         }
       }
-    } catch (err) {
-      console.error('⚠️ E_AI Rules evaluation failed:', err);
-      auditLog.push('⚠️ E_AI Rules evaluation failed');
-    }
-    
-    // ============ EAA STRATEGY VALIDATION (v20) ============
-    if (label) {
-      const eaaValidation = validateEAAForStrategy(eaaProfile, label);
-      if (!eaaValidation.valid) {
-        auditLog.push(`⚠️ EAA blocks strategy "${label}": ${eaaValidation.reason}`);
-        label = 'Reflectievraag';
+
+      try {
+        await storeReflectiveMemory(
+          supabase,
+          ctx.userInput,
+          stageAnswer,
+          eaaProfile,
+          stageLabel || 'Reflectievraag'
+        );
+      } catch (err) {
+        console.error('⚠️ Failed to store reflective memory:', err);
       }
-    }
-    
-    // ============ STORE REFLECTIVE MEMORY (v20) ============
-    try {
-      await storeReflectiveMemory(
-        supabase,
-        ctx.userInput,
-        answer,
-        eaaProfile,
-        label || 'Reflectievraag'
-      );
-    } catch (err) {
-      console.error('⚠️ Failed to store reflective memory:', err);
-    }
+
+      return {
+        answer: stageAnswer,
+        emotion: stageEmotion,
+        confidence: stageConfidence,
+        label: stageLabel,
+        reasoning: stageReasoning,
+        validated: stageValidated,
+        constraintsOK: stageConstraintsOK,
+        tdScore: stageTDScore
+      };
+    }, result => ({
+      validated: result.validated,
+      constraintsOK: result.constraintsOK,
+      label: result.label
+    }));
+
+    ({ answer, emotion, confidence, label, reasoning } = validationResult);
+    const validated = validationResult.validated;
+    const constraintsOK = validationResult.constraintsOK;
+    const tdScore = validationResult.tdScore;
     
     // ============ NGBSE CHECK (v20) ============
-    const { getOrCreateSessionId } = await import('@/lib/sessionManager');
-    const { logFlowEvent } = await import('@/lib/flowEventLogger');
-    const sessionId = getOrCreateSessionId();
-    
-    await logFlowEvent(sessionId, 'NGBSE_CHECK', 'processing');
+    await logFlowEvent(sessionId, 'NGBSE_CHECK', 'processing', undefined, { source: 'server' });
     
     const { performNGBSECheck } = await import('@/lib/ngbseEngine');
     const rubricScores = ctx.rubric ? {
@@ -355,17 +434,18 @@ export async function orchestrate(
     });
     
     await logFlowEvent(sessionId, 'NGBSE_CHECK', 'completed', Date.now() - ngbseStartTime, {
+      source: 'server',
       blindspots: ngbseResult.blindspots.length,
       adjustedConfidence: ngbseResult.adjustedConfidence
     });
-    
+
     if (ngbseResult.blindspots.length > 0) {
       auditLog.push(`🔍 NGBSE: ${ngbseResult.blindspots.length} blindspot(s) detected`);
       confidence = ngbseResult.adjustedConfidence;
     }
-    
+
     // ============ HITL CHECK (v20) ============
-    await logFlowEvent(sessionId, 'HITL_CHECK', 'processing');
+    await logFlowEvent(sessionId, 'HITL_CHECK', 'processing', undefined, { source: 'server' });
     
     const { shouldTriggerHITL, triggerHITL } = await import('@/lib/hitlTriggers');
     const hitlDecision = await shouldTriggerHITL({
@@ -386,6 +466,7 @@ export async function orchestrate(
       });
       
       await logFlowEvent(sessionId, 'HITL_CHECK', 'completed', 0, {
+        source: 'server',
         triggered: true,
         type: hitlDecision.triggerType,
         severity: hitlDecision.severity
@@ -397,7 +478,7 @@ export async function orchestrate(
         label = 'Reflectievraag';
       }
     } else {
-      await logFlowEvent(sessionId, 'HITL_CHECK', 'completed', 0, { triggered: false });
+      await logFlowEvent(sessionId, 'HITL_CHECK', 'completed', 0, { source: 'server', triggered: false });
     }
     
     const processingTime = Date.now() - startTime;
@@ -426,7 +507,7 @@ export async function orchestrate(
       metadata: {
         policyDecision: policyDecision.action,
         ruleId: policyDecision.ruleId,
-        semanticInterventions: allowedInterventions,
+        semanticInterventions: semanticStage.allowedInterventions,
         validated,
         constraintsOK,
         processingPath,
@@ -437,14 +518,10 @@ export async function orchestrate(
   } catch (error) {
     console.error('🔴 Orchestration error:', error);
     auditLog.push(`❌ ERROR: ${error instanceof Error ? error.message : String(error)}`);
-    
+
     // ============ AUTO-HEALING (v20) ============
-    const { getOrCreateSessionId } = await import('@/lib/sessionManager');
-    const { logFlowEvent } = await import('@/lib/flowEventLogger');
-    const sessionId = getOrCreateSessionId();
-    
-    await logFlowEvent(sessionId, 'AUTO_HEALING', 'processing');
-    
+    await logFlowEvent(sessionId, 'AUTO_HEALING', 'processing', undefined, { source: 'server' });
+
     const { attemptAutoHeal } = await import('./autoHealing');
     const healingResult = await attemptAutoHeal(
       {
@@ -458,6 +535,7 @@ export async function orchestrate(
     );
     
     await logFlowEvent(sessionId, 'AUTO_HEALING', healingResult.success ? 'completed' : 'failed', 0, {
+      source: 'server',
       strategy: healingResult.strategy,
       escalated: healingResult.escalateToHITL || false
     });

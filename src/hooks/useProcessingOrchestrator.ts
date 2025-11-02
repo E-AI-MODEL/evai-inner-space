@@ -17,6 +17,8 @@ import { evaluateEAA, validateEAAForStrategy } from '@/lib/eaaEvaluator';
 import { evaluateTD, estimateAIContribution } from '@/lib/tdMatrix';
 import { evaluateEAIRules, createEAIContext, executeEAIAction } from '@/policy/eai.rules';
 import type { EAAProfile } from '@/types/eaa';
+import { logFlowEvent } from '@/lib/flowEventLogger';
+import { getOrCreateSessionId } from '@/lib/sessionManager';
 
 interface ProcessingStats {
   totalRequests: number;
@@ -66,16 +68,42 @@ export function useProcessingOrchestrator() {
     console.log('🎼 Orchestrator v16 NEUROSYMBOLISCH: Policy + Semantic + Validation');
     console.log('📝 User input:', userInput.substring(0, 50) + '...');
     console.log('📚 Conversation history length:', conversationHistory?.length || 0);
-    
+
     const startTime = Date.now();
-    
+    const sessionId = getOrCreateSessionId();
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('evai-current-session-id', sessionId);
+      } catch (err) {
+        console.warn('⚠️ Unable to persist session ID:', err);
+      }
+    }
+
     try {
       // 🛡️ VEILIGHEIDSLAG: Pre-response harm detection (altijd doen)
       console.log('🛡️ Safety check: Analyzing user input...');
-      const safetyResult = await checkPromptSafety(userInput);
+      const safetyStageStart = Date.now();
+      await logFlowEvent(sessionId, 'SAFETY_CHECK', 'processing', undefined, { source: 'client' });
+      const safetyResult = await checkPromptSafety(userInput).catch(async err => {
+        await logFlowEvent(sessionId, 'SAFETY_CHECK', 'failed', Date.now() - safetyStageStart, {
+          source: 'client',
+          error: err instanceof Error ? err.message : String(err)
+        });
+        throw err;
+      });
+      const safetyMetadata = {
+        source: 'client',
+        decision: safetyResult.decision,
+        severity: safetyResult.severity,
+        flags: safetyResult.flags
+      };
 
       if (safetyResult.decision === 'block') {
         console.warn('🚫 Safety check BLOCKED input:', safetyResult.flags, 'severity:', safetyResult.severity, 'details:', safetyResult.details);
+        await logFlowEvent(sessionId, 'SAFETY_CHECK', 'failed', Date.now() - safetyStageStart, {
+          ...safetyMetadata,
+          details: safetyResult.details
+        });
         toast.error('Input geblokkeerd om veiligheidsredenen', {
           description: safetyResult.details || 'Je bericht bevat mogelijk schadelijke inhoud. Probeer het anders te formuleren.'
         });
@@ -90,6 +118,8 @@ export function useProcessingOrchestrator() {
       } else {
         console.log('✅ Safety check PASSED');
       }
+
+      await logFlowEvent(sessionId, 'SAFETY_CHECK', 'completed', Date.now() - safetyStageStart, safetyMetadata);
 
       // Optional API key validation: if provided, ensure it's valid; else rely on server-side keys via Edge Functions
       if (apiKey && !validateApiKey(apiKey)) {
@@ -162,18 +192,32 @@ export function useProcessingOrchestrator() {
       
       // ============ RUBRICS ASSESSMENT (EvAI 5.6) ============
       console.log('📊 Rubrics Assessment: Analyzing conversation context...');
-      const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unknown';
+      const rubricsStageStart = Date.now();
+      await logFlowEvent(sessionId, 'RUBRICS_EAA', 'processing', undefined, { source: 'client' });
       const rubricResult = await performEnhancedAssessment(
         userInput,
         sessionId,
         'balanced'
-      );
+      ).catch(async err => {
+        await logFlowEvent(sessionId, 'RUBRICS_EAA', 'failed', Date.now() - rubricsStageStart, {
+          source: 'client',
+          error: err instanceof Error ? err.message : String(err)
+        });
+        throw err;
+      });
       
       // Single EAA evaluation with rubric context (fix: was evaluated twice before)
       const eaaProfile: EAAProfile = evaluateEAA(userInput, {
         riskScore: rubricResult.overallRisk / 100,
         protectiveScore: rubricResult.overallProtective / 100,
         dominantPattern: rubricResult.dominantPattern
+      });
+
+      await logFlowEvent(sessionId, 'RUBRICS_EAA', 'completed', Date.now() - rubricsStageStart, {
+        source: 'client',
+        risk: rubricResult.overallRisk,
+        protective: rubricResult.overallProtective,
+        pattern: rubricResult.dominantPattern
       });
       
       console.log(`🧠 EAA Profile: O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
