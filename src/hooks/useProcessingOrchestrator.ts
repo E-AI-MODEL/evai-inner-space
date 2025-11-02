@@ -110,7 +110,8 @@ export function useProcessingOrchestrator() {
       }
 
       // 🎯 REGISSEUR BESLISSING 1: Is dit een simpele greeting? -> Fast-path! (VÓÓr rubrics!)
-      const isSimpleGreeting = /^(hi|hallo|hey|hoi|dag|hello|yo|hé|hee|sup|hiya|ok|oké|ja|nee|hmm)[\s!?.]*$/i.test(userInput.trim());
+      // ✅ LAYER 1 FIX: Multi-word greetings support (e.g., "Hey hallo", "Hoi daar")
+      const isSimpleGreeting = /^(hi|hallo|hey|hoi|dag|hello|yo|hé|hee|sup|hiya)(\s+(daar|hallo|hey|hoi|jij|allemaal|iedereen))?[\s!?.]*$/i.test(userInput.trim());
       
       if (isSimpleGreeting) {
         console.log('⚡ FAST-PATH: Simpele greeting, skip Rubrics + hele pipeline');

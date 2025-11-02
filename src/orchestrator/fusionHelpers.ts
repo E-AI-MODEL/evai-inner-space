@@ -253,8 +253,14 @@ function weightedBlend(symbolic: string, neural: string, weight: number): string
 
 /**
  * Determine context type for fusion weight learning
+ * ✅ LAYER 4 FIX: Added greeting detection
  */
 function determineContextType(ctx: FusionContext): string {
+  // ✅ NEW: Greeting detection (high confidence + neutral emotion)
+  if (ctx.symbolic.emotion === 'neutraal' && ctx.symbolic.confidence > 0.9) {
+    return 'greeting';
+  }
+  
   // Map validation/confidence to context types
   if (!ctx.validation.validated || !ctx.validation.constraintsOK) {
     return 'crisis';

@@ -83,7 +83,9 @@ export function buildSystemPrompt(
   emotion: string,
   allowedInterventions: string[],
   eaaProfile: { ownership: number; autonomy: number; agency: number },
-  seedGuidance?: string
+  seedGuidance?: string,
+  userInput?: string,
+  conversationHistory?: Array<{ role: string; content: string }>
 ): string {
   const { ownership, autonomy, agency } = eaaProfile;
   
@@ -99,8 +101,17 @@ GEBRUIKER EAA-PROFIEL:
 TOEGESTANE INTERVENTIES: ${allowedInterventions.join(', ')}
 `;
 
+  // ✅ LAYER 3 FIX: Context validation BEFORE fusion
   if (seedGuidance) {
-    prompt += `
+    const isGreeting = /^(hi|hallo|hey|hoi)/i.test(userInput || '');
+    const isFirstMessage = (conversationHistory?.length || 0) === 0;
+    const seedIsReflective = /wat zou er gebeuren|hoe zou het zijn|denk eens na|zou je|als je/i.test(seedGuidance);
+    
+    if (isGreeting && isFirstMessage && seedIsReflective) {
+      console.warn('⚠️ LAYER 3: Context mismatch detected - reflective seed for greeting → SKIP fusion');
+      // SKIP fusion instruction, let LLM generate natural greeting instead
+    } else {
+      prompt += `
 🧬 NEUROSYMBOLISCHE FUSION MODE:
 
 THERAPEUTISCHE KERN (SEED) - MOET 70% VAN JE RESPONSE ZIJN:
@@ -120,6 +131,7 @@ VALIDEER INTERN NA JE RESPONSE:
 ✅ Heb ik alleen context toegevoegd?
 ✅ Is therapeutische intentie behouden?
 `;
+    }
   }
 
   prompt += `

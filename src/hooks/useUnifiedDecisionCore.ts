@@ -221,9 +221,16 @@ export function useUnifiedDecisionCore() {
       
       const knowledgeItems = await searchUnifiedKnowledge(enhancedQuery, vectorApiKey, 15);
       
+      // ✅ LAYER 2 FIX: Filter seeds by context BEFORE ranking
+      const contextFilteredItems = filterSeedsByContext(
+        knowledgeItems,
+        input,
+        history?.length || 0
+      );
+      
       // 🚀 NEUROSYMBOLISCH STAP 3: Ranking met Browser ML emotion boost
       const rankedSources = rankKnowledgeSources(
-        knowledgeItems, 
+        contextFilteredItems, 
         input, 
         context,
         browserEmotion
@@ -264,6 +271,34 @@ export function useUnifiedDecisionCore() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  /**
+   * ✅ LAYER 2 FIX: Context-aware seed filtering
+   */
+  const filterSeedsByContext = (
+    seeds: UnifiedKnowledgeItem[],
+    userInput: string,
+    conversationLength: number
+  ): UnifiedKnowledgeItem[] => {
+    const isGreeting = /^(hi|hallo|hey|hoi|dag)/i.test(userInput.trim());
+    const isFirstMessage = conversationLength === 0;
+    
+    if (isGreeting && isFirstMessage) {
+      // Filter out reflective seeds for simple greetings
+      const filtered = seeds.filter(s => {
+        const response = s.response_text || '';
+        const isReflective = /wat zou er gebeuren|hoe zou het zijn|denk eens na|zou je|als je/i.test(response);
+        if (isReflective) {
+          console.log(`⚠️ Filtered reflective seed for greeting: ${s.emotion}`);
+        }
+        return !isReflective;
+      });
+      console.log(`✅ Context filter: ${seeds.length} → ${filtered.length} seeds (removed reflective for greeting)`);
+      return filtered;
+    }
+    
+    return seeds;
   };
 
   const rankKnowledgeSources = (
