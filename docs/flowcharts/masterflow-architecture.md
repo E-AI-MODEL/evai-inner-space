@@ -54,10 +54,10 @@ graph TD
     J --> AB
     K --> AB
     
-    AB --> AG[Get Learned Weights]
-    AG --> AH[Apply Fusion Weights]
-    AH --> AI[Calculate Preservation]
-    AI --> AJ[Validation Layer]
+    AB --> AG[Fusion Assembly: Get Learned Weights]
+    AG --> AH[Apply Context-Aware Fusion]
+    AH --> AI[Calculate Preservation Score]
+    AI --> AJ[Final Validation Layer]
     
     AJ --> AK{Valid?}
     AK -->|Yes| AL[Final Response]
@@ -91,10 +91,16 @@ graph TD
     style H fill:#ffe66d
     style L fill:#95e1d3
     style AB fill:#a8e6cf
-    style AG fill:#ffd93d
+    style AG fill:#ffd93d,stroke:#ff9500,stroke-width:3px
     style AP fill:#6bcf7f
     style AQ fill:#ff6b9d
     style AR fill:#c44569
+    
+    classDef fusionNode fill:#ffd93d,stroke:#ff9500,stroke-width:3px
+    classDef metaLearnerNode fill:#6bcf7f,stroke:#00b894,stroke-width:3px
+    
+    class AG,AH fusionNode
+    class AP,AQ,AR,AS metaLearnerNode
 ```
 
 ## 🧠 Meta-Learner Integration Points

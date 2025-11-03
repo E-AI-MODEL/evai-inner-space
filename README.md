@@ -4,11 +4,12 @@
 Een geavanceerde, hybride AI-chatbot met neurosymbolische verwerking, rubrics-beoordeling, zelflerend gedrag 
 ## 🎯 Kernfuncties
 
-- **Neurosymbolische AI v3.0**: Combineert symbolische patronen met semantische embeddings en neurale netwerken
+- **Neurosymbolische AI v20**: Combineert symbolische patronen met semantische embeddings en neurale netwerken
 - **EvAI 5.6 Rubrics**: Therapeutische beoordeling op 5 dimensies met configureerbare strengheid
-- **Hybride Besluitvorming**: 7-laagse AI-pipeline voor optimale responses
-- **Zelflerend + Meta-Learning**: Leert van gebruikersinteracties en analyseert leerpatronen
+- **Hybride Besluitvorming**: 14-laagse AI-pipeline met Meta-Learner voor adaptieve fusiegewichten
+- **Zelflerend + Meta-Learning**: Leert van HITL feedback en gebruikersinteracties
 - **Safety Layer**: Pre-response harm detection via OpenAI Moderation API
+- **Fast-Path**: Multi-word greetings bypass volledige pipeline (< 100ms)
 - **Easter Egg Toegang**: Innovatieve toegangsbeveiliging zonder traditionele login
 
 ## 🔑 Toegang tot de Applicatie
@@ -125,9 +126,9 @@ npm install
 npm run dev
 ```
 
-## 🧠 Neurosymbolische Architectuur v5.6
+## 🧠 Neurosymbolische Architectuur v20
 
-### 7-Laagse Hybrid Decision Pipeline
+### 14-Laagse Hybrid Decision Pipeline met Meta-Learner
 
 #### **Laag 1: Safety Layer 🛡️**
 - **Pre-response harm detection** via OpenAI Moderation API
@@ -172,26 +173,49 @@ Combineert scores voor optimale match:
 
 **Formula**: `finalScore = (symbolic × 0.4) + (semantic × 0.4) + (mlBoost × 0.1) + (feedback × 0.1)`
 
-#### **Laag 7: Self-Learning & Meta-Learning 🔄📈**
+#### **Laag 7: Self-Learning Manager 🔄**
+- **Trigger condities**: Lage confidence (<0.7), nieuwe topics, user corrections
+- **Output**: Nieuwe seeds → `unified_knowledge` tabel via learning queue
+- **Meta-Learner integration**: Self-learning success → neural weight +1-5%
 
-**A. Self-Learning Manager**
-- **Trigger condities**:
-  - Lage confidence (<0.4)
-  - Nieuwe topics (geen knowledge match)
-  - User corrections (👎 + nieuwe input)
-- **Output**: Nieuwe seeds → `unified_knowledge` tabel
+#### **Laag 8: TD-Matrix Check ⚖️**
+- **Doel**: Meet AI-dominantie vs user agency
+- **Blokkades**: TD >0.8 → block output, TD >0.7 + agency <0.3 → block
+- **Locatie**: `src/lib/tdMatrix.ts`
 
-**B. Meta-Learning Layer**
-- **Analyseert leerpatronen**:
-  - Failures: Welke seeds falen consistent?
-  - Successes: Welke seeds werken best?
-  - User preferences: Wat vindt de gebruiker waardevol?
-  - Temporal patterns: Tijdsgebonden patronen (dag/nacht)
+#### **Laag 9: E_AI Rules Engine 🔍**
+- **Doel**: Symbolische ethische validatie (6 regels)
+- **Rules**: Agency loss, bias detection, metacognitie, compliance
+- **Locatie**: `src/policy/eai.rules.ts`
 
-**C. Adaptive Feedback Loop**
-- **Track seed effectiveness**: usage_count, feedback_score, confidence trend
-- **Auto-prune**: Seeds met score <20% worden gemarkeerd voor verwijdering
-- **Optimize**: Adjust weights op basis van performance metrics
+#### **Laag 10: NGBSE Check 🧠**
+- **Doel**: Detecteert assumptions, bias, context gaps, overconfidence
+- **Trigger**: HITL queue bij detectie
+- **Locatie**: `src/lib/ngbseEngine.ts`
+
+#### **Laag 11: HITL Queue 👥**
+- **Doel**: Human-in-the-loop review voor edge cases
+- **Trigger**: NGBSE detectie, crisis >80, TD violations
+- **Meta-Learner impact**: Admin feedback → weight adjustment
+- **Locatie**: `src/lib/hitlTriggers.ts`
+
+#### **Laag 12: Fusion Assembly 🧬**
+- **Doel**: Combineert symbolic (seeds) + neural (LLM) responses
+- **Weights**: Context-dependent (crisis: 90/10, normal: 65/35)
+- **Cache**: 30s TTL, eventual consistency
+- **Locatie**: `src/orchestrator/fusionHelpers.ts`
+
+#### **Laag 13: Meta-Learner 📈**
+- **Doel**: Leert optimale fusion weights uit feedback
+- **Learning sources**: HITL decisions (approve/reject) + self-learning success
+- **Safety**: Max 5% shift, dampening 0.7, 10+ samples voor productie
+- **Locatie**: `src/lib/fusionWeightCalibrator.ts`
+
+#### **Laag 14: Auto-Healing 🔧**
+- **Doel**: Automatische recovery van mislukte responses
+- **Triggers**: TD violations, E_AI blocks, low confidence
+- **Fallbacks**: Template responses, crisis protocols
+- **Locatie**: `src/orchestrator/autoHealing.ts`
 
 ---
 
@@ -318,19 +342,27 @@ Toegankelijk via `/admin` - bevat:
 ### Belangrijke Componenten
 
 #### **Hooks (Core Logic)**
-- `useProcessingOrchestrator.ts` → Orchestrator voor hele 7-laagse AI pipeline
+- `useProcessingOrchestrator.ts` → Orchestrator voor hele 14-laagse v20 AI pipeline met Fast-Path
 - `useUnifiedDecisionCore.ts` → Neurosymbolisch v3.0 (Hybrid Decision Engine)
 - `useEvAI56Rubrics.ts` → Therapeutische rubrics beoordeling (5 dimensies)
 - `useEnhancedEvAI56Rubrics.ts` → Enhanced versie met database logging
 - `useRubricSettings.ts` → Configureerbare rubric strengheid (Flexible/Moderate/Strict)
 - `useOpenAISecondary.ts` → Strategic Briefing (Regisseur) via `evai-core`
 - `useBrowserTransformerEngine.ts` → Client-side ML (WebGPU/WASM) emotion detection
-- `useMetaLearning.ts` → Analyseert leerpatronen (failures, successes, preferences)
-- `useAdaptiveLearningFeedback.ts` → Seed effectiveness tracking + auto-pruning
-- `useContextAwareAnticipation.ts` → Proactieve interventies (risk alerts, escalation)
-- `useEmotionalContextEngine.ts` → Context analyse (tijd, intensiteit, risico) via rubrics
-- `useInsightGenerator.ts` → Genereert persoonlijke insights via rubric assessments
-- `useRiskPredictionEngine.ts` → Voorspelt toekomstige risico's via Enhanced Rubrics
+- `useSelfLearningManager.ts` → Layer 7 - Autonomous seed generation + Meta-Learner integration
+
+#### **Libraries (v20 Ethics & Learning)**
+- `eaaEvaluator.ts` → EAA Framework (Ownership, Autonomy, Agency)
+- `tdMatrix.ts` → Layer 8 - AI dominance monitoring
+- `eai.rules.ts` → Layer 9 - Symbolic ethical rules (6 regels)
+- `ngbseEngine.ts` → Layer 10 - Bias & blindspot detection
+- `hitlTriggers.ts` → Layer 11 - HITL queue management
+- `fusionHelpers.ts` → Layer 12 - Fusion Assembly met context-aware weights
+- `fusionWeightCache.ts` → Cache voor learned fusion weights (30s TTL)
+- `fusionWeightCalibrator.ts` → Layer 13 - Meta-Learner (adaptive weights)
+- `autoHealing.ts` → Layer 14 - Automatic recovery van mislukte responses
+- `safetyGuard.ts` → Layer 1 - Pre-response harm detection
+- `embeddingUtils.ts` → Vector embedding generation
 
 #### **Components (UI)**
 - `NeurosymbolicVisualizer.tsx` → Real-time analyse-visualisatie (emotion, confidence, label)

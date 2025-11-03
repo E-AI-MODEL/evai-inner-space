@@ -22,25 +22,31 @@ Strategic Briefing (conditional, alleen bij complexe input)
 ┌─────────────────────────────────────────┐
 │ Knowledge Search (Browser ML + Vector)  │
 │                                         │
-│ IF Confidence > 0.70:                   │
+│ IF Confidence > 0.88:                   │
 │   → Seed-Based Response                 │
-│   → hybrid.ts Orchestrator              │
-│      - Policy Engine                    │
+│   → Policy Decision Engine              │
+│      - Decision: USE_SEED               │
 │      - Semantic Graph                   │
-│      - Validation Layer                 │
 │      - v20 TD-Matrix Check ← 🆕         │
 │      - v20 E_AI Rules Check ← 🆕        │
-│      - v20 EAA Strategy Validation ← 🆕 │
+│      - NGBSE Check ← 🆕                 │
+│      - HITL Trigger (if needed) ← 🆕    │
+│      - Fusion Assembly ← 🆕             │
+│      - Meta-Learner Weights ← 🆕        │
 │                                         │
-│ ELSE:                                   │
+│ ELSE IF Confidence < 0.88:              │
 │   → Learning Mode                       │
-│   → Generate New Seed (LLM)             │
+│   → Policy Decision: LLM_PLANNING       │
+│   → Generate Response (edge function)   │
 │   → v20 TD-Matrix Check ← 🆕            │
 │   → v20 E_AI Rules Check ← 🆕           │
-│   → Store Seed (if validated)           │
+│   → NGBSE Check ← 🆕                    │
+│   → Generate & Store New Seed ← 🆕      │
+│   → Fusion Assembly ← 🆕                │
+│   → Meta-Learner: Learning Event ← 🆕   │
 └─────────────────────────────────────────┘
     ↓
-Final Response (fully validated)
+Final Response (fully validated + fused)
 ```
 
 ## Nieuwe v20 Checkpoints
@@ -158,14 +164,112 @@ De LLM krijgt een dynamische system prompt gebaseerd op EAA-profiel:
 - Geen diepgaande persoonlijke vragen
 ```
 
-## Validatie Matrix
+## Layer 6: NGBSE Check (Neural-Guided Bias & Safety Engine)
 
-| Scenario | v20 Checks | Fallback |
-|----------|------------|----------|
-| **High Confidence Seed** | TD-Matrix + E_AI + EAA Strategy | Safety fallback |
-| **Low Confidence** | Learning Mode → TD + E_AI validation | Block + error |
-| **LLM_PLANNING** | EAA constraints in prompt + post-TD check | Template fallback |
-| **Learning Mode** | TD-Matrix + E_AI pre-save | Skip seed generation |
+**Locatie**: `src/lib/ngbseEngine.ts`
+**Doel**: Detecteert assumptions, bias, context gaps, overconfidence in AI responses
+
+```typescript
+const ngbseResult = await detectBlindspots(ctx);
+if (ngbseResult.criticalIssues.length > 0) {
+  await triggerHITL(userInput, response, { ngbseResult });
+}
+```
+
+**Modules**:
+- `assumptionDetector.ts`: Detecteert ongefundeerde aannames
+- `biasChecker.ts`: Identificeert potentiële bias
+- `contextGapDetector.ts`: Vindt ontbrekende context
+- `confidenceCalibrator.ts`: Valideert confidence scores
+
+## Layer 7: HITL Queue (Human-In-The-Loop)
+
+**Locatie**: `src/lib/hitlTriggers.ts`
+**Doel**: Admin review voor edge cases en ambigue situaties
+
+**Trigger condities**:
+- NGBSE critical issues detected
+- Crisis score >80
+- TD violations (>0.8)
+- Low confidence (<0.4) with high stakes
+- Repeated failures (3+ in session)
+
+**Meta-Learner Integration**:
+```typescript
+// Admin approves neural response → Neural weight +3.5%
+// Admin rejects neural response → Symbolic weight +3.5%
+// Admin overrides both → Trigger learning event
+```
+
+## Layer 8: Fusion Assembly (NeSy v20)
+
+**Locatie**: `src/orchestrator/fusionHelpers.ts` + `hybrid.ts`
+**Doel**: Combineert symbolic (seed-based) + neural (LLM) responses
+
+**Fusion Strategy**:
+```typescript
+interface FusionContext {
+  symbolic: { content: string, emotion: string, confidence: number };
+  neural: { content: string, reasoning: string };
+  validation: { validated: boolean, tdScore: number };
+  userContext: { eaaProfile, conversationHistory };
+}
+
+// Get learned weights from cache
+const weights = await FusionWeightCache.getInstance().getWeights(contextType);
+
+// Apply fusion
+const fusedResponse = applyFusionWeights(
+  symbolic.content,
+  neural.content,
+  weights
+);
+```
+
+**Context-Aware Weights**:
+- `crisis`: 90% symbolic, 10% neural (safety first)
+- `low_confidence`: 75% symbolic, 25% neural
+- `user_agency_high`: 60% symbolic, 40% neural
+- `greeting`: 20% symbolic, 80% neural (conversational)
+- `normal`: 65% symbolic, 35% neural (learned baseline)
+
+## Layer 9: Meta-Learner (Adaptive Weights v20)
+
+**Locatie**: `src/lib/fusionWeightCalibrator.ts`
+**Doel**: Leert optimale fusion weights uit HITL feedback en self-learning
+
+**Learning Flow**:
+1. **HITL Feedback**: Admin approve/reject → weight shift
+2. **Self-Learning**: New seed success → neural weight +1-5%
+3. **Dampening**: rawShift × 0.7 (prevent oscillation)
+4. **Candidate System**: 10+ samples required before production
+5. **Cache Invalidation**: New weights propagate within 30s
+
+**Safety Constraints**:
+- Max shift: 5% per update
+- Crisis override: Always ≥85% symbolic
+- Min samples: 10 before promotion
+- Cache TTL: 30 seconds
+
+**Example Learning**:
+```typescript
+// HITL: Admin approves neural response
+learnFromHITL('approved') → neural +3.5% (dampened)
+
+// After 10 approvals → Candidate promoted to production
+// Cache invalidated → Next request uses new weights
+```
+
+## Validatie Matrix (v20 Complete)
+
+| Scenario | v20 Checks | Fusion Strategy | Meta-Learner Impact |
+|----------|------------|-----------------|---------------------|
+| **High Confidence Seed (≥0.88)** | TD-Matrix + E_AI + NGBSE | Learned weights from cache | Applied from production |
+| **Low Confidence (<0.88)** | Learning Mode → TD + E_AI + NGBSE | Learned weights from cache | Self-learning triggers update |
+| **LLM_PLANNING** | EAA constraints + TD + E_AI + NGBSE | Learned weights from cache | Applied from production |
+| **HITL Approved** | Post-response review | - | Neural +3.5% (candidate) |
+| **HITL Rejected** | Post-response review | - | Symbolic +3.5% (candidate) |
+| **Crisis (>80)** | All checks + auto-override | 90/10 symbolic (forced) | No learning (safety) |
 
 ## Error Handling
 

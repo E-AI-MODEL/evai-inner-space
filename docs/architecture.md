@@ -17,45 +17,58 @@
 
 ## 1. Overzicht
 
-EvAI Inner Space is een therapeutische AI-chatbot gebaseerd op een **7-laags neurosymbolisch systeem** dat symbolische kennis (emotion seeds) combineert met neural networks (OpenAI GPT, Browser ML) voor contextueel begrip en therapeutische responses.
+EvAI Inner Space is een therapeutische AI-chatbot gebaseerd op een **14-laags neurosymbolisch systeem (v20)** dat symbolische kennis (emotion seeds) combineert met neural networks (OpenAI GPT, Browser ML) en meta-learning voor adaptieve fusion weights.
 
 ### Kernprincipes
 - **Privacy by Design**: Browser ML voor lokale emotie-detectie
-- **Hybrid Reasoning**: Symbolisch (rule-based) + Neural (AI models)
-- **Self-Learning**: Automatische kennisgeneratie uit conversaties
+- **Hybrid Reasoning**: Symbolisch (rule-based) + Neural (AI models) met adaptieve fusion
+- **Self-Learning + Meta-Learning**: Automatische kennisgeneratie én weight optimization uit feedback
 - **Rubrics-Driven**: EvAI 5.6 therapeutische rubrics voor risicoanalyse
+- **Ethical Layer (v20)**: EAA/TD-Matrix/E_AI Rules voor agency-bescherming
+- **HITL Integration**: Human-in-the-loop review met Meta-Learner feedback loop
 
 ---
 
-## 2. Neurosymbolische Pipeline
+## 2. Neurosymbolische Pipeline (v20)
 
-De beslissingspipeline bestaat uit 7 sequentiële layers:
+De beslissingspipeline bestaat uit 14 sequentiële layers met Meta-Learner integratie:
 
 ```mermaid
 graph TB
-    A[User Input] --> B[Layer 1: Safety Check]
+    A[User Input] --> A1[Fast-Path Check]
+    A1 -->|Multi-word greeting| A2[Fast Response]
+    A1 -->|Complex input| B[Layer 1: Safety Check]
     B --> C[Layer 2: Rubrics Assessment]
     C --> D[Layer 3: Strategic Briefing]
     D --> E[Layer 4: Browser ML Emotion]
     E --> F[Layer 5: Unified Knowledge Search]
     F --> G[Layer 6: Hybrid Ranking]
     G --> H[Layer 7: Self-Learning]
-    H --> I[AI Response]
+    H --> I[Layer 8: TD-Matrix Check]
+    I --> J[Layer 9: E_AI Rules]
+    J --> K[Layer 10: NGBSE Check]
+    K --> L{HITL Needed?}
+    L -->|Yes| M[Layer 11: HITL Queue]
+    L -->|No| N[Layer 12: Fusion Assembly]
+    M --> O[Layer 13: Meta-Learner]
+    O --> N
+    N --> P[Layer 14: Auto-Healing]
+    P --> Q[AI Response]
     
     style B fill:#ff6b6b
     style C fill:#4ecdc4
-    style D fill:#45b7d1
-    style E fill:#96ceb4
-    style F fill:#ffeaa7
-    style G fill:#dfe6e9
-    style H fill:#a29bfe
+    style I fill:#ffe66d
+    style K fill:#95e1d3
+    style M fill:#ff6b9d
+    style N fill:#a8e6cf
+    style O fill:#ffd93d
 ```
 
-## 4. Ethische Laag (v20 EAA Framework)
+## 3. Ethische Laag (v20 EAA Framework)
 
-EVAI v20 introduceert een volledig uitlegbare ethische reflectielaag gebaseerd op het **EAA-framework**:
+EVAI v20 heeft een volledig geïntegreerde ethische reflectielaag gebaseerd op het **EAA-framework**:
 
-### Layer 8: EAA & E_AI Integration
+### EAA Pre-Filter & Integration
 
 ```
 User Input
@@ -371,6 +384,203 @@ const pendingSeeds = await supabase
 // Approve → Activeer seed + genereer embedding
 // Reject → Archiveer met reden
 ```
+
+---
+
+### Layer 8: TD-Matrix Check (v20)
+**Doel**: Monitoring van AI-dominantie vs menselijke agency
+
+```typescript
+// Locatie: src/lib/tdMatrix.ts
+interface TDResult {
+  score: number;           // 0-1 (0 = user dominant, 1 = AI dominant)
+  shouldBlock: boolean;    // true als TD > 0.8
+  reasoning: string;
+}
+
+const tdScore = evaluateTD(aiContribution, userAgency);
+if (tdScore.shouldBlock) {
+  // Fallback naar safety response of template
+}
+```
+
+**Blocking Rules**:
+- TD > 0.8 → Block (te veel AI-dominantie)
+- TD > 0.7 + agency < 0.3 → Block (kwetsbare gebruiker)
+- Crisis mode → TD forced to < 0.2 (minimal AI)
+
+---
+
+### Layer 9: E_AI Rules Engine (v20)
+**Doel**: Symbolische ethische regelvalidatie
+
+```typescript
+// Locatie: src/policy/eai.rules.ts
+const eaiRules = [
+  'rule_001: Agency Loss Detection',
+  'rule_002: Bias Detection',
+  'rule_003: Metacognitive Reflection Required',
+  'rule_004: Agency Enhancement',
+  'rule_005: Compliance Check',
+  'rule_006: Structural Agency Loss Block'
+];
+
+const result = evaluateEAIRules(context);
+if (result.triggered && result.severity === 'high') {
+  // Block response, gebruik fallback
+}
+```
+
+---
+
+### Layer 10: NGBSE Check (Neural-Guided Bias & Safety Engine)
+**Doel**: Detectie van assumptions, bias, context gaps
+
+```typescript
+// Locatie: src/lib/ngbseEngine.ts
+const ngbseResult = await detectBlindspots({
+  userInput,
+  aiResponse,
+  conversationHistory,
+  eaaProfile
+});
+
+// Modules:
+// - assumptionDetector: Ongefundeerde aannames
+// - biasChecker: Culturele/persoonlijke bias
+// - contextGapDetector: Ontbrekende essentiële context
+// - confidenceCalibrator: Overconfidence correctie
+```
+
+**Triggers HITL bij**:
+- Critical assumptions detected
+- High bias score (>0.7)
+- Context gap + high stakes
+- Overconfidence (claimed >0.9, actual <0.6)
+
+---
+
+### Layer 11: HITL Queue (Human-In-The-Loop)
+**Doel**: Admin review voor edge cases
+
+```typescript
+// Locatie: src/lib/hitlTriggers.ts
+const hitlDecision = await shouldTriggerHITL({
+  crisisScore: 85,
+  tdScore: 0.82,
+  blindspots: ngbseResult,
+  confidence: 0.42,
+  failureCount: 3
+});
+
+if (hitlDecision.shouldTrigger) {
+  await triggerHITL(userInput, aiResponse, hitlDecision);
+}
+```
+
+**Review Flow**:
+1. Admin ziet item in HITL Queue (Admin Dashboard)
+2. Keuzes: Approve / Reject / Override
+3. Meta-Learner leert uit decision:
+   - Approved → Neural weight +3.5%
+   - Rejected → Symbolic weight +3.5%
+   - Override → Trigger learning event
+
+---
+
+### Layer 12: Fusion Assembly (NeSy v20)
+**Doel**: Intelligent combineren van symbolic + neural responses
+
+```typescript
+// Locatie: src/orchestrator/fusionHelpers.ts
+interface FusionContext {
+  symbolic: { content: string, confidence: number };
+  neural: { content: string, reasoning: string };
+  validation: { validated: boolean, tdScore: number };
+  userContext: { eaaProfile, conversationHistory };
+}
+
+// Get learned weights from cache (30s TTL)
+const weights = await FusionWeightCache.getInstance()
+  .getWeights(contextType);
+
+// Apply fusion strategy
+const fused = applyFusionWeights(
+  symbolic.content,
+  neural.content,
+  weights.symbolicWeight,
+  weights.neuralWeight
+);
+```
+
+**Context-Aware Weight Profiles**:
+- `crisis`: 90% symbolic (safety first)
+- `low_confidence`: 75% symbolic
+- `user_agency_high`: 60% symbolic
+- `greeting`: 20% symbolic (conversational)
+- `normal`: 65% symbolic (learned baseline)
+
+---
+
+### Layer 13: Meta-Learner (Adaptive Fusion Weights)
+**Doel**: Optimalisatie van fusion weights via feedback learning
+
+```typescript
+// Locatie: src/lib/fusionWeightCalibrator.ts
+class FusionWeightCalibrator {
+  async learnFromHITL(decision: 'approved' | 'rejected' | 'override') {
+    // Calculate weight shift
+    const rawShift = decision === 'approved' ? 0.05 : -0.05;
+    const dampenedShift = rawShift * this.dampeningFactor; // 0.7
+    
+    // Update candidate weights (not production yet)
+    await this.updateCandidateWeights(contextType, dampenedShift);
+    
+    // Check if ready for promotion (≥10 samples)
+    if (sampleCount >= 10) {
+      await this.promoteToProduction(contextType);
+      await this.invalidateCache(contextType);
+    }
+  }
+}
+```
+
+**Learning Sources**:
+1. **HITL Feedback**: Admin decisions → +/-3.5% per decision
+2. **Self-Learning**: New seed success → +1-5% neural weight
+3. **Performance Metrics**: Success rate tracking
+
+**Safety Constraints**:
+- Max shift: 5% per update
+- Dampening: 0.7 (prevents oscillation)
+- Min samples: 10 before production
+- Crisis override: Always ≥85% symbolic
+
+---
+
+### Layer 14: Auto-Healing
+**Doel**: Automatische recovery van mislukte responses
+
+```typescript
+// Locatie: src/orchestrator/autoHealing.ts
+const healingResult = await attemptHealing({
+  failureType: 'td_violation',
+  originalResponse,
+  context
+});
+
+// Healing strategies:
+// 1. Template fallback (pre-approved responses)
+// 2. Crisis protocol (bij crisis >80)
+// 3. Simplified response (reduce AI contribution)
+// 4. Escalation (naar HITL queue)
+```
+
+**Triggers**:
+- TD violations (score >0.8)
+- E_AI rule blocks
+- Low confidence + high stakes
+- Repeated failures (3+ in session)
 
 ---
 
