@@ -2,7 +2,7 @@
 import { incrementApiUsage } from '@/utils/apiUsageTracker';
 import { supabase } from '@/integrations/supabase/client';
 
-export async function generateEmbedding(text: string, apiKey: string): Promise<number[]> {
+export async function generateEmbedding(text: string): Promise<number[]> {
   if (!text?.trim()) {
     throw new Error('Text is required for generating embeddings');
   }

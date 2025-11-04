@@ -130,7 +130,7 @@ export function useUnifiedDecisionCore() {
       let queryEmbedding: number[] | null = null;
       if (vectorApiKey?.trim()) {
         try {
-          queryEmbedding = await generateEmbedding(query, vectorApiKey);
+          queryEmbedding = await generateEmbedding(query);
           console.log('✅ Query embedding generated successfully');
         } catch (error) {
           console.warn('⚠️ Failed to generate embedding, continuing with text search only');

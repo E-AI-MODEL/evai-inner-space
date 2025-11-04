@@ -292,10 +292,6 @@ await supabase.functions.invoke('evai-core', {
 - **Operation: `test-openai-key`** → API key validation
 - **Operation: `autolearn-scan`** → Autonomous learning scan
 
-#### **`python-transformer-engine`** (DEPRECATED)
-- Legacy Hugging Face sentiment analysis
-- Vervangen door Browser ML Engine (client-side)
-
 ---
 
 ### Regisseur + Rubrics Pipeline (v2.0)
@@ -374,7 +370,6 @@ Toegankelijk via `/admin` - bevat:
 #### **Libraries**
 - `safetyGuard.ts` → Pre-response harm detection (OpenAI Moderation API via `evai-core`)
 - `embeddingUtils.ts` → Vector embedding generation (text-embedding-3-small via `evai-core`)
-- `SeedPatternMatcher.ts` → Symbolic pattern matching (legacy, vervangen door Unified Decision Core)
 
 ### Testing
 
