@@ -10,17 +10,7 @@ Een geavanceerde, hybride AI-chatbot met neurosymbolische verwerking, rubrics-be
 - **Zelflerend + Meta-Learning**: Leert van HITL feedback en gebruikersinteracties
 - **Safety Layer**: Pre-response harm detection via OpenAI Moderation API
 - **Fast-Path**: Multi-word greetings bypass volledige pipeline (< 100ms)
-- **Easter Egg Toegang**: Innovatieve toegangsbeveiliging zonder traditionele login
-
-## 🔑 Toegang tot de Applicatie
-
-De applicatie gebruikt een "easter egg" toegangsmechanisme:
-
-1. Open de applicatie - je ziet de intro-animatie met het 💙 hart-icoon
-2. Klik **3 keer snel** op het hart-icoon (binnen 2 seconden)
-3. De toegang wordt geactiveerd en je krijgt toegang tot de chat
- 
-Dit mechanisme dient als een interactieve startknop voor de demo.
+.
 
 ## 🔒 Single-User Architecture
 
@@ -106,11 +96,7 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 - OpenAI API keys worden beheerd via Supabase Secrets (server-side)
 - Operaties: `chat` (GPT-4o-mini), `embedding` (text-embedding-3-small), `safety` (Moderation API)
 
-**Client-Side (Optioneel - voor enhanced local testing):**
-Via Instellingen (⚙️ icon):
-- **OpenAI API Key**: Voor client-side fallbacks en testing (niet vereist voor productie)
 
-**📌 TIP**: De applicatie werkt volledig zonder client-side API keys via Edge Functions!
 
 ### 3. Installatie
 
@@ -294,12 +280,6 @@ await supabase.functions.invoke('evai-core', {
 
 ---
 
-### Regisseur + Rubrics Pipeline (v2.0)
-
-**OUDE ARCHITECTUUR (INCORRECT):**
-- ❌ API 1 = Stem (primaire chat)
-- ❌ API 2 = Regisseur (secundaire analyse)
-
 **NIEUWE ARCHITECTUUR (HUIDIG):**
 
 1. **Rubrics Assessment** (`useEvAI56Rubrics`)
@@ -465,7 +445,7 @@ De applicatie is geoptimaliseerd voor deployment op Vercel, Netlify, of andere s
 - **Anonymous User Model**: Alle database-operaties gebruiken een vast, anoniem user ID voor demo
 - **API Key Encryption**: Keys worden veilig opgeslagen in Supabase Edge Function environment vars
 - **Rate Limiting**: Ingebouwde bescherming tegen misbruik
-- **Easter Egg Access**: Verhindert ongeautoriseerde toegang tot de demo
+
 
 ## 📈 Prestatie
 
@@ -475,13 +455,6 @@ De applicatie is geoptimaliseerd voor deployment op Vercel, Netlify, of andere s
 - **Hybrid Processing**: Intelligente fallback-strategieën
 - **Client-Side ML**: WebGPU/WASM acceleration voor lokale inferentie
 
-## 🐛 Troubleshooting
-
-### Veelvoorkomende Problemen
-
-1. **Toegang werkt niet**: Zorg ervoor dat je precies 3x klikt binnen 2 seconden
-2. **API Errors**: Edge Functions gebruiken server-side keys (geen client-side keys nodig)
-3. **Database Errors**: Verificeer Supabase verbinding in Admin Dashboard
 
 ### Debug Mode
 
