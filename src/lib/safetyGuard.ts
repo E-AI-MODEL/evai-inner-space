@@ -24,13 +24,14 @@ export async function checkPromptSafety(input: string): Promise<SafetyResult> {
 
     if (error) {
       console.error('❌ Safety edge error:', error);
+      // ✅ FIX 6: Block on safety API failure (don't allow on error!)
       return {
         ok: false,
-        decision: 'allow',
+        decision: 'block',
         score: 0,
-        flags: [],
-        reasons: [],
-        severity: 'low',
+        flags: ['safety_check_failed'],
+        reasons: ['Safety check niet beschikbaar - uit voorzorg geblokkeerd'],
+        severity: 'high',
         error: error.message
       };
     }
@@ -60,13 +61,14 @@ export async function checkPromptSafety(input: string): Promise<SafetyResult> {
     };
   } catch (e) {
     console.error('🔴 Safety check failed:', e);
+    // ✅ FIX 6: Block on safety exception (don't allow on error!)
     return {
       ok: false,
-      decision: 'allow',
+      decision: 'block',
       score: 0,
-      flags: [],
-      reasons: [],
-      severity: 'low',
+      flags: ['safety_check_exception'],
+      reasons: ['Safety systeem niet bereikbaar - uit voorzorg geblokkeerd'],
+      severity: 'high',
       error: e instanceof Error ? e.message : String(e)
     };
   }

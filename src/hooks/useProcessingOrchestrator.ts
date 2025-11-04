@@ -114,47 +114,59 @@ export function useProcessingOrchestrator() {
       const isSimpleGreeting = /^(hi|hallo|hey|hoi|dag|hello|yo|hé|hee|sup|hiya)(\s+(daar|hallo|hey|hoi|jij|allemaal|iedereen))?[\s!?.]*$/i.test(userInput.trim());
       
       if (isSimpleGreeting) {
-        console.log('⚡ FAST-PATH: Simpele greeting, skip Rubrics + hele pipeline');
-        const fastGreetings = [
-          'Hoi! Hoe kan ik je helpen?',
-          'Hey! Vertel, waar loop je tegenaan?',
-          'Hallo! Fijn dat je er bent. Wat wil je delen?'
-        ];
-        const response = fastGreetings[Math.floor(Math.random() * fastGreetings.length)];
+        console.log('⚡ FAST-PATH: Simpele greeting detected');
         
-        const processingTime = Date.now() - startTime;
+        // ✅ FIX 5: Run Rubrics check even on fast-path (security requirement)
+        console.log('🛡️ Running Rubrics check on greeting (fast-path security)');
+        const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unknown';
+        const quickRubricResult = await performEnhancedAssessment(userInput, sessionId, 'balanced');
         
-        setStats(prev => ({
-          totalRequests: prev.totalRequests + 1,
-          averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
-          successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
-          lastProcessingTime: processingTime,
-          errorCount: prev.errorCount,
-          neurosymbolicRate: ((prev.neurosymbolicRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
-          successfulKnowledgeMatches: prev.successfulKnowledgeMatches
-        }));
+        // If high risk detected in greeting, don't use fast-path
+        if (quickRubricResult.overallRisk > 60) {
+          console.warn('⚠️ High risk detected in greeting, routing to full pipeline');
+        } else {
+          console.log('✅ Rubrics check passed, continuing fast-path');
+          const fastGreetings = [
+            'Hoi! Hoe kan ik je helpen?',
+            'Hey! Vertel, waar loop je tegenaan?',
+            'Hallo! Fijn dat je er bent. Wat wil je delen?'
+          ];
+          const response = fastGreetings[Math.floor(Math.random() * fastGreetings.length)];
+        
+          const processingTime = Date.now() - startTime;
+          
+          setStats(prev => ({
+            totalRequests: prev.totalRequests + 1,
+            averageProcessingTime: (prev.averageProcessingTime * prev.totalRequests + processingTime) / (prev.totalRequests + 1),
+            successRate: ((prev.successRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
+            lastProcessingTime: processingTime,
+            errorCount: prev.errorCount,
+            neurosymbolicRate: ((prev.neurosymbolicRate * prev.totalRequests + 100) / (prev.totalRequests + 1)),
+            successfulKnowledgeMatches: prev.successfulKnowledgeMatches
+          }));
 
-        return {
-          content: response,
-          emotion: 'neutraal',
-          confidence: 0.95,
-          label: 'Valideren',
-          reasoning: 'Fast-path: Skip Rubrics Assessment voor simpele greeting',
-          symbolicInferences: ['⚡ Fast-path', '✅ Bypassed: Rubrics, Orchestrator, Knowledge matching'],
-          metadata: {
-            processingPath: 'symbolic',
-            totalProcessingTime: processingTime,
-            componentsUsed: ['Fast-path greeting detector'],
-            apiCollaboration: {
-              api1Used: false,
-              api2Used: false,
-              vectorApiUsed: false,
-              googleApiUsed: false,
-              seedGenerated: false,
-              secondaryAnalysis: false
+          return {
+            content: response,
+            emotion: 'neutraal',
+            confidence: 0.95,
+            label: 'Valideren',
+            reasoning: 'Fast-path: Rubrics-validated greeting',
+            symbolicInferences: ['⚡ Fast-path (security-hardened)', '✅ Rubrics: Passed', '⏭️ Bypassed: Orchestrator, Knowledge matching'],
+            metadata: {
+              processingPath: 'symbolic',
+              totalProcessingTime: processingTime,
+              componentsUsed: ['Fast-path greeting detector', 'Rubrics Engine (security check)'],
+              apiCollaboration: {
+                api1Used: false,
+                api2Used: false,
+                vectorApiUsed: false,
+                googleApiUsed: false,
+                seedGenerated: false,
+                secondaryAnalysis: false
+              }
             }
-          }
-        };
+          };
+        }
       }
 
       // ============ v20 PRE-FILTER: EAA EVALUATION ============
@@ -314,6 +326,30 @@ export function useProcessingOrchestrator() {
           console.log(`🧬 Fusion strategy: ${fusionResult.strategy}`);
           console.log(`   Balance: ${Math.round(fusionResult.symbolicWeight * 100)}% symbolic / ${Math.round(fusionResult.neuralWeight * 100)}% neural`);
           console.log(`   Preservation score: ${Math.round(fusionResult.preservationScore * 100)}%`);
+          
+          // ✅ FIX 2: Validate fused response with TD-Matrix + E_AI
+          console.log('🛡️ Validating fused response with TD-Matrix + E_AI Rules...');
+          const aiContribution = estimateAIContribution(fusionResult.fusedResponse);
+          const userAgency = eaaProfile.agency;
+          const tdResult = evaluateTD(aiContribution, userAgency);
+          
+          const eaiContext = createEAIContext(eaaProfile, tdResult.value, {
+            riskScore: rubricResult.overallRisk / 100,
+            protectiveScore: rubricResult.overallProtective / 100
+          });
+          const eaiResult = evaluateEAIRules(eaiContext);
+          
+          console.log(`   TD Score: ${tdResult.value.toFixed(2)} (${tdResult.flag})`);
+          console.log(`   E_AI Triggered: ${eaiResult.triggered} ${eaiResult.triggered ? `(${eaiResult.ruleId})` : ''}`);
+          
+          // If E_AI blocks output, use symbolic fallback
+          if (eaiResult.triggered && eaiResult.action?.type === 'halt_output') {
+            console.warn('⚠️ E_AI blocked fused response, using symbolic fallback');
+            fusionResult.fusedResponse = decisionResult.response;
+            fusionResult.symbolicWeight = 1.0;
+            fusionResult.neuralWeight = 0.0;
+            fusionResult.strategy = 'symbolic_fallback';
+          }
           
           finalResult = {
             content: fusionResult.fusedResponse, // ← FUSION, niet selection

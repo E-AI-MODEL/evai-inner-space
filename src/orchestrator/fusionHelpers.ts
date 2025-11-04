@@ -158,11 +158,12 @@ function calculatePreservation(symbolic: string, neural: string): number {
 export async function assembleFusion(ctx: FusionContext): Promise<FusionResult> {
   console.log('🧬 NeSy Fusion Assembly starting...');
   
-  // ✅ NEW: Get learned weights from cache (non-blocking!)
-  const { FusionWeightCache } = await import('@/lib/fusionWeightCache');
-  const cache = FusionWeightCache.getInstance();
-  const contextType = determineContextType(ctx);
-  const learnedWeights = await cache.getWeights(contextType);
+  try {
+    // ✅ NEW: Get learned weights from cache (non-blocking!)
+    const { FusionWeightCache } = await import('@/lib/fusionWeightCache');
+    const cache = FusionWeightCache.getInstance();
+    const contextType = determineContextType(ctx);
+    const learnedWeights = await cache.getWeights(contextType);
   
   console.log(`📊 Using learned weights for ${contextType}:`, learnedWeights);
   
@@ -218,16 +219,30 @@ export async function assembleFusion(ctx: FusionContext): Promise<FusionResult> 
     (ctx.symbolic.confidence * symbolicWeight) + 
     (ctx.neural.confidence * neuralWeight);
   
-  console.log(`🧬 Fusion complete: ${strategy} (${Math.round(symbolicWeight * 100)}%/${Math.round(neuralWeight * 100)}%)`);
-  
-  return {
-    fusedResponse,
-    fusedConfidence,
-    symbolicWeight,
-    neuralWeight,
-    preservationScore: preservation,
-    strategy
-  };
+    console.log(`🧬 Fusion complete: ${strategy} (${Math.round(symbolicWeight * 100)}%/${Math.round(neuralWeight * 100)}%)`);
+    
+    return {
+      fusedResponse,
+      fusedConfidence,
+      symbolicWeight,
+      neuralWeight,
+      preservationScore: preservation,
+      strategy
+    };
+  } catch (error) {
+    // ✅ FIX 1: Error handling for Fusion Assembly
+    console.error('❌ Fusion Assembly failed:', error);
+    
+    // Fallback to symbolic core (safest option)
+    return {
+      fusedResponse: ctx.symbolic.response,
+      fusedConfidence: ctx.symbolic.confidence,
+      symbolicWeight: 1.0,
+      neuralWeight: 0.0,
+      preservationScore: 0.0,
+      strategy: 'symbolic_fallback'
+    };
+  }
 }
 
 /**
