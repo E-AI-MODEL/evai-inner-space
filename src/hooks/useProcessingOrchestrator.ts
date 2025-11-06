@@ -69,10 +69,24 @@ export function useProcessingOrchestrator() {
     
     const startTime = Date.now();
     
+    // ============ v20 FLOW LOGGING SETUP ============
+    const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unknown';
+    const { logFlowEvent } = await import('@/lib/flowEventLogger');
+    
     try {
-      // 🛡️ VEILIGHEIDSLAG: Pre-response harm detection (altijd doen)
+      // ============ LAYER 1: SAFETY CHECK ============
+      await logFlowEvent(sessionId, 'Safety Check', 'processing');
+      const safetyStartTime = Date.now();
+      
       console.log('🛡️ Safety check: Analyzing user input...');
       const safetyResult = await checkPromptSafety(userInput);
+      
+      await logFlowEvent(sessionId, 'Safety Check', 'completed', Date.now() - safetyStartTime, {
+        decision: safetyResult.decision,
+        score: safetyResult.score,
+        flags: safetyResult.flags,
+        severity: safetyResult.severity
+      });
 
       if (safetyResult.decision === 'block') {
         console.warn('🚫 Safety check BLOCKED input:', safetyResult.flags, 'severity:', safetyResult.severity, 'details:', safetyResult.details);
@@ -169,23 +183,39 @@ export function useProcessingOrchestrator() {
         }
       }
 
-      // ============ v20 PRE-FILTER: EAA EVALUATION ============
-      console.log('🧠 v20 Pre-Filter: EAA Evaluation starting...');
+      // ============ LAYER 2: RUBRICS ASSESSMENT (EvAI 5.6) ============
+      await logFlowEvent(sessionId, 'Rubrics Assessment', 'processing');
+      const rubricStartTime = Date.now();
       
-      // ============ RUBRICS ASSESSMENT (EvAI 5.6) ============
       console.log('📊 Rubrics Assessment: Analyzing conversation context...');
-      const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unknown';
       const rubricResult = await performEnhancedAssessment(
         userInput,
         sessionId,
         'balanced'
       );
       
-      // Single EAA evaluation with rubric context (fix: was evaluated twice before)
+      await logFlowEvent(sessionId, 'Rubrics Assessment', 'completed', Date.now() - rubricStartTime, {
+        overallRisk: rubricResult.overallRisk,
+        overallProtective: rubricResult.overallProtective,
+        dominantPattern: rubricResult.dominantPattern,
+        triggersCount: rubricResult.assessments.flatMap(a => a.triggers).length
+      });
+      
+      // ============ LAYER 3: EAA EVALUATION ============
+      await logFlowEvent(sessionId, 'EAA Evaluation', 'processing');
+      const eaaStartTime = Date.now();
+      
+      console.log('🧠 v20 Pre-Filter: EAA Evaluation starting...');
       const eaaProfile: EAAProfile = evaluateEAA(userInput, {
         riskScore: rubricResult.overallRisk / 100,
         protectiveScore: rubricResult.overallProtective / 100,
         dominantPattern: rubricResult.dominantPattern
+      });
+      
+      await logFlowEvent(sessionId, 'EAA Evaluation', 'completed', Date.now() - eaaStartTime, {
+        ownership: eaaProfile.ownership,
+        autonomy: eaaProfile.autonomy,
+        agency: eaaProfile.agency
       });
       
       console.log(`🧠 EAA Profile: O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
@@ -208,9 +238,12 @@ export function useProcessingOrchestrator() {
         needsDeepAnalysis
       });
 
-      // 🎯 CONDITIONAL STRATEGIC BRIEFING - alleen bij complexe gesprekken
+      // ============ LAYER 4: REGISSEUR BRIEFING ============
+      await logFlowEvent(sessionId, 'Regisseur Briefing', needsDeepAnalysis ? 'processing' : 'skipped');
       let briefing = null;
+      
       if (needsDeepAnalysis) {
+        const briefingStartTime = Date.now();
         const cachedBriefing = getCached(sessionId);
         briefing = cachedBriefing;
         
@@ -228,11 +261,20 @@ export function useProcessingOrchestrator() {
             console.log('✅ Strategic Briefing created and cached');
           }
         }
+        
+        await logFlowEvent(sessionId, 'Regisseur Briefing', 'completed', Date.now() - briefingStartTime, {
+          goal: briefing?.goal,
+          priority: briefing?.priority,
+          cached: !!cachedBriefing
+        });
       } else {
         console.log('⏭️ Regisseur besluit: Simpel gesprek, Strategic Briefing overgeslagen');
       }
 
-      // 🧠 Neurosymbolisch v16 - Hybrid Orchestrator (Policy + Semantic + Validation)
+      // ============ LAYER 5: UNIFIED DECISION (Knowledge Matching) ============
+      await logFlowEvent(sessionId, 'Response Generation', 'processing');
+      const decisionStartTime = Date.now();
+      
       const vectorApiKey = apiKey;
       
       console.log('🧠 NEUROSYMBOLISCH v16: Starting Hybrid Orchestrator...');
@@ -246,6 +288,35 @@ export function useProcessingOrchestrator() {
         briefing, // Strategic briefing (conditionally created)
         conversationHistory
       );
+      
+      // Store v20 metadata for logging (will be used in logDecisionToDatabase later)
+      const v20Metadata = {
+        eaaProfile,
+        tdMatrix: null as any, // Wordt later berekend
+        eaiRules: null as any, // Wordt later berekend
+        regisseurBriefing: briefing ? {
+          goal: briefing.goal,
+          priority: briefing.priority
+        } : null,
+        fusionMetadata: null as any, // Wordt later toegevoegd
+        safetyCheck: {
+          decision: safetyResult.decision,
+          score: safetyResult.score,
+          flags: safetyResult.flags
+        },
+        rubricsAnalysis: {
+          overallRisk: rubricResult.overallRisk,
+          overallProtective: rubricResult.overallProtective,
+          dominantPattern: rubricResult.dominantPattern,
+          assessments: rubricResult.assessments
+        }
+      };
+      
+      await logFlowEvent(sessionId, 'Response Generation', 'completed', Date.now() - decisionStartTime, {
+        matchFound: !!decisionResult,
+        confidence: decisionResult?.confidence || 0,
+        sources: decisionResult?.sources?.length || 0
+      });
 
       // 🎯 V16: If high confidence match, route through hybrid orchestrator for validation
       let finalResult: UnifiedResponse | null = null;
@@ -327,11 +398,35 @@ export function useProcessingOrchestrator() {
           console.log(`   Balance: ${Math.round(fusionResult.symbolicWeight * 100)}% symbolic / ${Math.round(fusionResult.neuralWeight * 100)}% neural`);
           console.log(`   Preservation score: ${Math.round(fusionResult.preservationScore * 100)}%`);
           
+          // Update v20Metadata with Fusion results
+          v20Metadata.fusionMetadata = {
+            strategy: fusionResult.strategy,
+            symbolicWeight: fusionResult.symbolicWeight,
+            neuralWeight: fusionResult.neuralWeight,
+            preservationScore: fusionResult.preservationScore
+          };
+          
           // ✅ FIX 2: Validate fused response with TD-Matrix + E_AI
           console.log('🛡️ Validating fused response with TD-Matrix + E_AI Rules...');
+          
+          // ============ LAYER 10: TD-MATRIX EVALUATION ============
+          await logFlowEvent(sessionId, 'TD-Matrix', 'processing');
+          const tdStartTime = Date.now();
+          
           const aiContribution = estimateAIContribution(fusionResult.fusedResponse);
           const userAgency = eaaProfile.agency;
           const tdResult = evaluateTD(aiContribution, userAgency);
+          
+          await logFlowEvent(sessionId, 'TD-Matrix', 'completed', Date.now() - tdStartTime, {
+            value: tdResult.value,
+            flag: tdResult.flag,
+            shouldBlock: tdResult.shouldBlock,
+            aiContribution
+          });
+          
+          // ============ LAYER 11: E_AI RULES ENGINE ============
+          await logFlowEvent(sessionId, 'E_AI Rules', 'processing');
+          const eaiStartTime = Date.now();
           
           const eaiContext = createEAIContext(eaaProfile, tdResult.value, {
             riskScore: rubricResult.overallRisk / 100,
@@ -339,8 +434,27 @@ export function useProcessingOrchestrator() {
           });
           const eaiResult = evaluateEAIRules(eaiContext);
           
+          await logFlowEvent(sessionId, 'E_AI Rules', 'completed', Date.now() - eaiStartTime, {
+            triggered: eaiResult.triggered,
+            ruleId: eaiResult.ruleId,
+            actionType: eaiResult.action?.type
+          });
+          
           console.log(`   TD Score: ${tdResult.value.toFixed(2)} (${tdResult.flag})`);
           console.log(`   E_AI Triggered: ${eaiResult.triggered} ${eaiResult.triggered ? `(${eaiResult.ruleId})` : ''}`);
+          
+          // Update v20Metadata with TD-Matrix and E_AI results
+          v20Metadata.tdMatrix = {
+            value: tdResult.value,
+            flag: tdResult.flag,
+            shouldBlock: tdResult.shouldBlock,
+            aiContribution
+          };
+          v20Metadata.eaiRules = eaiResult.triggered ? {
+            ruleId: eaiResult.ruleId,
+            reason: eaiResult.reason,
+            action: eaiResult.action
+          } : null;
           
           // If E_AI blocks output, use symbolic fallback
           if (eaiResult.triggered && eaiResult.action?.type === 'halt_output') {

@@ -24,6 +24,11 @@ interface DecisionLog {
     neuralWeight?: number;
     preservationScore?: number;
   };
+  eaaProfile?: { ownership: number; autonomy: number; agency: number };
+  tdMatrix?: { value: number; flag: string; shouldBlock: boolean };
+  eaiRules?: { ruleId?: string; reason?: string };
+  safetyCheck?: { decision: string; score: number };
+  rubricsAnalysis?: { overallRisk: number; overallProtective: number };
 }
 
 interface DecisionLogTableProps {
@@ -141,13 +146,28 @@ export const DecisionLogTable: React.FC<DecisionLogTableProps> = ({ logs, isLoad
                               </div>
                             </div>
                           )}
-                          <div className="flex gap-4 text-xs">
+                           <div className="flex gap-4 text-xs flex-wrap">
                             <span>
                               Validated: <Badge variant={log.validated ? 'default' : 'destructive'}>{log.validated ? 'Yes' : 'No'}</Badge>
                             </span>
                             <span>
                               Constraints: <Badge variant={log.constraintsOK ? 'default' : 'destructive'}>{log.constraintsOK ? 'OK' : 'Violated'}</Badge>
                             </span>
+                            {log.eaaProfile && (
+                              <span>
+                                EAA: <Badge variant="outline">O:{log.eaaProfile.ownership.toFixed(2)} A:{log.eaaProfile.autonomy.toFixed(2)} Ag:{log.eaaProfile.agency.toFixed(2)}</Badge>
+                              </span>
+                            )}
+                            {log.tdMatrix && (
+                              <span>
+                                TD: <Badge variant={log.tdMatrix.shouldBlock ? 'destructive' : 'default'}>{log.tdMatrix.value.toFixed(2)} {log.tdMatrix.flag}</Badge>
+                              </span>
+                            )}
+                            {log.safetyCheck && (
+                              <span>
+                                Safety: <Badge variant={log.safetyCheck.decision === 'allow' ? 'default' : 'destructive'}>{log.safetyCheck.decision}</Badge>
+                              </span>
+                            )}
                           </div>
                         </div>
                       </TableCell>

@@ -27,6 +27,12 @@ export interface DecisionLog {
   constraintsOK?: boolean;
   createdAt: string;
   auditLog?: string[];
+  fusionMetadata?: any;
+  eaaProfile?: any;
+  tdMatrix?: any;
+  eaiRules?: any;
+  safetyCheck?: any;
+  rubricsAnalysis?: any;
 }
 
 /**
@@ -146,7 +152,13 @@ export async function getDecisionLogs(userId: string, limit = 50): Promise<Decis
         validated: Boolean(metadata.validated),
         constraintsOK: Boolean(metadata.constraintsOK),
         createdAt: d.created_at,
-        auditLog: metadata.auditLog ? (Array.isArray(metadata.auditLog) ? metadata.auditLog : []) : []
+        auditLog: metadata.auditLog ? (Array.isArray(metadata.auditLog) ? metadata.auditLog : []) : [],
+        fusionMetadata: d.fusion_metadata,
+        eaaProfile: d.eaa_profile,
+        tdMatrix: d.td_matrix,
+        eaiRules: d.eai_rules,
+        safetyCheck: d.safety_check,
+        rubricsAnalysis: d.rubrics_analysis
       };
     });
 

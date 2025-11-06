@@ -416,7 +416,7 @@ export function useUnifiedDecisionCore() {
     input: string,
     sources: UnifiedKnowledgeItem[],
     decision: DecisionResult | null,
-    metadata: { googleApiUsed?: boolean; version?: string } = {}
+    metadata: { googleApiUsed?: boolean; version?: string; v20Metadata?: any } = {}
   ) => {
     try {
       // 🆕 V3.0: Use new log_unified_decision_v3 RPC for simplified, reliable logging
@@ -439,7 +439,7 @@ export function useUnifiedDecisionCore() {
         secondaryAnalysis: false
       };
 
-      // Call new v3.0 RPC function
+      // Call new v3.0 RPC function with v20 metadata
       const { data: logId, error } = await supabase.rpc('log_unified_decision_v3', {
         p_user_input: input,
         p_emotion: decision?.emotion || 'no-match',
@@ -449,7 +449,14 @@ export function useUnifiedDecisionCore() {
         p_sources: sourcesJson,
         p_conversation_id: sessionId,
         p_processing_time_ms: 0,
-        p_api_collaboration: apiCollaboration
+        p_api_collaboration: apiCollaboration,
+        p_eaa_profile: metadata.v20Metadata?.eaaProfile || {},
+        p_td_matrix: metadata.v20Metadata?.tdMatrix || {},
+        p_eai_rules: metadata.v20Metadata?.eaiRules || {},
+        p_regisseur_briefing: metadata.v20Metadata?.regisseurBriefing || {},
+        p_fusion_metadata: metadata.v20Metadata?.fusionMetadata || {},
+        p_safety_check: metadata.v20Metadata?.safetyCheck || {},
+        p_rubrics_analysis: metadata.v20Metadata?.rubricsAnalysis || {}
       });
 
       if (error) {

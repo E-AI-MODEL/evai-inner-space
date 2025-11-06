@@ -181,13 +181,19 @@ export type Database = {
           confidence_score: number
           conversation_id: string | null
           created_at: string
+          eaa_profile: Json | null
+          eai_rules: Json | null
           final_response: string
+          fusion_metadata: Json | null
           hybrid_decision: Json
           id: string
           neural_similarities: Json | null
           processing_time_ms: number | null
+          regisseur_briefing: Json | null
           rubrics_analysis: Json | null
+          safety_check: Json | null
           symbolic_matches: Json | null
+          td_matrix: Json | null
           user_id: string
           user_input: string
           workflow_version: string | null
@@ -197,13 +203,19 @@ export type Database = {
           confidence_score: number
           conversation_id?: string | null
           created_at?: string
+          eaa_profile?: Json | null
+          eai_rules?: Json | null
           final_response: string
+          fusion_metadata?: Json | null
           hybrid_decision: Json
           id?: string
           neural_similarities?: Json | null
           processing_time_ms?: number | null
+          regisseur_briefing?: Json | null
           rubrics_analysis?: Json | null
+          safety_check?: Json | null
           symbolic_matches?: Json | null
+          td_matrix?: Json | null
           user_id?: string
           user_input: string
           workflow_version?: string | null
@@ -213,13 +225,19 @@ export type Database = {
           confidence_score?: number
           conversation_id?: string | null
           created_at?: string
+          eaa_profile?: Json | null
+          eai_rules?: Json | null
           final_response?: string
+          fusion_metadata?: Json | null
           hybrid_decision?: Json
           id?: string
           neural_similarities?: Json | null
           processing_time_ms?: number | null
+          regisseur_briefing?: Json | null
           rubrics_analysis?: Json | null
+          safety_check?: Json | null
           symbolic_matches?: Json | null
+          td_matrix?: Json | null
           user_id?: string
           user_input?: string
           workflow_version?: string | null
@@ -1018,20 +1036,42 @@ export type Database = {
         }
         Returns: string
       }
-      log_unified_decision_v3: {
-        Args: {
-          p_api_collaboration?: Json
-          p_confidence: number
-          p_conversation_id: string
-          p_emotion: string
-          p_label: string
-          p_processing_time_ms: number
-          p_response: string
-          p_sources: Json
-          p_user_input: string
-        }
-        Returns: string
-      }
+      log_unified_decision_v3:
+        | {
+            Args: {
+              p_api_collaboration?: Json
+              p_confidence: number
+              p_conversation_id: string
+              p_eaa_profile?: Json
+              p_eai_rules?: Json
+              p_emotion: string
+              p_fusion_metadata?: Json
+              p_label: string
+              p_processing_time_ms: number
+              p_regisseur_briefing?: Json
+              p_response: string
+              p_rubrics_analysis?: Json
+              p_safety_check?: Json
+              p_sources: Json
+              p_td_matrix?: Json
+              p_user_input: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_api_collaboration?: Json
+              p_confidence: number
+              p_conversation_id: string
+              p_emotion: string
+              p_label: string
+              p_processing_time_ms: number
+              p_response: string
+              p_sources: Json
+              p_user_input: string
+            }
+            Returns: string
+          }
       search_unified_knowledge: {
         Args: {
           max_results?: number

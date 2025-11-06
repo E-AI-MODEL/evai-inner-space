@@ -158,6 +158,14 @@ function calculatePreservation(symbolic: string, neural: string): number {
 export async function assembleFusion(ctx: FusionContext): Promise<FusionResult> {
   console.log('🧬 NeSy Fusion Assembly starting...');
   
+  // ============ FLOW LOGGING: FUSION_ASSEMBLY ============
+  const { getOrCreateSessionId } = await import('@/lib/sessionManager');
+  const { logFlowEvent } = await import('@/lib/flowEventLogger');
+  const sessionId = getOrCreateSessionId();
+  
+  await logFlowEvent(sessionId, 'FUSION_ASSEMBLY', 'processing');
+  const fusionStartTime = Date.now();
+  
   try {
     // ✅ NEW: Get learned weights from cache (non-blocking!)
     const { FusionWeightCache } = await import('@/lib/fusionWeightCache');
@@ -183,11 +191,20 @@ export async function assembleFusion(ctx: FusionContext): Promise<FusionResult> 
     neuralWeight = 1.0 - symbolicWeight;
   }
   
+  // ============ FLOW LOGGING: SEED_PRESERVATION_CHECK ============
+  await logFlowEvent(sessionId, 'SEED_PRESERVATION_CHECK', 'processing');
+  const preservationStartTime = Date.now();
+  
   // Preservation check: hoe goed heeft LLM de seed behouden?
   const preservation = calculatePreservation(
     ctx.symbolic.response,
     ctx.neural.response
   );
+  
+  await logFlowEvent(sessionId, 'SEED_PRESERVATION_CHECK', 'completed', Date.now() - preservationStartTime, {
+    preservationScore: preservation,
+    passedThreshold: preservation > 0.4
+  });
   
   console.log(`🔍 Seed preservation score: ${(preservation * 100).toFixed(0)}%`);
   
@@ -221,6 +238,14 @@ export async function assembleFusion(ctx: FusionContext): Promise<FusionResult> 
   
     console.log(`🧬 Fusion complete: ${strategy} (${Math.round(symbolicWeight * 100)}%/${Math.round(neuralWeight * 100)}%)`);
     
+    await logFlowEvent(sessionId, 'FUSION_ASSEMBLY', 'completed', Date.now() - fusionStartTime, {
+      strategy,
+      symbolicWeight,
+      neuralWeight,
+      preservationScore: preservation,
+      contextType
+    });
+    
     return {
       fusedResponse,
       fusedConfidence,
@@ -232,6 +257,11 @@ export async function assembleFusion(ctx: FusionContext): Promise<FusionResult> 
   } catch (error) {
     // ✅ FIX 1: Error handling for Fusion Assembly
     console.error('❌ Fusion Assembly failed:', error);
+    
+    await logFlowEvent(sessionId, 'FUSION_ASSEMBLY', 'failed', Date.now() - fusionStartTime, {
+      error: error instanceof Error ? error.message : String(error),
+      fallbackStrategy: 'symbolic_fallback'
+    });
     
     // Fallback to symbolic core (safest option)
     return {
