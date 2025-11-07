@@ -70,6 +70,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                         animate={!!msg.animate}
                         feedback={msg.feedback}
                         symbolicInferences={msg.symbolicInferences}
+                        v20Metadata={msg.v20Metadata}
                         explainText={msg.explainText}
                         meta={msg.meta}
                         onFeedback={msg.from === 'ai' && onFeedback ? (feedbackType) => onFeedback(msg.id, feedbackType) : undefined}

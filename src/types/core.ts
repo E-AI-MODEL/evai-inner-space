@@ -26,6 +26,13 @@ export interface UnifiedResponse {
       neuralWeight: number;
       preservationScore: number;
       strategy: 'neural_enhanced' | 'weighted_blend' | 'symbolic_fallback';
+      tdMatrixFlag?: string;
+      safetyScore?: number;
+      eaaScores?: {
+        ownership: number;
+        autonomy: number;
+        agency: number;
+      };
     };
     apiCollaboration?: {
       api1Used: boolean;

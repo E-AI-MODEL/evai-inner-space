@@ -19,6 +19,12 @@ interface ChatBubbleProps {
   repliedToContent?: string;
   feedback?: "like" | "dislike" | null;
   symbolicInferences?: string[];
+  v20Metadata?: {
+    tdMatrixFlag?: string;
+    fusionStrategy?: string;
+    safetyScore?: number;
+    eaaScores?: { ownership: number; autonomy: number; agency: number };
+  };
   onFeedback?: (feedback: "like" | "dislike") => void;
 }
 
@@ -44,6 +50,7 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
   repliedToContent,
   feedback,
   symbolicInferences,
+  v20Metadata,
   onFeedback,
 }, ref) => {
   const bubbleStyles =
@@ -67,12 +74,27 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
       data-seed={emotionSeed}
     >
       {from === "ai" && label && (
-        <div className="mb-0.5 ml-2 flex items-center">
+        <div className="mb-0.5 ml-2 flex items-center gap-1 flex-wrap">
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-medium tracking-wide opacity-80 ${LABEL_CLASSES[label] ?? "bg-muted text-muted-foreground"}`}
           >
             {label}
           </span>
+          {v20Metadata?.tdMatrixFlag && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400">
+              {v20Metadata.tdMatrixFlag === 'DIDACTIC' ? '🎓 Didactisch' : v20Metadata.tdMatrixFlag === 'AUTONOMOUS' ? '🌱 Autonoom' : '⚖️ Balanced'}
+            </span>
+          )}
+          {v20Metadata?.fusionStrategy && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-500/10 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400">
+              {v20Metadata.fusionStrategy === 'neural_enhanced' ? '🧠 Neural+' : v20Metadata.fusionStrategy === 'weighted_blend' ? '🔬 Hybrid' : '📚 Symbolic'}
+            </span>
+          )}
+          {v20Metadata?.safetyScore !== undefined && v20Metadata.safetyScore < 0.5 && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
+              ⚠️ Safety Review
+            </span>
+          )}
           <AITransparencyTooltip 
             label={label}
             reasoning={explainText}

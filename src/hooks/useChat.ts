@@ -77,6 +77,12 @@ export function useChat() {
           totalProcessingTime: result.metadata.totalProcessingTime,
           componentsUsed: result.metadata.componentsUsed
         },
+        v20Metadata: result.metadata.fusionMetadata ? {
+          tdMatrixFlag: result.metadata.fusionMetadata.tdMatrixFlag,
+          fusionStrategy: result.metadata.fusionMetadata.strategy,
+          safetyScore: result.metadata.fusionMetadata.safetyScore,
+          eaaScores: result.metadata.fusionMetadata.eaaScores
+        } : undefined,
         feedback: null
       };
 

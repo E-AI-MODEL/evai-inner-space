@@ -33,6 +33,12 @@ export interface Message {
   meta?: MessageMeta;
   symbolicInferences?: string[];
   secondaryInsights?: string[];
+  v20Metadata?: {
+    tdMatrixFlag?: string;
+    fusionStrategy?: string;
+    safetyScore?: number;
+    eaaScores?: { ownership: number; autonomy: number; agency: number };
+  };
 }
 export * from './orchestration';
 export * from './core';

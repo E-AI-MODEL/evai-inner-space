@@ -497,7 +497,14 @@ export function useProcessingOrchestrator() {
                 symbolicWeight: fusionResult.symbolicWeight,
                 neuralWeight: fusionResult.neuralWeight,
                 preservationScore: fusionResult.preservationScore,
-                strategy: fusionResult.strategy
+                strategy: fusionResult.strategy,
+                tdMatrixFlag: tdResult.flag,
+                safetyScore: safetyResult.score,
+                eaaScores: {
+                  ownership: eaaProfile.ownership,
+                  autonomy: eaaProfile.autonomy,
+                  agency: eaaProfile.agency
+                }
               },
               apiCollaboration: {
                 api1Used: true,
