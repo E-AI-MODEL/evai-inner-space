@@ -74,6 +74,10 @@ export async function orchestrate(
   const startTime = Date.now();
   const auditLog: string[] = [];
   
+  // ============ v20 FLOW LOGGING SETUP (must be first) ============
+  const sessionId = sessionStorage.getItem('evai-current-session-id') || 'unknown';
+  const { logFlowEvent } = await import('@/lib/flowEventLogger');
+  
   auditLog.push(`🚀 EvAI v20 Orchestration started at ${new Date().toISOString()}`);
   auditLog.push(`📝 Input: "${ctx.userInput.substring(0, 50)}..."`);
   
@@ -111,7 +115,10 @@ export async function orchestrate(
     const inputComplexity = analyzeInputComplexity(ctx.userInput);
     auditLog.push(`📊 Input complexity: ${JSON.stringify(inputComplexity)}`);
 
-    // STAP 2: Policy Engine - decide next step
+    // ============ LAYER 8: POLICY DECISION ============
+    await logFlowEvent(sessionId, 'Policy Decision', 'processing');
+    const policyStartTime = Date.now();
+    
     const policyCtx: PolicyContext = {
       rubric: {
         crisis: ctx.rubric.crisis,
@@ -127,8 +134,16 @@ export async function orchestrate(
     const policyDecision = await decideNextStep(policyCtx);
     const explanation = explainDecision(policyDecision, policyCtx);
     auditLog.push(...explanation);
+    
+    await logFlowEvent(sessionId, 'Policy Decision', 'completed', Date.now() - policyStartTime, {
+      action: policyDecision.action,
+      ruleId: policyDecision.ruleId,
+      confidence: policyDecision.confidence
+    });
 
-    // STAP 3: Semantic Layer - determine allowed interventions
+    // ============ LAYER 9: SEMANTIC GRAPH ============
+    await logFlowEvent(sessionId, 'Semantic Graph', 'processing');
+    const semanticStartTime = Date.now();
     const emotionForInterventions = ctx.topEmotion || ctx.seed.emotion || 'neutraal';
     const allowedInterventions = getAllowedInterventions(emotionForInterventions, {
       crisis: ctx.rubric.crisis,
@@ -141,6 +156,12 @@ export async function orchestrate(
     auditLog.push(`  • Emotion: ${emotionForInterventions}`);
     auditLog.push(`  • Suggested interventions: ${suggestedInterventions.map(i => i.intervention).join(', ')}`);
     auditLog.push(`  • Allowed interventions: ${allowedInterventions.join(', ')}`);
+    
+    await logFlowEvent(sessionId, 'Semantic Graph', 'completed', Date.now() - semanticStartTime, {
+      emotion: emotionForInterventions,
+      suggestedCount: suggestedInterventions.length,
+      allowedCount: allowedInterventions.length
+    });
 
     // STAP 4: Execute decision
     let answer = '';
@@ -245,9 +266,20 @@ export async function orchestrate(
       auditLog.push(`🔒 Constraints: ${constraintsOK ? 'SATISFIED' : 'VIOLATED'}`);
     }
 
+    // ============ LAYER 14: VALIDATION ============
+    await logFlowEvent(sessionId, 'Validation', 'processing');
+    const validationStartTime = Date.now();
+    
     const responseValidation = validateResponse(answer, plan || {}, policyCtx);
     constraintsOK = responseValidation.ok;
     auditLog.push(`🛡️ Response validation: ${constraintsOK ? 'PASSED' : 'FAILED'}`);
+    
+    await logFlowEvent(sessionId, 'Validation', 'completed', Date.now() - validationStartTime, {
+      passed: constraintsOK,
+      errorsCount: responseValidation.errors.length,
+      warningsCount: responseValidation.warnings.length
+    });
+    
     if (!constraintsOK) {
       auditLog.push(`  Errors: ${responseValidation.errors.join(', ')}`);
       // BLOCK response if validation failed
@@ -328,11 +360,7 @@ export async function orchestrate(
     }
     
     // ============ NGBSE CHECK (v20) ============
-    const { getOrCreateSessionId } = await import('@/lib/sessionManager');
-    const { logFlowEvent } = await import('@/lib/flowEventLogger');
-    const sessionId = getOrCreateSessionId();
-    
-    await logFlowEvent(sessionId, 'NGBSE_CHECK', 'processing');
+    await logFlowEvent(sessionId, 'NGBSE Check', 'processing');
     
     const { performNGBSECheck } = await import('@/lib/ngbseEngine');
     const rubricScores = ctx.rubric ? {
@@ -354,7 +382,7 @@ export async function orchestrate(
       sessionId,
     });
     
-    await logFlowEvent(sessionId, 'NGBSE_CHECK', 'completed', Date.now() - ngbseStartTime, {
+    await logFlowEvent(sessionId, 'NGBSE Check', 'completed', Date.now() - ngbseStartTime, {
       blindspots: ngbseResult.blindspots.length,
       adjustedConfidence: ngbseResult.adjustedConfidence
     });
@@ -365,7 +393,7 @@ export async function orchestrate(
     }
     
     // ============ HITL CHECK (v20) ============
-    await logFlowEvent(sessionId, 'HITL_CHECK', 'processing');
+    await logFlowEvent(sessionId, 'HITL Check', 'processing');
     
     const { shouldTriggerHITL, triggerHITL } = await import('@/lib/hitlTriggers');
     const hitlDecision = await shouldTriggerHITL({
@@ -385,7 +413,7 @@ export async function orchestrate(
         ngbseResult,
       });
       
-      await logFlowEvent(sessionId, 'HITL_CHECK', 'completed', 0, {
+      await logFlowEvent(sessionId, 'HITL Check', 'completed', 0, {
         triggered: true,
         type: hitlDecision.triggerType,
         severity: hitlDecision.severity
@@ -397,7 +425,7 @@ export async function orchestrate(
         label = 'Reflectievraag';
       }
     } else {
-      await logFlowEvent(sessionId, 'HITL_CHECK', 'completed', 0, { triggered: false });
+      await logFlowEvent(sessionId, 'HITL Check', 'completed', 0, { triggered: false });
     }
     
     const processingTime = Date.now() - startTime;
@@ -439,10 +467,6 @@ export async function orchestrate(
     auditLog.push(`❌ ERROR: ${error instanceof Error ? error.message : String(error)}`);
     
     // ============ AUTO-HEALING (v20) ============
-    const { getOrCreateSessionId } = await import('@/lib/sessionManager');
-    const { logFlowEvent } = await import('@/lib/flowEventLogger');
-    const sessionId = getOrCreateSessionId();
-    
     await logFlowEvent(sessionId, 'AUTO_HEALING', 'processing');
     
     const { attemptAutoHeal } = await import('./autoHealing');
