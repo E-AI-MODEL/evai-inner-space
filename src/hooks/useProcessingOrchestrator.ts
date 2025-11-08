@@ -353,7 +353,25 @@ export function useProcessingOrchestrator() {
             consent: true,
             conversationHistory,
             topEmotion: decisionResult.emotion,
-            rubricAssessments: rubricResult.assessments
+            rubricAssessments: rubricResult.assessments,
+            // Pass v20 metadata to orchestrator
+            eaaProfile: eaaProfile,
+            safetyCheck: {
+              decision: safetyResult.decision,
+              score: safetyResult.score,
+              flags: safetyResult.flags
+            },
+            rubricsAnalysis: {
+              overallRisk: rubricResult.overallRisk,
+              overallProtective: rubricResult.overallProtective,
+              dominantPattern: rubricResult.dominantPattern,
+              assessments: rubricResult.assessments
+            },
+            regisseurBriefing: briefing ? {
+              advice: briefing.goal,
+              reason: briefing.priority,
+              avgAgency: eaaProfile.agency
+            } : undefined
           };
 
           console.log('🎼 Calling orchestrate with seed:', {

@@ -45,6 +45,14 @@ export interface OrchestrationContext {
     confidenceLevel?: string;
     reasoning?: string;
   }>;
+  // v20 metadata
+  eaaProfile?: EAAProfile;
+  tdMatrix?: { value: number; flag: string; aiContribution: number; shouldBlock?: boolean; reason?: string };
+  regisseurBriefing?: { advice: string; reason: string; avgAgency: number };
+  eaiRules?: { triggered: boolean; ruleId?: string; reason?: string; action?: any };
+  rubricsAnalysis?: { overallRisk: number; overallProtective: number; dominantPattern: string; assessments?: any[] };
+  fusionMetadata?: { strategy: string; symbolicWeight: number; neuralWeight: number; preservationScore: number };
+  safetyCheck?: { decision: string; score: number; flags: string[] };
 }
 
 export interface OrchestrationResult {
@@ -82,32 +90,40 @@ export async function orchestrate(
   auditLog.push(`📝 Input: "${ctx.userInput.substring(0, 50)}..."`);
   
   // ============ LAYER 8: EAA EVALUATION (v20) ============
-  let eaaProfile: EAAProfile = { ownership: 0.5, autonomy: 0.5, agency: 0.5 };
-  try {
-    const rubricContext = ctx.rubricAssessments && ctx.rubricAssessments.length > 0 ? {
-      riskScore: ctx.rubricAssessments[0].riskScore,
-      protectiveScore: ctx.rubricAssessments[0].protectiveScore,
-      dominantPattern: ctx.rubricAssessments[0].rubricId
-    } : undefined;
-    
-    eaaProfile = evaluateEAA(ctx.userInput, rubricContext);
-    auditLog.push(`🧠 EAA Profile: O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
-  } catch (err) {
-    console.error('⚠️ EAA Evaluation failed:', err);
-    auditLog.push('⚠️ EAA Evaluation failed, using defaults');
+  let eaaProfile: EAAProfile = ctx.eaaProfile || { ownership: 0.5, autonomy: 0.5, agency: 0.5 };
+  if (!ctx.eaaProfile) {
+    try {
+      const rubricContext = ctx.rubricAssessments && ctx.rubricAssessments.length > 0 ? {
+        riskScore: ctx.rubricAssessments[0].riskScore,
+        protectiveScore: ctx.rubricAssessments[0].protectiveScore,
+        dominantPattern: ctx.rubricAssessments[0].rubricId
+      } : undefined;
+      
+      eaaProfile = evaluateEAA(ctx.userInput, rubricContext);
+      auditLog.push(`🧠 EAA Profile: O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
+    } catch (err) {
+      console.error('⚠️ EAA Evaluation failed:', err);
+      auditLog.push('⚠️ EAA Evaluation failed, using defaults');
+    }
+  } else {
+    auditLog.push(`🧠 EAA Profile (from parent): O=${eaaProfile.ownership.toFixed(2)} A=${eaaProfile.autonomy.toFixed(2)} Ag=${eaaProfile.agency.toFixed(2)}`);
   }
   
   // ============ REGISSEUR REFLECTIE (v20) ============
-  let regisseurAdvice = { advice: 'geen precedent', reason: 'init', avgAgency: 0.5 };
-  try {
-    regisseurAdvice = await reflectOnHistory(ctx.userInput, supabase, {
-      similarityThreshold: 0.3,
-      maxResults: 5
-    });
-    auditLog.push(`💭 Regisseur: ${regisseurAdvice.advice} (avg_agency=${regisseurAdvice.avgAgency.toFixed(2)})`);
-  } catch (err) {
-    console.error('⚠️ Regisseur Reflection failed:', err);
-    auditLog.push('⚠️ Regisseur Reflection failed');
+  let regisseurAdvice = ctx.regisseurBriefing || { advice: 'geen precedent', reason: 'init', avgAgency: 0.5 };
+  if (!ctx.regisseurBriefing) {
+    try {
+      regisseurAdvice = await reflectOnHistory(ctx.userInput, supabase, {
+        similarityThreshold: 0.3,
+        maxResults: 5
+      });
+      auditLog.push(`💭 Regisseur: ${regisseurAdvice.advice} (avg_agency=${regisseurAdvice.avgAgency.toFixed(2)})`);
+    } catch (err) {
+      console.error('⚠️ Regisseur Reflection failed:', err);
+      auditLog.push('⚠️ Regisseur Reflection failed');
+    }
+  } else {
+    auditLog.push(`💭 Regisseur (from parent): ${regisseurAdvice.advice}`);
   }
   
   try {
@@ -220,15 +236,22 @@ export async function orchestrate(
         auditLog.push(`🧠 Executing: LLM_PLANNING`);
         // v20: LLM generation with v20 validation
         try {
-          // Call edge function for LLM generation
+          // Call edge function for LLM generation with full v20 context
           const { data: llmData, error: llmError } = await supabase.functions.invoke('evai-core', {
             body: {
               operation: 'generate-response',
-              input: ctx.userInput,
+              userInput: ctx.userInput,
               emotion,
               allowedInterventions,
-              eaaProfile,
-              conversationHistory: ctx.conversationHistory?.slice(-6) || []
+              eaaProfile: ctx.eaaProfile || eaaProfile,
+              conversationHistory: ctx.conversationHistory?.slice(-6) || [],
+              // v20 metadata
+              tdMatrix: ctx.tdMatrix,
+              regisseurBriefing: ctx.regisseurBriefing,
+              eaiRules: ctx.eaiRules,
+              rubricsAssessment: ctx.rubricsAnalysis,
+              fusionMetadata: ctx.fusionMetadata,
+              safetyCheck: ctx.safetyCheck
             }
           });
           
@@ -666,8 +689,8 @@ async function compileSeedResponse(
     // Get allowed interventions
     const allowedInterventions = getEAAAllowedInterventions(ctx.seed.emotion, ctx.rubric);
     
-    // STEP 3: LLM Generation met fusion mode enabled
-    console.log('🤖 Calling LLM Generator with NeSy fusion mode...');
+    // STEP 3: LLM Generation met fusion mode enabled + v20 context
+    console.log('🤖 Calling LLM Generator with NeSy fusion mode + v20 metadata...');
     const { data, error } = await supabase.functions.invoke('evai-core', {
       body: {
         operation: 'generate-response',
@@ -678,8 +701,15 @@ async function compileSeedResponse(
         userInput: ctx.userInput,
         conversationHistory: ctx.conversationHistory.slice(-6),
         emotion: ctx.seed.emotion,
-        eaaProfile,
-        allowedInterventions
+        eaaProfile: ctx.eaaProfile || eaaProfile,
+        allowedInterventions,
+        // v20 metadata voor contextuele sturing
+        tdMatrix: ctx.tdMatrix,
+        regisseurBriefing: ctx.regisseurBriefing,
+        eaiRules: ctx.eaiRules,
+        rubricsAssessment: ctx.rubricsAnalysis,
+        fusionMetadata: ctx.fusionMetadata,
+        safetyCheck: ctx.safetyCheck
       }
     });
     
@@ -816,10 +846,22 @@ async function logDecisionToDatabase(params: {
         googleApiUsed: false,
         seedGenerated: false,
         secondaryAnalysis: false
-      }
+      },
+      // v20 metadata logging
+      p_eaa_profile: params.ctx.eaaProfile ? {
+        ownership: params.ctx.eaaProfile.ownership,
+        autonomy: params.ctx.eaaProfile.autonomy,
+        agency: params.ctx.eaaProfile.agency
+      } : null,
+      p_td_matrix: params.ctx.tdMatrix,
+      p_eai_rules: params.ctx.eaiRules,
+      p_regisseur_briefing: params.ctx.regisseurBriefing,
+      p_fusion_metadata: params.ctx.fusionMetadata,
+      p_safety_check: params.ctx.safetyCheck,
+      p_rubrics_analysis: params.ctx.rubricsAnalysis
     });
 
-    console.log('✅ Decision logged to database');
+    console.log('✅ Decision logged to database with v20 metadata');
   } catch (error) {
     console.error('❌ Failed to log decision:', error);
   }
