@@ -14,12 +14,16 @@ import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import SettingsSheet from "../components/SettingsSheet";
 import { useAuth } from "../hooks/useAuth";
 import { EmptyState } from "../components/EmptyState";
+import { EmotionTimeline } from "../components/EmotionTimeline";
+import { EmotionPulse } from "../components/EmotionPulse";
 
 const Index = () => {
   const { isAuthorized, authorizeChat, loading } = useAuth();
   const [showIntro, setShowIntro] = useState(!isAuthorized);
   const [focusedMessageId, setFocusedMessageId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [showEmotionPulse, setShowEmotionPulse] = useState(false);
+  const [currentEmotion, setCurrentEmotion] = useState<{ label: string; icon: keyof typeof import('lucide-react/dynamicIconImports').default; gradientClass: string } | null>(null);
   const isMobile = useIsMobile();
 
   const handleFinishedIntro = () => {
@@ -90,6 +94,7 @@ const Index = () => {
         icon: visual.icon,
         label: emotionLabel.charAt(0).toUpperCase() + emotionLabel.slice(1),
         colorClass: visual.colorClass,
+        gradientClass: visual.gradientClass,
         time: messageTimestamp.toLocaleTimeString("nl-NL", {
           hour: "2-digit",
           minute: "2-digit",
@@ -98,9 +103,36 @@ const Index = () => {
     })
     .reverse();
 
+  // Trigger emotion pulse animation for new emotions
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.from === 'ai' && lastMsg.emotionSeed) {
+        const visual = getEmotionVisuals(lastMsg.emotionSeed);
+        setCurrentEmotion({
+          label: lastMsg.emotionSeed.charAt(0).toUpperCase() + lastMsg.emotionSeed.slice(1),
+          icon: visual.icon,
+          gradientClass: visual.gradientClass
+        });
+        setShowEmotionPulse(true);
+      }
+    }
+  }, [messages]);
+
   return (
     <>
       <MobileUIFixes />
+      
+      {/* Emotion Pulse Animation */}
+      {showEmotionPulse && currentEmotion && (
+        <EmotionPulse
+          emotion={currentEmotion.label}
+          icon={currentEmotion.icon}
+          gradientClass={currentEmotion.gradientClass}
+          onComplete={() => setShowEmotionPulse(false)}
+        />
+      )}
+      
       <div className={`w-full bg-background font-inter flex flex-col ${isMobile ? 'h-[100dvh]' : 'h-screen'} overflow-hidden`}>
         <TopBar onSettingsClick={() => setSettingsOpen(true)} />
         <SettingsSheet
@@ -139,11 +171,24 @@ const Index = () => {
           
           {/* Chat Container */}
           <main className="flex-1 flex flex-col min-h-0">
+            {/* Emotion Timeline */}
+            {!isMobile && emotionHistory.length > 0 && (
+              <EmotionTimeline 
+                history={emotionHistory}
+                onFocus={handleFocusMessage}
+              />
+            )}
+            
             {/* Scrollable Messages Area */}
             <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-2 py-2' : 'px-4 py-4'}`}>
               <div className={`max-w-4xl mx-auto w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'}`}>
                 {/* Enhanced Empty State */}
-                {(!messages || messages.length === 0) && <EmptyState />}
+                {(!messages || messages.length === 0) && (
+                  <EmptyState onPromptClick={(prompt) => {
+                    setInput(prompt);
+                    // Auto-focus input (optional)
+                  }} />
+                )}
                 
                 <ChatView
                   messages={messages || []}
