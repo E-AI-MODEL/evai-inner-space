@@ -9,10 +9,10 @@ interface ProcessingStep {
 }
 
 const PROCESSING_STEPS: ProcessingStep[] = [
-  { id: 'rubrics', label: 'Rubrics analyseren', estimatedMs: 500 },
-  { id: 'eaa', label: 'EAA evalueren', estimatedMs: 300 },
-  { id: 'seed', label: 'Emotie detecteren', estimatedMs: 800 },
-  { id: 'llm', label: 'Response genereren', estimatedMs: 2000 }
+  { id: 'rubrics', label: 'Analyseren van context', estimatedMs: 500 },
+  { id: 'eaa', label: 'Empathie evalueren', estimatedMs: 300 },
+  { id: 'seed', label: 'Emotie herkennen', estimatedMs: 800 },
+  { id: 'llm', label: 'Antwoord creëren', estimatedMs: 2000 }
 ];
 
 interface LoadingStateIndicatorProps {
@@ -33,8 +33,18 @@ export const LoadingStateIndicator: React.FC<LoadingStateIndicatorProps> = ({ cl
   }, [currentStep]);
 
   return (
-    <Card className={`p-4 bg-muted/50 border-border animate-fade-slide-in ${className}`}>
-      <div className="space-y-2">
+    <Card className={`glass-strong border-primary-purple/20 animate-fade-slide-in overflow-hidden ${className}`}>
+      {/* Progress bar */}
+      <div className="h-1 bg-muted/30 relative overflow-hidden">
+        <div 
+          className="h-full bg-gradient-to-r from-primary-coral to-primary-purple transition-all duration-500 ease-out"
+          style={{ width: `${(currentStep / PROCESSING_STEPS.length) * 100}%` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+        </div>
+      </div>
+
+      <div className="p-5 space-y-3">
         {PROCESSING_STEPS.map((step, index) => {
           const isCompleted = index < currentStep;
           const isActive = index === currentStep;
@@ -42,18 +52,32 @@ export const LoadingStateIndicator: React.FC<LoadingStateIndicatorProps> = ({ cl
           return (
             <div 
               key={step.id}
-              className="flex items-center gap-3 text-sm"
+              className={`flex items-center gap-4 text-sm transition-all duration-300 ${
+                isActive ? 'scale-105' : ''
+              }`}
             >
-              {isCompleted ? (
-                <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-              ) : isActive ? (
-                <Loader2 className="h-4 w-4 text-primary animate-spin flex-shrink-0" />
-              ) : (
-                <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
-              )}
-              <span className={isCompleted || isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}>
-                {step.label}
-              </span>
+              <div className="relative">
+                {isCompleted ? (
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-glow-sm">
+                    <CheckCircle2 className="h-5 w-5 text-white" />
+                  </div>
+                ) : isActive ? (
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary-coral to-primary-purple flex items-center justify-center shadow-glow animate-pulse">
+                    <Loader2 className="h-5 w-5 text-white animate-spin" />
+                  </div>
+                ) : (
+                  <div className="h-8 w-8 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center" />
+                )}
+              </div>
+              <div className="flex-1">
+                <span className={`block font-medium transition-colors ${
+                  isCompleted ? 'text-green-600 dark:text-green-400' : 
+                  isActive ? 'gradient-text font-semibold' : 
+                  'text-muted-foreground'
+                }`}>
+                  {step.label}
+                </span>
+              </div>
             </div>
           );
         })}

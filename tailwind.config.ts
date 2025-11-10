@@ -22,17 +22,34 @@ export default {
     extend: {
       fontFamily: {
         inter: ["Inter", "sans-serif"],
+        display: ["Space Grotesk", "Inter", "sans-serif"],
       },
       colors: {
-        stress: "#BFD7FF", // pastel-blauw accent stress
-        background: "#F6F4F2",
-        sidebar: "#E8E6E4",
+        stress: "hsl(var(--emotion-stress))",
+        verdriet: "hsl(var(--emotion-verdriet))",
+        blij: "hsl(var(--emotion-blij))",
+        angst: "hsl(var(--emotion-angst))",
+        primary: {
+          coral: "hsl(var(--primary-coral))",
+          purple: "hsl(var(--primary-purple))",
+        },
+        secondary: {
+          teal: "hsl(var(--secondary-teal))",
+        },
+        background: "hsl(var(--background))",
+        sidebar: "hsl(var(--sidebar-background))",
       },
       borderRadius: {
         xl: "12px",
       },
       boxShadow: {
         card: "0 2px 8px 0 rgba(0,0,0,0.04)",
+        elegant: "0 10px 30px -10px rgba(0,0,0,0.15)",
+        glow: "0 0 40px rgba(155, 107, 255, 0.3)",
+        "glow-sm": "0 0 20px rgba(155, 107, 255, 0.2)",
+      },
+      backdropBlur: {
+        xs: "2px",
       },
       keyframes: {
         "fade-slide-in": {

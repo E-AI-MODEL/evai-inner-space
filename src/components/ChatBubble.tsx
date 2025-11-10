@@ -55,10 +55,10 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
 }, ref) => {
   const bubbleStyles =
     from === "user"
-      ? "bg-background text-foreground border border-border"
+      ? "bg-gradient-to-br from-primary-coral/10 to-primary-purple/10 text-foreground border border-primary-coral/20"
       : accentColor
       ? ""
-      : "bg-muted text-foreground";
+      : "glass text-foreground";
 
   // Extract gap analysis from meta if it's an object
   const gapAnalysis = typeof meta === 'object' && meta && 'gapAnalysis' in meta 
@@ -122,17 +122,18 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
         )}
 
         <div
-          className={`px-4 py-3 rounded-xl font-inter shadow-card relative text-sm leading-relaxed transition-all duration-300
+          className={`px-5 py-4 rounded-2xl font-inter shadow-elegant relative text-sm leading-relaxed transition-all duration-300 hover:shadow-glow
             ${from === "ai"
               ? accentColor
                 ? ""
-                : "bg-muted"
-              : "bg-background"
+                : "glass"
+              : "bg-gradient-to-br from-primary-coral/10 to-primary-purple/10"
             }
             ${bubbleStyles}
-            ${brilliant ? "ring-2 ring-primary/20 ring-offset-2 shadow-lg" : ""}
+            ${brilliant ? "ring-2 ring-primary-purple/30 ring-offset-2 shadow-glow" : ""}
             ${isFocused ? "ring-2 ring-yellow-400 ring-offset-2" : ""}
-            ${from === "ai" && animate ? "animate-pulse-accent" : ""}
+            ${from === "ai" && animate ? "spring" : ""}
+            ${from === "user" ? "hover:scale-[1.02]" : ""}
           `}
           style={
             accentColor && from === "ai"

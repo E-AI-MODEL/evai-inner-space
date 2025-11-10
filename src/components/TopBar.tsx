@@ -37,15 +37,17 @@ const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
   const status = getBrowserMLStatus();
 
   return (
-    <header className="border-b border-border bg-background/80 backdrop-blur-sm">
+    <header className="border-b border-border glass-strong sticky top-0 z-40">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
         <div
-          className="flex items-center gap-2 cursor-pointer"
+          className="flex items-center gap-3 cursor-pointer group"
           onClick={handleLogoClick}
           title="Klik om naar Admin Dashboard te gaan"
         >
-          <Brain className="h-6 w-6 text-blue-600" />
-          <h1 className="text-xl font-bold text-gray-800">EvAI Neurosymbolische Chat</h1>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-coral to-primary-purple flex items-center justify-center shadow-glow-sm group-hover:shadow-glow transition-all duration-300 group-hover:scale-105">
+            <Brain className="h-6 w-6 text-white" />
+          </div>
+          <h1 className="text-xl font-display font-bold gradient-text">EvAI</h1>
         </div>
         <div className="flex items-center gap-2">
           <Tooltip>

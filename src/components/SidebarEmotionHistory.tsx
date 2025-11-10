@@ -40,17 +40,17 @@ const SidebarEmotionHistory: React.FC<{
         {history.map((item) => (
           <button
             key={item.id}
-            className={`relative group flex flex-col items-center justify-center w-12 h-12 rounded-full border-2 border-white shadow-card ${item.colorClass} hover:ring-2 hover:ring-accent focus:outline-none transition-all`}
+            className={`relative group flex flex-col items-center justify-center w-16 h-16 rounded-2xl border-2 border-white ${item.colorClass} hover:shadow-glow-sm focus:outline-none transition-all duration-300 hover:scale-110 hover:-translate-y-1`}
             title={`${item.label} · ${item.time}`}
             onClick={() => onFocus?.(item.id)}
             aria-label={`${item.label} om ${item.time}`}
           >
-            <Icon name={item.icon} className="text-zinc-700" size={24} />
+            <Icon name={item.icon} className="text-white drop-shadow-md" size={32} />
             <span className={cn(
-              "absolute text-xs opacity-0 group-hover:opacity-100 bg-zinc-900 text-white rounded px-2 py-0.5 duration-200 pointer-events-none z-10",
+              "absolute text-xs opacity-0 group-hover:opacity-100 glass-strong text-foreground rounded-lg px-3 py-1.5 duration-200 pointer-events-none z-10 shadow-elegant font-medium",
               isFlexRow 
-                ? "-top-8 left-1/2 -translate-x-1/2" 
-                : "-bottom-7 left-1/2 -translate-x-1/2"
+                ? "-top-10 left-1/2 -translate-x-1/2" 
+                : "-bottom-10 left-1/2 -translate-x-1/2"
             )}>
               {item.label} · {item.time}
             </span>
@@ -65,11 +65,11 @@ const SidebarEmotionHistory: React.FC<{
         )}>
           <button
             onClick={onClear}
-            className="relative group flex items-center justify-center w-12 h-12 rounded-full border-2 border-transparent hover:border-red-200 bg-zinc-100 hover:bg-red-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+            className="relative group flex items-center justify-center w-14 h-14 rounded-2xl border-2 border-transparent hover:border-red-300 bg-gradient-to-br from-zinc-100 to-zinc-200 hover:from-red-100 hover:to-red-200 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-400 hover:scale-105 hover:shadow-elegant"
             title="Wis geschiedenis"
             aria-label="Wis de volledige chatgeschiedenis"
           >
-            <Trash2 className="text-zinc-500 group-hover:text-red-600 transition-colors" size={22} />
+            <Trash2 className="text-zinc-500 group-hover:text-red-600 transition-colors" size={24} />
             <span className={cn(
               "absolute text-xs opacity-0 group-hover:opacity-100 bg-zinc-900 text-white rounded px-2 py-0.5 duration-200 pointer-events-none z-10",
               isFlexRow 
