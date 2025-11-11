@@ -1,8 +1,9 @@
 
 import React, { forwardRef, useState } from "react";
-import { Gem, CornerDownRight, ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
+import { Gem, CornerDownRight, ThumbsUp, ThumbsDown, Sparkles, BookOpen, Zap, Scale, Brain, PieChart, Shield, AlertTriangle } from "lucide-react";
 import AITransparencyTooltip from "./AITransparencyTooltip";
 import { ContextualHelp } from "./ContextualHelp";
+import { TransparencyPanel } from "./TransparencyPanel";
 
 interface ChatBubbleProps {
   id: string;
@@ -94,25 +95,37 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
       data-seed={emotionSeed}
     >
       {from === "ai" && label && (
-        <div className="mb-0.5 ml-2 flex items-center gap-1 flex-wrap">
+        <div className="mb-2 ml-2 flex items-center gap-1.5 flex-wrap">
           <span
-            className={`px-2 py-0.5 rounded-full text-xs font-medium tracking-wide opacity-80 ${LABEL_CLASSES[label] ?? "bg-muted text-muted-foreground"}`}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium tracking-wide ${LABEL_CLASSES[label] ?? "bg-muted text-muted-foreground"}`}
           >
             {label}
           </span>
           {v20Metadata?.tdMatrixFlag && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400">
-              {v20Metadata.tdMatrixFlag === 'DIDACTIC' ? '🎓 Didactisch' : v20Metadata.tdMatrixFlag === 'AUTONOMOUS' ? '🌱 Autonoom' : '⚖️ Balanced'}
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium glass-strong border border-primary-purple/20 text-foreground flex items-center gap-1.5">
+              {v20Metadata.tdMatrixFlag === 'DIDACTIC' ? (
+                <><BookOpen className="h-3 w-3" /> Didactisch</>
+              ) : v20Metadata.tdMatrixFlag === 'AUTONOMOUS' ? (
+                <><Zap className="h-3 w-3" /> Autonoom</>
+              ) : (
+                <><Scale className="h-3 w-3" /> Balanced</>
+              )}
             </span>
           )}
           {v20Metadata?.fusionStrategy && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-500/10 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400">
-              {v20Metadata.fusionStrategy === 'neural_enhanced' ? '🧠 Neural+' : v20Metadata.fusionStrategy === 'weighted_blend' ? '🔬 Hybrid' : '📚 Symbolic'}
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium glass-strong border border-primary-purple/20 text-foreground flex items-center gap-1.5">
+              {v20Metadata.fusionStrategy === 'neural_enhanced' ? (
+                <><Brain className="h-3 w-3" /> Neural+</>
+              ) : v20Metadata.fusionStrategy === 'weighted_blend' ? (
+                <><PieChart className="h-3 w-3" /> Hybrid</>
+              ) : (
+                <><BookOpen className="h-3 w-3" /> Symbolic</>
+              )}
             </span>
           )}
           {v20Metadata?.safetyScore !== undefined && v20Metadata.safetyScore < 0.5 && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
-              ⚠️ Safety Review
+            <span className="px-2.5 py-1 rounded-full text-xs font-medium glass-strong border border-amber-500/30 text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3" /> Safety Review
             </span>
           )}
           <AITransparencyTooltip 
@@ -209,6 +222,17 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
             </div>
           )}
         </div>
+        
+        {/* Transparency Panel */}
+        {from === 'ai' && (v20Metadata || symbolicInferences) && (
+          <div className="mt-3">
+            <TransparencyPanel 
+              v20Metadata={v20Metadata}
+              symbolicInferences={symbolicInferences}
+              explainText={explainText}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

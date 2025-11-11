@@ -60,7 +60,7 @@ const AITransparencyTooltip: React.FC<AITransparencyTooltipProps> = ({
         </button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-80 p-4 bg-card text-card-foreground border border-border shadow-lg z-50" 
+        className="w-80 p-4 glass-strong border-primary-purple/20 shadow-elegant z-50 animate-fade-slide-in" 
         side="top" 
         align="start"
         sideOffset={8}
@@ -85,13 +85,13 @@ const AITransparencyTooltip: React.FC<AITransparencyTooltipProps> = ({
           <div>
             <h4 className="font-semibold text-sm mb-1">Betrouwbaarheid</h4>
             <div className="flex items-center gap-2">
-              <div className="flex-1 bg-muted rounded-full h-2">
+              <div className="flex-1 bg-muted/50 rounded-full h-2 overflow-hidden">
                 <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-primary-coral to-primary-purple h-2 rounded-full transition-all duration-500 shadow-glow-sm"
                   style={{ width: `${reliabilityPercentage}%` }}
                 />
               </div>
-              <span className="text-xs font-medium">{reliabilityPercentage}%</span>
+              <span className="text-xs font-medium gradient-text">{reliabilityPercentage}%</span>
             </div>
           </div>
 
