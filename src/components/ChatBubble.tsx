@@ -1,6 +1,6 @@
 
-import React, { forwardRef } from "react";
-import { Gem, CornerDownRight, ThumbsUp, ThumbsDown } from "lucide-react";
+import React, { forwardRef, useState } from "react";
+import { Gem, CornerDownRight, ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
 import AITransparencyTooltip from "./AITransparencyTooltip";
 import { ContextualHelp } from "./ContextualHelp";
 
@@ -53,17 +53,37 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
   v20Metadata,
   onFeedback,
 }, ref) => {
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [shaking, setShaking] = useState(false);
+  
   const bubbleStyles =
     from === "user"
-      ? "bg-gradient-to-br from-primary-coral/10 to-primary-purple/10 text-foreground border border-primary-coral/20"
+      ? "bg-gradient-to-br from-primary-coral to-primary-purple text-white border-0"
       : accentColor
       ? ""
-      : "glass text-foreground";
+      : "glass text-foreground border border-primary-purple/10";
 
   // Extract gap analysis from meta if it's an object
   const gapAnalysis = typeof meta === 'object' && meta && 'gapAnalysis' in meta 
     ? meta.gapAnalysis 
     : undefined;
+
+  const handleFeedback = (type: 'like' | 'dislike') => {
+    if (type === 'like') {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 1000);
+    } else {
+      setShaking(true);
+      setTimeout(() => setShaking(false), 500);
+    }
+    
+    // Haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(type === 'like' ? 50 : [30, 20, 30]);
+    }
+    
+    onFeedback?.(type);
+  };
 
   return (
     <div
@@ -123,17 +143,12 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
 
         <div
           className={`px-5 py-4 rounded-2xl font-inter shadow-elegant relative text-sm leading-relaxed transition-all duration-300 hover:shadow-glow
-            ${from === "ai"
-              ? accentColor
-                ? ""
-                : "glass"
-              : "bg-gradient-to-br from-primary-coral/10 to-primary-purple/10"
-            }
             ${bubbleStyles}
             ${brilliant ? "ring-2 ring-primary-purple/30 ring-offset-2 shadow-glow" : ""}
             ${isFocused ? "ring-2 ring-yellow-400 ring-offset-2" : ""}
             ${from === "ai" && animate ? "spring" : ""}
             ${from === "user" ? "hover:scale-[1.02]" : ""}
+            ${shaking ? "animate-shake" : ""}
           `}
           style={
             accentColor && from === "ai"
@@ -144,21 +159,48 @@ const ChatBubble = forwardRef<HTMLDivElement, ChatBubbleProps>(({
         >
           {children}
           
+          {/* Confetti particles */}
+          {showConfetti && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+              {[...Array(8)].map((_, i) => (
+                <Sparkles
+                  key={i}
+                  className="absolute text-primary-purple animate-ping"
+                  size={16}
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${i * 50}ms`,
+                    animationDuration: '600ms'
+                  }}
+                />
+              ))}
+            </div>
+          )}
+          
           {/* Feedback Toggle */}
           {from === 'ai' && onFeedback && (
             <div className="absolute -bottom-3 -right-2 flex items-center gap-2">
-              <div className="flex items-center bg-background border border-border rounded-full shadow-sm p-0.5">
+              <div className="flex items-center glass-strong border border-primary-purple/20 rounded-full shadow-elegant p-0.5">
                 <button
-                  onClick={() => onFeedback('like')}
-                  className={`p-1 rounded-full transition-colors ${feedback === 'like' ? 'bg-green-500/10 text-green-600 dark:bg-green-500/20 dark:text-green-400' : 'text-muted-foreground hover:bg-accent'}`}
+                  onClick={() => handleFeedback('like')}
+                  className={`p-1.5 rounded-full transition-all duration-200 ${
+                    feedback === 'like' 
+                      ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white scale-110 shadow-glow-sm' 
+                      : 'text-muted-foreground hover:bg-accent hover:scale-105'
+                  }`}
                   aria-label="Antwoord is nuttig"
                 >
                   <ThumbsUp size={14} />
                 </button>
-                <div className="w-px h-4 bg-border mx-0.5" />
+                <div className="w-px h-4 bg-border/50 mx-0.5" />
                 <button
-                  onClick={() => onFeedback('dislike')}
-                  className={`p-1 rounded-full transition-colors ${feedback === 'dislike' ? 'bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400' : 'text-muted-foreground hover:bg-accent'}`}
+                  onClick={() => handleFeedback('dislike')}
+                  className={`p-1.5 rounded-full transition-all duration-200 ${
+                    feedback === 'dislike' 
+                      ? 'bg-gradient-to-br from-red-400 to-rose-500 text-white scale-110 shadow-glow-sm' 
+                      : 'text-muted-foreground hover:bg-accent hover:scale-105'
+                  }`}
                   aria-label="Antwoord is niet nuttig"
                 >
                   <ThumbsDown size={14} />

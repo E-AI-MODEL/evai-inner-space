@@ -4,6 +4,7 @@ import ChatBubble from "./ChatBubble";
 import { Message } from '../types';
 import { ConversationHealthMonitor } from './ConversationHealthMonitor';
 import { LoadingStateIndicator } from './LoadingStateIndicator';
+import { TypingIndicator } from './TypingIndicator';
 import { ErrorState } from './ErrorState';
 
 interface ChatViewProps {
@@ -81,7 +82,10 @@ const ChatView: React.FC<ChatViewProps> = ({
             )}
             
             {isProcessing && (
-                <LoadingStateIndicator className="mb-4" />
+                <>
+                    <TypingIndicator className="mb-2" />
+                    <LoadingStateIndicator className="mb-4" />
+                </>
             )}
         </div>
     );
