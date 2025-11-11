@@ -23,10 +23,10 @@ const InputBar: React.FC<{
 
   return (
     <form
-      className={`flex gap-3 items-end bg-background shadow-card rounded-xl border border-border mx-auto w-full ${
+      className={`flex gap-3 items-end glass-strong rounded-2xl border border-border/30 mx-auto w-full transition-all duration-300 focus-within:border-primary-purple/40 focus-within:shadow-glow-sm ${
         isMobile 
-          ? 'px-2 py-2 my-2' 
-          : 'px-3 py-2 my-3'
+          ? 'px-3 py-2.5 my-2' 
+          : 'px-4 py-3 my-3'
       }`}
       onSubmit={e => {
         e.preventDefault();
@@ -37,7 +37,7 @@ const InputBar: React.FC<{
       <textarea
         ref={ref}
         rows={1}
-        className={`resize-none w-full border-none bg-transparent outline-none p-0 min-h-[32px] max-h-[100px] font-inter flex-1 leading-relaxed`}
+        className={`resize-none w-full border-none bg-transparent outline-none p-0 min-h-[32px] max-h-[100px] font-inter flex-1 leading-relaxed placeholder:text-muted-foreground/60`}
         placeholder="Vertel wat je voelt…"
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -52,14 +52,14 @@ const InputBar: React.FC<{
       <button
         type="submit"
         disabled={disabled || !value.trim()}
-        className={`rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors disabled:opacity-60 flex-shrink-0 ${
+        className={`rounded-xl bg-gradient-to-br from-primary-coral to-primary-purple hover:shadow-glow transition-all duration-300 disabled:opacity-50 disabled:shadow-none flex-shrink-0 group ${
           isMobile 
-            ? 'ml-1 p-2' 
-            : 'ml-1 p-2'
+            ? 'ml-1 p-2.5' 
+            : 'ml-1 p-2.5'
         }`}
         aria-label="Verzenden"
       >
-        <Send size={18} className="text-primary" />
+        <Send size={18} className="text-white group-hover:scale-110 transition-transform duration-300" />
       </button>
     </form>
   );

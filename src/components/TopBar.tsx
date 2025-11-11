@@ -37,7 +37,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
   const status = getBrowserMLStatus();
 
   return (
-    <header className="border-b border-border glass-strong sticky top-0 z-40">
+    <header className="border-b border-border/30 glass-strong sticky top-0 z-40 backdrop-blur-xl">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
         <div
           className="flex items-center gap-3 cursor-pointer group"
@@ -52,16 +52,21 @@ const TopBar: React.FC<TopBarProps> = ({ onSettingsClick }) => {
         <div className="flex items-center gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant={status.color} className="cursor-help gap-1">
+              <Badge variant={status.color} className="cursor-help gap-1 glass-strong border-border/20">
                 {status.icon} {status.text}
               </Badge>
             </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
+            <TooltipContent className="max-w-xs glass-strong border-border/20">
               <p className="font-semibold">Browser ML Status</p>
               <p className="text-sm">{status.description}</p>
             </TooltipContent>
           </Tooltip>
-          <Button variant="ghost" size="sm" onClick={onSettingsClick} className="text-gray-600 hover:text-gray-800">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onSettingsClick} 
+            className="glass hover:glass-strong transition-all duration-300"
+          >
             <Settings className="h-4 w-4" />
           </Button>
         </div>
