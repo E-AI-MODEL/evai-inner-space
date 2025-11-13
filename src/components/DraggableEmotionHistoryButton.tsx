@@ -118,8 +118,8 @@ const DraggableEmotionHistoryButton = React.forwardRef<HTMLButtonElement, Dragga
       ref={setRefs}
       type="button"
       aria-label="Toon emotiegeschiedenis (versleepbaar)"
-      className={`md:hidden fixed z-40 p-3 rounded-full bg-background border border-border shadow-lg hover:shadow-xl transition-shadow select-none ${
-        isDragging ? 'cursor-grabbing scale-110' : 'cursor-grab'
+      className={`md:hidden fixed z-40 p-3 rounded-full glass-strong border-border/30 hover:shadow-glow-sm transition-all duration-300 select-none ${
+        isDragging ? 'cursor-grabbing scale-110 shadow-glow' : 'cursor-grab'
       }`}
       style={{
         left: `${position.x}px`,
@@ -132,7 +132,7 @@ const DraggableEmotionHistoryButton = React.forwardRef<HTMLButtonElement, Dragga
     >
       <History size={20} className="text-foreground" />
       {isDragging && (
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs bg-popover text-popover-foreground px-2 py-1 rounded whitespace-nowrap border border-border">
+        <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-xs glass-strong px-3 py-1.5 rounded-lg whitespace-nowrap border-border/20 shadow-elegant font-medium animate-fade-slide-in">
           Versleep naar gewenste plek
         </div>
       )}

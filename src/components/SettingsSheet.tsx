@@ -31,7 +31,7 @@ const SettingsSheet: React.FC<SettingsSheetProps> = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent className="font-inter sm:max-w-xl overflow-y-auto">
+      <SheetContent className="font-inter sm:max-w-xl overflow-y-auto glass-strong border-border/30 backdrop-blur-xl">
         <SheetHeader>
           <SheetTitle>Instellingen</SheetTitle>
           <SheetDescription>

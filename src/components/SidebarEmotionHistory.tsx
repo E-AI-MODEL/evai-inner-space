@@ -25,7 +25,7 @@ const SidebarEmotionHistory: React.FC<{
   return (
     <aside
       className={cn(
-        "flex bg-sidebar border-zinc-200 sticky overflow-y-auto",
+        "flex glass-strong border-border/30 sticky overflow-y-auto backdrop-blur-xl",
         isFlexRow 
           ? "flex-row flex-wrap justify-center items-start gap-4 p-4" 
           : "flex-col justify-between w-20 py-6 px-2 border-r min-h-[calc(100vh-56px)] top-14 h-[calc(100vh-56px)]",
@@ -58,23 +58,23 @@ const SidebarEmotionHistory: React.FC<{
         ))}
       </div>
       
-      {onClear && (
+        {onClear && (
         <div className={cn(
           "flex justify-center",
           isFlexRow ? "w-full pt-4" : "mt-auto pt-4"
         )}>
           <button
             onClick={onClear}
-            className="relative group flex items-center justify-center w-14 h-14 rounded-2xl border-2 border-transparent hover:border-red-300 bg-gradient-to-br from-zinc-100 to-zinc-200 hover:from-red-100 hover:to-red-200 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-400 hover:scale-105 hover:shadow-elegant"
+            className="relative group flex items-center justify-center w-14 h-14 rounded-2xl border-2 border-border/30 hover:border-destructive/50 glass hover:glass-strong transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-destructive/40 hover:scale-105 hover:shadow-glow-sm"
             title="Wis geschiedenis"
             aria-label="Wis de volledige chatgeschiedenis"
           >
-            <Trash2 className="text-zinc-500 group-hover:text-red-600 transition-colors" size={24} />
+            <Trash2 className="text-muted-foreground group-hover:text-destructive transition-colors" size={24} />
             <span className={cn(
-              "absolute text-xs opacity-0 group-hover:opacity-100 bg-zinc-900 text-white rounded px-2 py-0.5 duration-200 pointer-events-none z-10",
+              "absolute text-xs opacity-0 group-hover:opacity-100 glass-strong px-3 py-1.5 rounded-lg shadow-elegant font-medium pointer-events-none z-10",
               isFlexRow 
-                ? "-top-8 left-1/2 -translate-x-1/2" 
-                : "-bottom-7 left-1/2 -translate-x-1/2"
+                ? "-top-10 left-1/2 -translate-x-1/2" 
+                : "-bottom-10 left-1/2 -translate-x-1/2"
             )}>
               Wis alles
             </span>
