@@ -56,11 +56,6 @@ const Index = () => {
     }
   }, [messages, isProcessing]);
 
-  if (showIntro && !isAuthorized) {
-    return <IntroAnimation onFinished={handleFinishedIntro} />;
-  }
-
-
   const handleFocusMessage = (id: string) => {
     const node = messageRefs.current.get(id);
     if (node) {
@@ -118,6 +113,11 @@ const Index = () => {
       }
     }
   }, [messages]);
+
+  // Show intro animation if not authorized
+  if (showIntro && !isAuthorized) {
+    return <IntroAnimation onFinished={handleFinishedIntro} />;
+  }
 
   return (
     <>
