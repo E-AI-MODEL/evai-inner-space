@@ -2,8 +2,10 @@
  * NeSy Fusion Helper Functions
  * Voor echte neurosymbolic fusion in plaats van "beste antwoord" selectie
  */
+import type { EAAProfile } from '@/types/eaa';
+import { FusionWeightCache } from '@/lib/fusionWeightCache';
 
-interface FusionContext {
+export interface FusionContext {
   symbolic: {
     response: string;
     emotion: string;
@@ -20,6 +22,8 @@ interface FusionContext {
     constraintsOK: boolean;
     tdScore?: number;
   };
+  // v20 metadata for context-aware weight selection
+  eaaProfile?: EAAProfile;
 }
 
 interface FusionResult {
@@ -298,26 +302,42 @@ function weightedBlend(symbolic: string, neural: string, weight: number): string
 
 /**
  * Determine context type for fusion weight learning
- * ✅ LAYER 4 FIX: Added greeting detection
+ * v20: Enhanced with EAA profile for context-aware weight selection
  */
 function determineContextType(ctx: FusionContext): string {
-  // ✅ NEW: Greeting detection (high confidence + neutral emotion)
+  const eaa = ctx.eaaProfile;
+  const td = ctx.validation.tdScore || 0.5;
+  
+  // CRITICAL: Crisis override for low agency (safety first!)
+  if (eaa && eaa.agency < 0.3) {
+    console.log('🚨 Crisis context detected: low agency');
+    return 'crisis';
+  }
+  
+  // Validation failure → symbolic fallback (trust rules over neural)
+  if (!ctx.validation.validated || !ctx.validation.constraintsOK) {
+    console.log('⚠️ Validation failed: using crisis context');
+    return 'crisis';
+  }
+  
+  // High TD + Low neural confidence → rely more on symbolic (therapeutic guidance)
+  if (td > 0.7 && ctx.neural.confidence < 0.6) {
+    console.log('📊 High TD + Low confidence: using low_confidence context');
+    return 'low_confidence';
+  }
+  
+  // High confidence + validated → allow more neural enhancement (contextual adaptation)
+  if (ctx.neural.confidence >= 0.8 && ctx.symbolic.confidence >= 0.7) {
+    console.log('✅ High confidence: using high_confidence context');
+    return 'high_confidence';
+  }
+  
+  // Greeting detection (high symbolic confidence + neutral emotion)
   if (ctx.symbolic.emotion === 'neutraal' && ctx.symbolic.confidence > 0.9) {
+    console.log('👋 Greeting detected');
     return 'greeting';
   }
   
-  // Map validation/confidence to context types
-  if (!ctx.validation.validated || !ctx.validation.constraintsOK) {
-    return 'crisis';
-  }
-  if (ctx.symbolic.confidence < 0.6) {
-    return 'low_confidence';
-  }
-  if (ctx.symbolic.confidence >= 0.8) {
-    return 'high_confidence';
-  }
-  if (ctx.validation.tdScore && ctx.validation.tdScore < 0.4) {
-    return 'user_agency_high';
-  }
+  console.log('➡️ Normal context');
   return 'normal';
 }
