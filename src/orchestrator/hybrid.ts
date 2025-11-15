@@ -719,67 +719,52 @@ async function compileSeedResponse(
       return { answer: generateEAAAwareFallback(eaaProfile, ctx.seed.emotion) };
     }
     
-    // STEP 4: Post-LLM Fusion Validation
-    const { validateSeedPreservation, blendSeedWithLLM } = await import('./fusionHelpers');
-    const fusionCheck = validateSeedPreservation(
-      data.response,
-      seedCore,
-      seedGuidance
-    );
+    // STEP 4: Neurosymbolic Fusion with Meta-Learner weights
+    console.log('🧬 Performing Neurosymbolic Fusion with learned weights...');
+    const { assembleFusion } = await import('./fusionHelpers');
     
-    if (!fusionCheck.preserved) {
-      console.warn('🚨 Fusion validation: Seed core not preserved');
-      console.warn(`   Similarity: ${(fusionCheck.similarity * 100).toFixed(0)}%`);
-      console.warn(`   Deviations: ${fusionCheck.deviation.join(', ')}`);
-      
-      auditLog.push(`⚠️ LLM deviated from seed core (similarity: ${(fusionCheck.similarity * 100).toFixed(0)}%)`);
-      auditLog.push(`   Deviations: ${fusionCheck.deviation.join(', ')}`);
-      
-      // Fallback: Weighted blend (70% seed / 30% LLM)
-      const blendedAnswer = blendSeedWithLLM(
-        seedGuidance,
-        data.response,
-        fusionCheck
-      );
-      
-      auditLog.push(`🧬 Applied weighted blend: 70% seed / 30% LLM context`);
-      
-      return { 
-        answer: blendedAnswer,
-        fusionMetadata: {
-          strategy: 'weighted_blend',
-          preservationScore: fusionCheck.similarity,
-          symbolicWeight: 0.7,
-          neuralWeight: 0.3
-        }
-      };
-    }
-    
-    // STEP 5: EAA Compliance Validation (existing)
+    // EAA Compliance Validation before fusion
     const validationResult = validateEAACompliance(
       data.response,
       eaaProfile,
       allowedInterventions
     );
     
-    if (!validationResult.ok) {
-      console.warn('⚠️ Post-LLM EAA validation failed:', validationResult.errors);
-      auditLog.push(`⚠️ Post-LLM EAA validation failed: ${validationResult.errors.join(', ')}`);
-      return { answer: generateEAAAwareFallback(eaaProfile, ctx.seed.emotion) };
-    }
+    const fusionCtx = {
+      symbolic: {
+        response: seedGuidance,
+        emotion: ctx.seed.emotion || 'onzekerheid',
+        confidence: ctx.seed.matchScore || 0.7,
+        sources: []
+      },
+      neural: {
+        response: data.response,
+        confidence: 0.85,
+        processingPath: 'llm'
+      },
+      validation: {
+        validated: validationResult.ok,
+        constraintsOK: validationResult.ok,
+        tdScore: ctx.tdMatrix?.value || 0.5
+      },
+      eaaProfile: ctx.eaaProfile || eaaProfile
+    };
+    
+    const fusionResult = await assembleFusion(fusionCtx);
+    
+    auditLog.push(`🧬 Fusion complete: ${fusionResult.strategy} (symbolic: ${(fusionResult.symbolicWeight * 100).toFixed(0)}%, neural: ${(fusionResult.neuralWeight * 100).toFixed(0)}%)`);
     
     if (validationResult.warnings.length > 0) {
       auditLog.push(`⚠️ Post-LLM warnings: ${validationResult.warnings.join(', ')}`);
     }
     
-    auditLog.push(`✅ NeSy Fusion complete: seed preserved (${(fusionCheck.similarity * 100).toFixed(0)}%)`);
-    return { 
-      answer: data.response,
+    return {
+      answer: fusionResult.fusedResponse,
       fusionMetadata: {
-        strategy: 'neural_enhanced',
-        preservationScore: fusionCheck.similarity,
-        symbolicWeight: 0.7,
-        neuralWeight: 0.3
+        strategy: fusionResult.strategy,
+        preservationScore: fusionResult.preservationScore,
+        symbolicWeight: fusionResult.symbolicWeight,
+        neuralWeight: fusionResult.neuralWeight
       }
     };
   } catch (err) {
