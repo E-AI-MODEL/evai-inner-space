@@ -101,28 +101,31 @@ ${ownership > 0.6 ? '- Sluit aan bij hun verbondenheid met de situatie' : '- Hel
 Focus op: ${allowedInterventions.join(', ')}
 `;
 
-  // ✅ LAYER 3 FIX: Context validation BEFORE fusion
+  // ✅ NATURALIZED SEED INJECTION: Seed becomes therapeutic context, not literal text
   if (seedGuidance) {
     const isGreeting = /^(hi|hallo|hey|hoi)/i.test(userInput || '');
     const isFirstMessage = (conversationHistory?.length || 0) === 0;
     const seedIsReflective = /wat zou er gebeuren|hoe zou het zijn|denk eens na|zou je|als je/i.test(seedGuidance);
     
     if (isGreeting && isFirstMessage && seedIsReflective) {
-      console.warn('⚠️ LAYER 3: Context mismatch detected - reflective seed for greeting → SKIP fusion');
-      // SKIP fusion instruction, let LLM generate natural greeting instead
+      console.warn('⚠️ Context mismatch: reflective seed for greeting → SKIP');
+      // SKIP seed for context mismatch
     } else {
+      // ✅ NEW: Describe therapeutic INTENT instead of literal seed text
+      const therapeuticIntent = seedGuidance.includes('valideer') || seedGuidance.includes('begrijp')
+        ? 'De gebruiker heeft behoefte aan validatie van hun gevoel'
+        : seedGuidance.includes('vraag') || seedGuidance.includes('reflecteer')
+        ? 'De gebruiker zou kunnen profiteren van reflectie op hun situatie'
+        : seedGuidance.includes('stel voor') || seedGuidance.includes('probeer')
+        ? 'De gebruiker zou gebaat zijn bij een kleine concrete suggestie'
+        : 'Therapeutische ondersteuning passend bij de situatie';
+      
       prompt += `
 
-Een ervaren therapeut suggereert deze richting:
-"${seedGuidance}"
-
-Gebruik dit als INSPIRATIE, niet als script:
-- Voel de therapeutische intentie (het 'waarom')
-- Vorm het om naar natuurlijke, persoonlijke taal
-- Pas het aan het moment in dit gesprek
-- Maak het kort en toegankelijk
-
-Het gaat om de kern, niet de exacte woorden.
+💡 Therapeutische richting: ${therapeuticIntent}
+- Vorm dit naar natuurlijke, vriendelijke taal
+- Pas het aan de vibe van dit gesprek
+- Houd het luchtig en kort
 `;
     }
   }
