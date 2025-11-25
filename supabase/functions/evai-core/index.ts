@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { handleBiasCheck } from "./llm-generator.ts";
+import { handleBiasCheck, buildSystemPrompt } from "./llm-generator.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -514,17 +514,14 @@ async function handleGenerateResponse(body: any) {
     historyLength: conversationHistory.length
   });
 
-  // Build v20-enhanced system prompt
+  // Build natural system prompt (v20 metadata used internally, not exposed to LLM)
   const systemPrompt = buildSystemPrompt(
-    emotion, 
-    allowedInterventions, 
-    eaaProfile, 
+    emotion,
+    allowedInterventions,
+    eaaProfile,
     seedGuidance,
-    tdMatrix,
-    regisseurBriefing,
-    eaiRules,
-    rubricsAssessment,
-    fusionMetadata
+    userInput,
+    conversationHistory
   );
 
   // Build conversation messages
@@ -589,147 +586,6 @@ async function handleGenerateResponse(body: any) {
   }
 }
 
-function buildSystemPrompt(
-  emotion: string,
-  allowedInterventions: string[],
-  eaaProfile: { ownership: number; autonomy: number; agency: number },
-  seedGuidance?: string,
-  tdMatrix?: { value: number; flag: string; aiContribution: number },
-  regisseurBriefing?: { advice: string; reason: string; avgAgency: number },
-  eaiRules?: { triggered: boolean; ruleId?: string; reason?: string; action?: string },
-  rubricsAssessment?: { overallRisk: number; overallProtective: number; dominantPattern: string },
-  fusionMetadata?: { strategy: string; symbolicWeight: number; neuralWeight: number }
-): string {
-  const { ownership, autonomy, agency } = eaaProfile;
-
-  let prompt = `Je bent een empathische AI-coach die helpt bij emotionele ondersteuning met NEUROSYMBOLIC v20 GUIDANCE.
-
-🎯 EMOTIONELE CONTEXT: ${emotion}
-
-📊 GEBRUIKER EAA-PROFIEL:
-- Eigenaarschap (ownership): ${(ownership * 100).toFixed(0)}% - ${ownership > 0.6 ? 'Hoog: sterke verbinding' : ownership > 0.4 ? 'Gemiddeld: enige verbinding' : 'Laag: weinig betrokkenheid'}
-- Autonomie: ${(autonomy * 100).toFixed(0)}% - ${autonomy > 0.5 ? 'Hoog: keuzevrijheid' : autonomy > 0.3 ? 'Gemiddeld: enige autonomie' : 'Laag: weinig vrijheid'}
-- Agency: ${(agency * 100).toFixed(0)}% - ${agency > 0.6 ? 'Hoog: handelingsbekwaam' : agency > 0.4 ? 'Gemiddeld: kan handelen' : 'Laag: machteloos'}
-`;
-
-  // TD-Matrix guidance
-  if (tdMatrix) {
-    const tdGuidance = tdMatrix.flag === 'DIDACTIC' 
-      ? '🎓 DIDACTISCH MODUS: Gebruik meer sturing, geef concrete stappen, wees directiever'
-      : tdMatrix.flag === 'AUTONOMOUS'
-      ? '🌱 AUTONOME MODUS: Minimale sturing, faciliteer zelfontdekking, stel open vragen'
-      : '⚖️ BALANCED MODUS: Evenwicht tussen sturing en autonomie';
-    
-    prompt += `\n🧭 TD-MATRIX: ${tdGuidance} (TD-score: ${tdMatrix.value.toFixed(2)}, AI contribution: ${(tdMatrix.aiContribution * 100).toFixed(0)}%)\n`;
-  }
-
-  // Regisseur Strategic Briefing
-  if (regisseurBriefing?.advice) {
-    prompt += `\n🎬 REGISSEUR BRIEFING: "${regisseurBriefing.advice}"
-   Reden: ${regisseurBriefing.reason}
-   → Volg dit strategische advies bij het formuleren van je antwoord.\n`;
-  }
-
-  // E_AI Rules
-  if (eaiRules?.triggered) {
-    prompt += `\n⚠️ E_AI RULE TRIGGERED: ${eaiRules.ruleId}
-   Reden: ${eaiRules.reason}
-   Actie: ${eaiRules.action}
-   → Pas je antwoord aan volgens deze ethische constraint.\n`;
-  }
-
-  // Rubrics Risk Assessment
-  if (rubricsAssessment) {
-    const riskLevel = rubricsAssessment.overallRisk > 0.7 ? 'HOOG' : rubricsAssessment.overallRisk > 0.4 ? 'GEMIDDELD' : 'LAAG';
-    const protectiveLevel = rubricsAssessment.overallProtective > 0.6 ? 'STERK' : rubricsAssessment.overallProtective > 0.3 ? 'AANWEZIG' : 'ZWAK';
-    
-    prompt += `\n📋 RUBRICS ASSESSMENT:
-   - Risicofactoren: ${riskLevel} (${(rubricsAssessment.overallRisk * 100).toFixed(0)}%)
-   - Protectieve factoren: ${protectiveLevel} (${(rubricsAssessment.overallProtective * 100).toFixed(0)}%)
-   - Dominant patroon: ${rubricsAssessment.dominantPattern}
-   → ${riskLevel === 'HOOG' ? 'Extra voorzichtigheid, overweeg HITL escalatie' : 'Normale therapeutische flow'}
-`;
-  }
-
-  // Fusion Strategy
-  if (fusionMetadata) {
-    const strategyExplain = fusionMetadata.strategy === 'neural_enhanced'
-      ? 'Neural-enhanced: LLM verrijkt symbolische basis'
-      : fusionMetadata.strategy === 'weighted_blend'
-      ? 'Weighted blend: Symbolisch + Neural gemengd'
-      : 'Symbolic fallback: Pure symbolische response';
-    
-    prompt += `\n🔬 FUSION STRATEGY: ${strategyExplain}
-   Symbolisch gewicht: ${(fusionMetadata.symbolicWeight * 100).toFixed(0)}% | Neural gewicht: ${(fusionMetadata.neuralWeight * 100).toFixed(0)}%
-`;
-  }
-
-  prompt += `\n✅ TOEGESTANE INTERVENTIES: ${allowedInterventions.join(', ')}\n`;
-
-  if (seedGuidance) {
-    prompt += `
-🧬 THERAPEUTISCHE ANKER (SEED):
-"${seedGuidance}"
-
-JOUW TAAK:
-- Gebruik de seed als therapeutische basis (WAT gezegd MOET worden)
-- Vertaal naar deze specifieke conversatie met gebruiker
-- Voeg persoonlijke aansluiting toe
-- Behoud therapeutische intentie
-- Integreer v20 guidance (TD-Matrix, Regisseur, Rubrics)
-`;
-  }
-
-  prompt += `
-📜 GEDRAGSRICHTLIJNEN:`;
-
-  // Low agency constraints
-  if (agency < 0.4) {
-    prompt += `
-- ⚠️ LAGE AGENCY: Gebruiker voelt machteloosheid
-- ALLEEN reflectieve vragen stellen
-- GEEN suggesties of concrete acties voorstellen
-- Focus op begrijpen en erkennen
-- Voorbeeld: "Wat maakt het nu zo moeilijk?"`;
-  } else if (agency < 0.6) {
-    prompt += `
-- GEMIDDELDE AGENCY: Voorzichtige begeleiding
-- Kleine, haalbare stappen voorstellen
-- Vragen stellen die perspectief bieden
-- Voorbeeld: "Zou het helpen om..."`;
-  } else {
-    prompt += `
-- HOGE AGENCY: Gebruiker kan actie ondernemen
-- Concrete suggesties toegestaan
-- Voorbeeld: "Je zou kunnen proberen om..."`;
-  }
-
-  // Low autonomy constraints
-  if (autonomy < 0.3) {
-    prompt += `
-- ⚠️ LAGE AUTONOMIE: Gebruiker voelt druk
-- GEEN sturende taal gebruiken
-- Keuzes open houden
-- Vermijd "moet", "zou moeten"`;
-  }
-
-  // Low ownership constraints
-  if (ownership < 0.4) {
-    prompt += `
-- ⚠️ LAGE OWNERSHIP: Weinig persoonlijke betrokkenheid
-- Focus op validatie en erkenning
-- Geen diepgaande persoonlijke vragen`;
-  }
-
-  prompt += `
-
-✍️ ANTWOORDSTIJL:
-- Maximum 2-3 zinnen
-- Empathisch en warm
-- Nederlands
-- Direct en concreet
-- Integreer v20 strategische guidance subtiel in je formulering
-`;
-
-  return prompt;
-}
+// ✅ buildSystemPrompt is now imported from llm-generator.ts
+// v20 metadata (TD-Matrix, Regisseur, EAI, Rubrics) is used for INTERNAL decision-making
+// but NOT exposed to the LLM to keep responses natural
