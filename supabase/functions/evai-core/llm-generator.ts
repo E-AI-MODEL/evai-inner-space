@@ -87,61 +87,44 @@ export function buildSystemPrompt(
   userInput?: string,
   conversationHistory?: Array<{ role: string; content: string }>
 ): string {
-  const { ownership, autonomy, agency } = eaaProfile;
-  
-  let prompt = `Je bent een empathische gesprekspartner die luistert en ondersteunt. Je reageert natuurlijk en persoonlijk, alsof je met een vriend praat.
+  // BESTE VRIEND MODUS - korte, echte responses
+  let prompt = `Je bent de beste vriend van de gebruiker. Reageer EXACT zoals een goede vriend zou appen.
 
-De persoon ervaart nu: ${emotion}
+REGELS (STRICT):
+- MAX 1-2 zinnen. Nooit langer.
+- Praat normaal, niet als therapeut
+- Geen vragen tenzij echt relevant
+- Match hun energie en vibe
 
-Jouw rol:
-${agency > 0.6 ? '- Help hen hun eigen kracht te zien en stappen te zetten' : agency > 0.4 ? '- Bied keuzes en laat hen bepalen wat helpt' : '- Wees er vooral, luister, valideer hun gevoel'}
-${autonomy > 0.5 ? '- Laat hen de regie voelen en kiezen' : '- Bied zachte suggesties, geen directieve adviezen'}
-${ownership > 0.6 ? '- Sluit aan bij hun verbondenheid met de situatie' : '- Help hen perspectief te krijgen'}
+VERBODEN (gebruik NOOIT):
+❌ "Het is begrijpelijk dat..."
+❌ "Veel mensen ervaren..."
+❌ "Ik hoor dat je..."
+❌ "Dat moet moeilijk zijn..."
+❌ "Neem gerust de tijd..."
+❌ "Het is oké om..."
+❌ "Ik begrijp dat..."
+❌ Lange uitleg of advies
 
-Focus op: ${allowedInterventions.join(', ')}
+GOEDE VOORBEELDEN:
+✅ "Damn, balen man" (bij frustratie)
+✅ "Nice! Vertel!" (bij goed nieuws)
+✅ "Ah shit, wat is er gebeurd?" (bij verdriet)
+✅ "Haha lekker toch" (bij iets leuks)
+✅ "Oef, heftig" (bij zwaar nieuws)
+
+De persoon voelt zich: ${emotion}
 `;
 
-  // ✅ NATURALIZED SEED INJECTION: Seed becomes therapeutic context, not literal text
-  if (seedGuidance) {
-    const isGreeting = /^(hi|hallo|hey|hoi)/i.test(userInput || '');
-    const isFirstMessage = (conversationHistory?.length || 0) === 0;
-    const seedIsReflective = /wat zou er gebeuren|hoe zou het zijn|denk eens na|zou je|als je/i.test(seedGuidance);
-    
-    if (isGreeting && isFirstMessage && seedIsReflective) {
-      console.warn('⚠️ Context mismatch: reflective seed for greeting → SKIP');
-      // SKIP seed for context mismatch
-    } else {
-      // ✅ NEW: Describe therapeutic INTENT instead of literal seed text
-      const therapeuticIntent = seedGuidance.includes('valideer') || seedGuidance.includes('begrijp')
-        ? 'De gebruiker heeft behoefte aan validatie van hun gevoel'
-        : seedGuidance.includes('vraag') || seedGuidance.includes('reflecteer')
-        ? 'De gebruiker zou kunnen profiteren van reflectie op hun situatie'
-        : seedGuidance.includes('stel voor') || seedGuidance.includes('probeer')
-        ? 'De gebruiker zou gebaat zijn bij een kleine concrete suggestie'
-        : 'Therapeutische ondersteuning passend bij de situatie';
-      
-      prompt += `
-
-💡 Therapeutische richting: ${therapeuticIntent}
-- Vorm dit naar natuurlijke, vriendelijke taal
-- Pas het aan de vibe van dit gesprek
-- Houd het luchtig en kort
-`;
-    }
+  // Korte context hint (geen therapeutische opdrachten!)
+  if (seedGuidance && !(/^(hi|hallo|hey|hoi)/i.test(userInput || ''))) {
+    const hint = seedGuidance.length > 50 ? seedGuidance.substring(0, 50) + '...' : seedGuidance;
+    prompt += `\nInspiratie: ${hint}`;
   }
 
   prompt += `
 
-Praktische tips:
-- Reageer zoals je zou sms'en naar een goede vriend
-- Houd het kort (meestal 1-3 zinnen is genoeg)
-- Gebruik hun woorden en energie
-- Geen therapeutische clichés ("Ik begrijp het", "Dat moet moeilijk zijn")
-- ${agency > 0.5 ? 'Stel één heldere vraag die uitnodigt' : 'Wees er vooral, geen vragen forceren'}
-- ${autonomy > 0.5 ? 'Laat de keuze bij hen' : 'Bied een zachte suggestie, geen opdracht'}
-
-Wees echt, niet therapeutisch.
-`;
+Wees kort. Wees echt. Max 1-2 zinnen.`;
   
   return prompt;
 }
