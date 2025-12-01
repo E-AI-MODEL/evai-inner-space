@@ -639,16 +639,11 @@ function injectSeedTemplate(
     .replace(/\{\{autonomie\}\}/g, `${(eaaProfile.autonomy * 100).toFixed(0)}%`)
     .replace(/\{\{eigenaarschap\}\}/g, `${(eaaProfile.ownership * 100).toFixed(0)}%`);
   
-  // Add therapeutic constraints
-  enrichedSeed += `\n\nCONTEXT: Gebruiker zei: "${userInput}"`;
+  // Add simple context (NO therapeutic instructions!)
+  enrichedSeed += `\n\nGebruiker zei: "${userInput}"`;
   if (conversationHistory.length > 0) {
-    enrichedSeed += `\nGESPREKSVERLOOP: ${conversationSummary}`;
+    enrichedSeed += ` (gesprek: ${conversationSummary})`;
   }
-  
-  enrichedSeed += `\n\nTHERAPEUTISCHE OPDRACHT:
-- Gebruik bovenstaande seed als therapeutische basis (WAT gezegd moet worden)
-- Vertaal naar deze specifieke conversatie (HOE het aanvoelt voor deze gebruiker)
-- Voeg persoonlijke aansluiting toe zonder de therapeutische intentie te verliezen`;
   
   return enrichedSeed;
 }

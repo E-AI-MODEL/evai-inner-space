@@ -215,7 +215,32 @@ export async function assembleFusion(ctx: FusionContext): Promise<FusionResult> 
   let fusedResponse: string;
   let strategy: FusionResult['strategy'];
   
-  if (preservation > 0.7) {
+  // ✅ FRIEND-CHECK: Reject therapeutic phrases
+  const therapeuticBlacklist = [
+    'het is begrijpelijk',
+    'veel mensen ervaren',
+    'ik hoor dat je',
+    'dat moet moeilijk zijn',
+    'neem gerust de tijd',
+    'het is oké om',
+    'ik begrijp dat',
+    'therapeutisch',
+    'validatie'
+  ];
+  
+  const neuralLower = ctx.neural.response.toLowerCase();
+  const hasForbiddenPhrase = therapeuticBlacklist.some(phrase => neuralLower.includes(phrase));
+  const isTooLong = ctx.neural.response.length > 120;
+  
+  if (hasForbiddenPhrase) {
+    console.warn('🚨 FRIEND-CHECK: Therapeutic phrase detected, using symbolic');
+    fusedResponse = ctx.symbolic.response;
+    strategy = 'symbolic_fallback';
+  } else if (isTooLong && preservation > 0.5) {
+    console.warn('🚨 LENGTH-CHECK: Response too long (>120 chars), using symbolic');
+    fusedResponse = ctx.symbolic.response;
+    strategy = 'symbolic_fallback';
+  } else if (preservation > 0.7) {
     // Excellent preservation: LLM heeft seed goed behouden, gebruik neural
     console.log('✅ Excellent preservation (>70%), using neural-enhanced response');
     fusedResponse = ctx.neural.response;

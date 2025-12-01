@@ -544,8 +544,8 @@ async function handleGenerateResponse(body: any) {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages,
-        temperature: 0.7,
-        max_tokens: 200
+        temperature: 0.8,
+        max_tokens: 60
       })
     });
 
